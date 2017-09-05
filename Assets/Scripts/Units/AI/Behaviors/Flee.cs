@@ -1,0 +1,222 @@
+﻿using UnityEngine;
+using System.Collections;
+using System;
+
+[RequireComponent(typeof(MovementController))]
+public class Flee : BaseUtilityBehavior
+{
+    //static readonly int MAX_ITERATIONS = 25;
+    static readonly float SEARCH_ANGLE_DELTA = 15f;
+    static readonly float MEAN_TO_OFFSET_RATIO = 3f;
+    //static readonly float THREAT_POSITION_MIN_DISTANCE = 5f;
+
+    [Tooltip("Determines how far the unit attempts to flee")]
+    [SerializeField]
+    protected DeviatingFloat fleeDistance;
+
+    [Tooltip("Minimum distance that unit can flee")]
+    [SerializeField]
+    protected float minFleeDistance = 3f;
+
+
+    [Tooltip("Multiplier applied to speed during fleeing")]
+    [SerializeField]
+    [Range(0.1f, 3f)]
+    protected float fleeSpeedup = 1f;
+
+
+    [Tooltip("Initial maximum angle for attempted flee")]
+    [SerializeField]
+    [Range(1, 180)]
+    int initialFleeAngle = 30;
+    
+
+
+    MovementController m_Movement;
+    
+
+    public override void Awake()
+    {
+        base.Awake();
+        
+        m_Movement = GetComponent<MovementController>();
+    }
+
+
+    public void FleeFromThreats()
+    {
+        Vector3 pos = FindThreatPosition();
+
+        FleeFromPosition(pos);
+    }
+    public Vector3 FindThreatPosition()
+    {
+        //Attempt to continue moving in same direction
+        Vector3 offset = -m_Movement.Velocity;
+
+        //If not moving, construct own offset
+        if (offset.magnitude <= 0.1f)
+        {
+            offset = Vector3.one * ( UnityEngine.Random.value < 0.5f ? 1 : -1);
+        }
+
+        offset.Normalize();
+
+
+        Vector3 threatPos = m_Transform.position + offset;
+
+        for (int i = 0; i < m_Actor.NearbyEnemies.Count; i++)
+        {
+            threatPos += m_Actor.NearbyEnemies[i].transform.position;
+        }
+
+        threatPos /= m_Actor.NearbyEnemies.Count + 1;
+
+        return threatPos;
+    }
+    public Vector3 FleeFromPosition(Vector3 threatPosition)
+    {
+
+        Vector3 fleeVector = (m_Transform.position - threatPosition).normalized;
+        Vector3 perpendicularFleeVector = new Vector3(-fleeVector.z, fleeVector.y, fleeVector.x).normalized * ((UnityEngine.Random.value * 2f) - 1f);
+        fleeVector += perpendicularFleeVector;
+
+        Vector3 fleePos = m_Transform.position + (fleeVector.normalized * MEAN_TO_OFFSET_RATIO * (float)Utilities.GetRandomGaussian(fleeDistance));
+
+        return fleePos;
+    }
+
+    IEnumerator FleeRoutine()
+    {
+        Vector3 threatPos = FindThreatPosition();
+
+        if (m_Actor.ShowDebug)
+            Debug.DrawLine(m_Transform.position, threatPos, Color.red, 2f);
+
+
+        Vector3 worldPosition = FleeFromPosition(threatPos);
+
+        Vector3 zeroAngleVector = worldPosition - m_Transform.position;
+        zeroAngleVector = zeroAngleVector.magnitude == 0 ? m_Transform.forward : zeroAngleVector.normalized;
+
+
+        Vector3 toVector = worldPosition - m_Transform.position;
+        toVector.y = 0;
+
+        if (toVector.magnitude < minFleeDistance)
+        {
+            worldPosition = m_Transform.position + (toVector.normalized * minFleeDistance);
+        }
+
+
+        Node _node = A_Star_Pathfinding.Instance.NodeFromWorldPoint(worldPosition);
+
+
+        float checkAngle = initialFleeAngle;
+
+
+        checkAngle += SEARCH_ANGLE_DELTA * Time.deltaTime;
+
+
+        float _angle = UnityEngine.Random.Range(0f, checkAngle);
+        _angle *= UnityEngine.Random.value <= 0.5f ? 1f : -1f;
+
+        Vector3 fleeDir = Quaternion.AngleAxis(_angle, m_Transform.up) * zeroAngleVector;
+        worldPosition = m_Transform.position + (fleeDir.normalized * MEAN_TO_OFFSET_RATIO * (float)Utilities.GetRandomGaussian(fleeDistance));
+
+        _node = A_Star_Pathfinding.Instance.NodeFromWorldPoint(worldPosition);
+
+
+        if (_node != null && _node.IsWalkable(m_Actor.WalkableNodes))
+        {
+
+            m_Actor.FindPathTo(_node.WorldPosition);
+
+            yield return null;
+
+
+            
+            while (m_Actor.MoveAlongPath())
+            {
+                if (m_Actor.ShowDebug)
+                    Debug.DrawLine(m_Transform.position, _node.WorldPosition, Color.yellow);
+
+
+                yield return null;
+            }
+            
+        }
+
+
+        EndBehavior(true, true);
+    }
+
+ 
+
+    public override void StartBehavior()
+    {
+        IsActive = true;
+
+        m_Movement.AddSpeedMultiplier(fleeSpeedup);
+        StartCoroutine(FleeRoutine());
+    }
+    public override void EndBehavior(bool shouldNotifySuper, bool shouldNotifyActor)
+    {
+        StopAllCoroutines();
+        m_Movement.RemoveSpeedMultiplier(fleeSpeedup);
+       
+        base.EndBehavior(shouldNotifySuper, shouldNotifyActor);
+    }
+
+    public override void NotifySubBehaviorEnded(BaseUtilityBehavior _behavior)
+    {
+        throw new NotImplementedException();
+    }
+
+
+    public override float GetBehaviorScore()
+    {
+         if (m_Mind == null)
+            return 0f;
+
+
+        UtilityPersonalityTrait fearTrait = m_Mind.GetTrait(UtilityPersonalityTrait.PersonalityTrait_Type.Fear);
+
+        if (fearTrait == null)
+            return 0f;
+
+
+        return utilityCurve.Evaluate(fearTrait.CurrentValue);
+    }
+
+
+
+    public override bool CanEndBehavior
+    {
+       get { return true; }
+    }
+
+
+    public override bool CanStartSubBehavior
+    {
+        get { return true; }
+    }
+
+
+
+
+
+    protected override void OnValidate()
+    {
+        base.OnValidate();
+
+        Utilities.ValidateCurve_Times(utilityCurve, 0f, 100f);
+    }
+
+    public override string ToString()
+    {
+        return "Flee";
+    }
+
+
+}
