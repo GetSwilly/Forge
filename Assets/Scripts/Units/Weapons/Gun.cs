@@ -178,8 +178,6 @@ public class Gun : Weapon {
         }
     }
 
-    public override void UpdateStat(Stat _stat) { }
-
     public override void Update()
     {
         base.Update();
@@ -210,9 +208,9 @@ public class Gun : Weapon {
 
 
 
-    public override void Initialize(Transform _owner, List<Stat> _stats)
+    public override void Initialize(ITeamMember owner)
     {
-        base.Initialize(_owner, _stats);
+        base.Initialize(owner);
 
         DestroyBulletObjects();
         isReloading = false;
@@ -245,14 +243,7 @@ public class Gun : Weapon {
 
         bulletParents = new List<GameObject>();
 	}
-
-
-
-
-
-
-
-
+    
 
     Vector3? RaycastSweep(Vector3 aimDir)
     {
@@ -390,11 +381,7 @@ public class Gun : Weapon {
 
         return targetHit.collider == null ? null : (Vector3?)targetHit.point;
     }
-
-
-
-
-
+    
 
     IEnumerator FireProjectile(ShotContainer _container, ObjectPooler _pool, bool isPrimary)
     {
@@ -404,9 +391,12 @@ public class Gun : Weapon {
 
         PlaySound(_container.Sound);
 
+        if (m_Movement != null)
+        {
+            m_Movement.AddSpeedMultiplier(isPrimary ? primarySpeedSpeedup : secondarySpeedSpeedup);
+            m_Movement.AddRotationMultiplier(isPrimary ? primaryRotationSpeedup : secondaryRotationSpeedup);
+        }
 
-        m_Movement.AddSpeedMultiplier(isPrimary ? primarySpeedSpeedup : secondarySpeedSpeedup);
-        m_Movement.AddRotationMultiplier(isPrimary ? primaryRotationSpeedup : secondaryRotationSpeedup);
 
         List<Shot> _shots = _container.ProjectileShots;
         for (int i = 0; i < _shots.Count; i++)
@@ -456,7 +446,7 @@ public class Gun : Weapon {
 
                 float _range = AttackRange * _shots[i].RangeModifier;
 
-                bScript.Initialize(m_Transform.parent, friendlyMask, fireDir, (int)-_power, isCrit, _speed, _range);
+                bScript.Initialize(m_Transform.parent, m_Team, fireDir, (int)-_power, isCrit, _speed, _range);
                 bScript.SubscribeToOnImpact(AlertWeaponCasualty);
 
                 EnableEffects();
@@ -476,9 +466,13 @@ public class Gun : Weapon {
 
         }
 
+        if (m_Movement != null)
+        {
+            m_Movement.RemoveSpeedMultiplier(isPrimary ? primarySpeedSpeedup : secondarySpeedSpeedup);
+            m_Movement.RemoveRotationMultiplier(isPrimary ? primaryRotationSpeedup : secondaryRotationSpeedup);
+        }
 
-        m_Movement.RemoveSpeedMultiplier(isPrimary ? primarySpeedSpeedup : secondarySpeedSpeedup);
-        m_Movement.RemoveRotationMultiplier(isPrimary ? primaryRotationSpeedup : secondaryRotationSpeedup);
+
         isFiring = false;
 
 
@@ -532,7 +526,7 @@ public class Gun : Weapon {
 
             float _range = AttackRange * _shot.ProjectorShot.RangeModifier;
 
-            _script.Initialize(m_Transform.parent, friendlyMask, fireDir, (int)-_power, isCrit, _speed, _range);
+            _script.Initialize(m_Transform.parent, m_Team, fireDir, (int)-_power, isCrit, _speed, _range);
 
 
             EnableEffects();
@@ -571,9 +565,7 @@ public class Gun : Weapon {
         }
     }
 
-
-
-
+    
 
     public override void ActivatePrimary()
     {
@@ -939,8 +931,10 @@ public class Gun : Weapon {
 	#endregion
 
     
-    void OnValidate()
+    protected override void OnValidate()
     {
+        base.OnValidate();
+
         ShotSpeed = ShotSpeed;
         
         Utilities.ValidateCurve_Times(accuracyCurve, 0f, 100f);

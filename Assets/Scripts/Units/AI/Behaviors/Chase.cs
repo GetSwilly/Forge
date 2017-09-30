@@ -2,9 +2,18 @@
 using System.Collections;
 using System;
 
-[RequireComponent(typeof(MovementController))]
 public class Chase : BaseUtilityBehavior
 {
+    enum Type
+    {
+        LastKnownPosition,
+        Transform
+    }
+
+    [SerializeField]
+    Type m_Type;
+
+
     [Tooltip("Maximum amount of time an object can be out of sight before behavior ends. -1 means infinity.")]
     [SerializeField]
     float maxTimeOutOfSight = 2f;
@@ -26,116 +35,44 @@ public class Chase : BaseUtilityBehavior
     [Tooltip("Distance from target at which behavior ends")]
     [SerializeField]
     float stopDistance = 2f;
-    
-    
-    MovementController m_Movement;
+
+    float sightTimer;
+    SightedObject targetObject;
 
 
-    public override void Awake()
+    void Update()
     {
-        base.Awake();
+        if (!IsActive)
+            return;
 
-        m_Movement = GetComponent<MovementController>();
-    } 
+        sightTimer += Time.deltaTime;
 
-    IEnumerator ChaseTarget()
-    {
-        float sightTimer = 0f;
 
-        while (IsActive)
+        if (targetObject == null)
         {
-
-            SightedObject targetObject = m_Actor.TargetObject;
-
-            if (targetObject == null)
-            {
-                if (m_Actor.ShowDebug)
-                {
-                    Debug.Log(string.Format("CHASE --- {0} --- Target is null.", m_Transform.name));
-                }
-
-                break;
-            }
-
-            if (!targetObject.SightedTransform.gameObject.activeInHierarchy)
-            {
-                if (m_Actor.ShowDebug)
-                {
-                    Debug.Log(string.Format("CHASE --- {0} --- Target not active.", m_Transform.name));
-                }
-
-                    break;
-            }
-
-            if (MaximumTimeOutOfSight >= 0 && !targetObject.InSight)
-            {
-                if (m_Actor.ShowDebug)
-                {
-                    Debug.Log(string.Format("CHASE --- {0} --- Target not in sight.", m_Transform.name));
-                }
-
-                break;
-            }
-            
-
-
-            m_Actor.FindPathTo(targetObject.LastKnownPosition);
-
-            yield return null;
-
-
-            float timer = 0;
-
-
-            while (timer <= m_Actor.UpdatePathTime && m_Actor.MoveAlongPath())
-            {
-
-                if (m_Actor.ShowDebug)
-                {
-                    Debug.DrawLine(m_Transform.position, targetObject.LastKnownPosition, Color.cyan);
-                }
-
-                m_Movement.RotateTowards(targetObject.LastKnownPosition);
-
-                sightTimer += Time.deltaTime;
-                timer += Time.deltaTime;
-                
-                Vector3 toTarget = targetObject.LastKnownPosition - m_Transform.position;
-
-
-                //Stop chasing if close enough
-                if (toTarget.magnitude <= StopDistance)
-                {
-                    if (m_Actor.ShowDebug)
-                    {
-                        Debug.Log(string.Format("CHASE --- {0} --- Within stop distance: {1}.", m_Transform.name, toTarget.magnitude));
-                    }
-
-                    EndBehavior(true, true);
-                }
-                
-
-                //End behavior if lost sight of target
-                if (toTarget.magnitude <= m_Actor.SightRange)
-                {
-                    sightTimer = 0f;
-                }
-                else if(MaximumTimeOutOfSight != -1 && sightTimer >= maxTimeOutOfSight)
-                {
-                    if (m_Actor.ShowDebug)
-                    {
-                        Debug.Log(string.Format("CHASE --- {0} --- Max out of sight time reached: {1}.", m_Transform.name, sightTimer));
-                    }
-
-                    EndBehavior(true, true);
-                }
-
-
-                yield return null;
-            }
+            EndBehavior(true, true);
         }
 
-        EndBehavior(true, true);
+
+        if (targetObject.InSight)
+        {
+            sightTimer = 0f;
+
+            if (m_Type == Chase.Type.LastKnownPosition)
+            {
+                m_Pathfinder.SetTarget(targetObject.LastKnownPosition);
+            }
+        }
+        else if (MaximumTimeOutOfSight != -1 && sightTimer >= MaximumTimeOutOfSight)
+        {
+            if (m_Actor.ShowDebug)
+            {
+                Debug.Log(string.Format("CHASE --- {0} --- Max out of sight time reached: {1}.", m_Transform.name, sightTimer));
+            }
+
+            EndBehavior(true, true);
+        }
+
     }
 
 
@@ -144,55 +81,107 @@ public class Chase : BaseUtilityBehavior
     {
         IsActive = true;
 
-        m_Movement.AddSpeedMultiplier(chaseMovementSpeedup);
-        m_Movement.AddRotationMultiplier(chaseRotationSpeedup);
+        //m_Movement.AddSpeedMultiplier(chaseMovementSpeedup);
+        // m_Movement.AddRotationMultiplier(chaseRotationSpeedup);
 
-        StartCoroutine(ChaseTarget());
+        targetObject = m_Actor.TargetObject;
+        sightTimer = 0f;
+
+        if (targetObject != null)
+        {
+            switch (m_Type)
+            {
+                case Type.LastKnownPosition:
+                    m_Pathfinder.SetAndSearch(targetObject.LastKnownPosition);
+                    break;
+                case Type.Transform:
+                    m_Pathfinder.SetAndSearch(targetObject.SightedTransform);
+                    break;
+            }
+        }
     }
 
     public override void EndBehavior(bool shouldNotifySuper, bool shouldNotifyActor)
     {
         StopAllCoroutines();
 
-        m_Movement.RemoveSpeedMultiplier(chaseMovementSpeedup);
-        m_Movement.RemoveRotationMultiplier(chaseRotationSpeedup);
+        //m_Movement.RemoveSpeedMultiplier(chaseMovementSpeedup);
+        //m_Movement.RemoveRotationMultiplier(chaseRotationSpeedup);
 
 
         base.EndBehavior(shouldNotifySuper, shouldNotifyActor);
     }
-     
+
     public override void NotifySubBehaviorEnded(BaseUtilityBehavior _behavior)
     {
-       // throw new NotImplementedException();
+        // throw new NotImplementedException();
     }
+
 
 
     public override float GetBehaviorScore()
     {
-        if (m_Actor.TargetObject == null || m_Actor.TargetObject.SightedTransform == null || !m_Actor.TargetObject.SightedTransform.gameObject.activeInHierarchy || (MaximumTimeOutOfSight !=-1 && !m_Actor.TargetObject.InSight))
+        if (m_Actor.TargetObject == null)
+        {
+            if (ShowDebug)
+            {
+                Debug.Log(Time.time + " #### " + m_Transform.name + ". Target Object is null");
+            }
+
             return 0f;
+        }
+        if (m_Actor.TargetObject.SightedTransform == null)
+        {
+            if (ShowDebug)
+            {
+                Debug.Log(Time.time + " #### " + m_Transform.name + ". Target Object's SightedTransform is null");
+            }
+
+            return 0f;
+        }
+
+        if (!m_Actor.TargetObject.SightedTransform.gameObject.activeInHierarchy)
+        {
+            if (ShowDebug)
+            {
+                Debug.Log(Time.time + " #### " + m_Transform.name + ". Target Object's SightedTransform is not active");
+            }
+
+            return 0f;
+        }
+
+        if (MaximumTimeOutOfSight != -1 && !m_Actor.TargetObject.InSight)
+        {
+            if (ShowDebug)
+            {
+                Debug.Log(Time.time + " #### " + m_Transform.name + ". Target out of sight time exceeds chase time");
+            }
+
+            return 0f;
+        }
+
 
 
 
         float dist = Vector3.Distance(m_Actor.TargetObject.LastKnownPosition, m_Transform.position);
 
-        if(dist <= StopDistance)
+        if (dist <= StopDistance)
         {
             return 0f;
         }
 
 
-        return utilityCurve.Evaluate(Mathf.Clamp01(dist/StartDistance));
+        return utilityCurve.Evaluate(Mathf.Clamp01(dist / StartDistance));
     }
 
 
-    
+
 
     public override bool CanStartSubBehavior
     {
-       get{ return true; }
+        get { return true; }
     }
-    
+
     public float MaximumTimeOutOfSight
     {
         get { return maxTimeOutOfSight; }
@@ -200,7 +189,7 @@ public class Chase : BaseUtilityBehavior
         {
             maxTimeOutOfSight = value;
 
-            if(maxTimeOutOfSight < 0)
+            if (maxTimeOutOfSight < 0)
             {
                 maxTimeOutOfSight = -1;
             }
@@ -236,5 +225,5 @@ public class Chase : BaseUtilityBehavior
         return "Chase";
     }
 
-   
+
 }

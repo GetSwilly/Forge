@@ -5,7 +5,8 @@ using System;
 
 [RequireComponent(typeof(AudioSource))]
 [RequireComponent(typeof(Rigidbody))]
-public abstract class HandheldItem : MonoBehaviour, IIdentifier {
+public abstract class HandheldItem : MonoBehaviour, IIdentifier, ITeamMember
+{
 
     protected static readonly float DEBUG_DRAW_TIME = 2f;
 
@@ -37,13 +38,13 @@ public abstract class HandheldItem : MonoBehaviour, IIdentifier {
     [EnumFlags]
     protected InputType tertiaryInputType = InputType.Hold;
 
-    
+
     [Space(10)]
     [Header("Movement Effects")]
     [Space(5)]
 
 
-    
+
     [Tooltip("Speed Multiplier to apply on Item pickup")]
     [SerializeField]
     [Range(0f, 1f)]
@@ -85,29 +86,29 @@ public abstract class HandheldItem : MonoBehaviour, IIdentifier {
     protected float tertiaryRotationSpeedup = 1f;
 
 
-    [Space(10)]
-    [Header("Camera Shake")]
-    [Space(5)]
+    //[Space(10)]
+    //[Header("Camera Shake")]
+    //[Space(5)]
 
-    [Tooltip("Camera Shake to apply on PRIMARY action activation")]
-    [SerializeField]
-    [Range(0f, 2f)]
-    float shakeAmountPrimary = 0.2f;
+    //[Tooltip("Camera Shake to apply on PRIMARY action activation")]
+    //[SerializeField]
+    //[Range(0f, 2f)]
+    //float shakeAmountPrimary = 0.2f;
 
-    [Tooltip("Camera Shake to apply on SECONDARY action activation")]
-    [SerializeField]
-    [Range(0f, 2f)]
-    float shakeAmountSecondary = 0.2f;
+    //[Tooltip("Camera Shake to apply on SECONDARY action activation")]
+    //[SerializeField]
+    //[Range(0f, 2f)]
+    //float shakeAmountSecondary = 0.2f;
 
-    [Tooltip("Camera Shake to apply on TERTIARY action activation")]
-    [SerializeField]
-    [Range(0f, 2f)]
-    float shakeAmountTertiary = 0.2f;
+    //[Tooltip("Camera Shake to apply on TERTIARY action activation")]
+    //[SerializeField]
+    //[Range(0f, 2f)]
+    //float shakeAmountTertiary = 0.2f;
 
-    [Tooltip("Camera Shake time to apply on all activations")]
-    [SerializeField]
-    [Range(0f, 1f)]
-    float shakeTime = 0f;
+    //[Tooltip("Camera Shake time to apply on all activations")]
+    //[SerializeField]
+    //[Range(0f, 1f)]
+    //float shakeTime = 0f;
 
 
     [Space(15)]
@@ -126,9 +127,12 @@ public abstract class HandheldItem : MonoBehaviour, IIdentifier {
     [SerializeField]
     protected List<WeightedObjectOfSoundClip> tertiaryActionSounds = new List<WeightedObjectOfSoundClip>();
 
+    [SerializeField]
+    protected Team m_Team;
 
+    [SerializeField]
+    StatSubscriptions m_StatSubscriptions;
 
-    private Dictionary<StatType, Stat> m_StatDictionary = new Dictionary<StatType, Stat>();
 
     public delegate void AlertEvent();
     public event AlertEvent OnActivatePrimary;
@@ -147,6 +151,7 @@ public abstract class HandheldItem : MonoBehaviour, IIdentifier {
 
     protected MovementController m_Movement;
 
+    Dictionary<StatType, int> statLevelTracker = new Dictionary<StatType, int>();
 
     public virtual void Awake()
     {
@@ -156,17 +161,26 @@ public abstract class HandheldItem : MonoBehaviour, IIdentifier {
 
 
 
-    public virtual void Initialize(Transform _transform, List<Stat> _stats)
+    public virtual void Initialize(ITeamMember teamMember)
     {
         AlertWeaponChange(GetPercentage(), false);
         //SetVolume(1);
 
-        m_Owner = _transform;
-        UpdateStats(_stats);
+        m_Owner = teamMember.Transform;
 
+        SetTeam(teamMember);
 
-        m_Movement = _transform.GetComponent<MovementController>();
-        if(m_Movement != null)
+        statLevelTracker.Clear();
+
+        IStat statOwner = m_Owner.GetComponent<IStat>();
+        if (statOwner != null)
+        {
+            statOwner.OnLevelChanged += UpdateStatEffect;
+            InitializeStats(statOwner);
+        }
+
+        m_Movement = m_Owner.GetComponent<MovementController>();
+        if (m_Movement != null)
         {
             m_Movement.AddSpeedMultiplier(SpeedMultiplier);
             m_Movement.AddRotationMultiplier(RotationMultiplier);
@@ -184,6 +198,13 @@ public abstract class HandheldItem : MonoBehaviour, IIdentifier {
         OnWeaponChanged = null;
         OnWeaponCasualty = null;
 
+
+        IStat statOwner = m_Owner.GetComponent<IStat>();
+        if (statOwner != null)
+        {
+            statOwner.OnLevelChanged -= UpdateStatEffect;
+        }
+
         m_Owner = null;
 
         if (m_Movement != null)
@@ -193,18 +214,8 @@ public abstract class HandheldItem : MonoBehaviour, IIdentifier {
         }
         m_Movement = null;
 
-        m_StatDictionary.Clear();
+        ResetTeam();
     }
-
-
-
-
-    public void UpdateStats(List<Stat> _stats)
-    {
-        _stats.ForEach(s => UpdateStat(s));
-    }
-    public abstract void UpdateStat(Stat _stat);
-
 
     public abstract void ActivatePrimary();
     public abstract void DeactivatePrimary();
@@ -278,17 +289,71 @@ public abstract class HandheldItem : MonoBehaviour, IIdentifier {
         }
     }
 
+    #region Team
 
-    protected Stat GetStat(StatType _type)
+    public void SetTeam(ITeamMember teamMember)
     {
-        return m_StatDictionary.ContainsKey(_type) ? m_StatDictionary[_type] : null;
+        m_Team.SetCurrentTeamTag(teamMember.GetCurrentTeam().Team);
+        m_Team.SetFriendlyTeams(teamMember.GetFriendlyTeams());
+        m_Team.SetEnemyTeams(teamMember.GetEnemyTeams());
     }
-    protected float GetStatValue(StatType _type)
+    public void ResetTeam()
     {
-        Stat _stat = GetStat(_type);
+        m_Team.SetCurrentTeamTag(TeamTag.All);
+        m_Team.SetFriendlyTeams(new TeamClassification[] { });
+        m_Team.SetEnemyTeams(new TeamClassification[] { });
+    }
 
-        return _stat == null ? 0f : _stat.CurrentValue;
+    public Team GetTeam()
+    {
+        return m_Team;
     }
+    public SingleTeamClassification GetCurrentTeam()
+    {
+        return m_Team.CurrentTeam;
+    }
+    public TeamClassification[] GetFriendlyTeams()
+    {
+        return m_Team.FriendlyTeams;
+    }
+    public TeamClassification[] GetEnemyTeams()
+    {
+        return m_Team.EnemyTeams;
+    }
+    #endregion
+
+    #region Stats
+
+    protected float GetStatValue(StatType type)
+    {
+        if (!statLevelTracker.ContainsKey(type))
+        {
+            return 0f;
+        }
+
+        int level = statLevelTracker[type];
+        return m_StatSubscriptions.GetValue(type, level);
+    }
+    void InitializeStats(IStat statOwner)
+    {
+        StatType[] statTypes = Enum.GetValues(typeof(StatType)) as StatType[];
+        for(int i = 0; i < statTypes.Length; i++)
+        {
+            UpdateStatEffect(statTypes[i], statOwner.GetCurrentStatLevel(statTypes[i]));
+        }
+    }
+    void UpdateStatEffect(StatType type, int level)
+    {
+        if (statLevelTracker.ContainsKey(type))
+        {
+            statLevelTracker[type] = level;
+        }else
+        {
+            statLevelTracker.Add(type, level);
+        }
+    }
+
+    #endregion
 
     #region Accessors
 
@@ -298,6 +363,14 @@ public abstract class HandheldItem : MonoBehaviour, IIdentifier {
         set { m_ItemName = value; }
     }
 
+    public GameObject GameObject
+    {
+        get { return this.gameObject; }
+    }
+    public Transform Transform
+    {
+        get { return m_Transform; }
+    }
 
     public InputType PrimaryInputType
     {
@@ -324,25 +397,30 @@ public abstract class HandheldItem : MonoBehaviour, IIdentifier {
 
 
 
-    public float ShakeAmountPrimary
-    {
-        get { return shakeAmountPrimary; }
-    }
-    public float ShakeAmountSecondary
-    {
-        get { return shakeAmountSecondary; }
-    }
-    public float ShakeAmountTertiary
-    {
-        get { return shakeAmountTertiary; }
-    }
-    public float ShakeTime
-    {
-        get { return shakeTime; }
-    }
+    //public float ShakeAmountPrimary
+    //{
+    //    get { return shakeAmountPrimary; }
+    //}
+    //public float ShakeAmountSecondary
+    //{
+    //    get { return shakeAmountSecondary; }
+    //}
+    //public float ShakeAmountTertiary
+    //{
+    //    get { return shakeAmountTertiary; }
+    //}
+    //public float ShakeTime
+    //{
+    //    get { return shakeTime; }
+    //}
 
     #endregion
 
+
+    protected virtual void OnValidate()
+    {
+        m_StatSubscriptions.Validate();
+    }
 
     public override string ToString()
     {

@@ -84,6 +84,7 @@ public class FireProjectile : BaseUtilityBehavior {
             Vector3 fireDir = localDir; // * currentAccuracy) + shotError;
             fireDir.Normalize();
 
+          
             GameObject _projectile = projectilePool.GetPooledObject();
             _projectile.transform.position = m_Transform.TransformPoint(gunBarrelOffset);// +myTransform.TransformPoint(_shot[i].LocalOffset);
             _projectile.transform.rotation = m_Transform.rotation;
@@ -104,7 +105,12 @@ public class FireProjectile : BaseUtilityBehavior {
 
                 float _range = AttackRange * shots[i].RangeModifier;
 
-                pScript.Initialize(m_Transform.parent, m_Actor.FriendlyMask, fireDir, -(int)_power, isCrit, _speed, _range);
+                pScript.Initialize(m_Transform.parent, m_Actor.GetTeam(), fireDir, -(int)_power, isCrit, _speed, _range);
+
+                if (ShowDebug)
+                {
+                    Debug.DrawLine(m_Transform.position, m_Transform.position + (fireDir * _range), Color.red, 2f);
+                }
             }
 
         }

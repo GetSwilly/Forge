@@ -13,6 +13,9 @@ public abstract class BaseUtilityBehavior : MonoBehaviour
     public delegate void AlertBehaviorEnd(BaseUtilityBehavior behavior);
     public AlertBehaviorEnd OnBehaviorEnd;
 
+    [SerializeField]
+    bool showDebug = false;
+
     [Tooltip("Can behavior be utilized?")]
     [SerializeField]
     private bool isUsable = true;
@@ -42,6 +45,7 @@ public abstract class BaseUtilityBehavior : MonoBehaviour
     float minimumRechargeDelay = 0f;
 
     protected UtilityActor m_Actor;
+    protected IPathfinder m_Pathfinder;
     protected UtilityMind m_Mind;
     protected Transform m_Transform;
 
@@ -51,6 +55,8 @@ public abstract class BaseUtilityBehavior : MonoBehaviour
         m_Transform = GetComponent<Transform>();
         m_Actor = GetComponent<UtilityActor>();
         m_Mind = GetComponent<UtilityMind>();
+
+        m_Pathfinder = GetComponent<IPathfinder>();
     }
     
 
@@ -189,6 +195,11 @@ public abstract class BaseUtilityBehavior : MonoBehaviour
 
     #region Accessors
 
+    public bool ShowDebug
+    {
+        get { return showDebug; }
+        set { showDebug = value; }
+    }
     protected float MinimumRechargeDelay
     {
         get { return minimumRechargeDelay; }

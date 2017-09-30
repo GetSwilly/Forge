@@ -111,6 +111,13 @@ public class Charge : BaseUtilityBehavior
 
     public void OnCollision(Collider coll)
     {
+        if (coll.isTrigger)
+            return;
+
+        IMemorable mem = coll.GetComponent<IMemorable>();
+
+        if (mem == null)
+            return;
 
         if (!IsActive)
             return;
@@ -128,7 +135,7 @@ public class Charge : BaseUtilityBehavior
 
 
 
-        if (!m_Actor.IsEnemy(coll))
+        if (!m_Actor.IsEnemy(mem.GameObject.GetComponent<ITeamMember>()))
         {
 
             Health collHealth = coll.gameObject.GetComponent<Health>();

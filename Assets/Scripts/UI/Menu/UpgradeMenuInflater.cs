@@ -34,7 +34,7 @@ public class UpgradeMenuInflater : MenuInflater {
             _object.transform.localScale = Vector3.one;
 
             StatButtonController _controller = _button as StatButtonController;
-            _controller.Initialize(m_Menu, _types[i], activatingPlayer.GetStatLevel_Current(_types[i]), activatingPlayer.GetStatLevel_Max(_types[i]));
+            _controller.Initialize(m_Menu, _types[i], activatingPlayer.GetCurrentStatLevel(_types[i]), activatingPlayer.GetMaxStatLevel(_types[i]));
             _controller.OnUpgradeClicked += AttemptStatUpgrade;
 
 
@@ -65,7 +65,7 @@ public class UpgradeMenuInflater : MenuInflater {
         {
             if (m_StatButtons[i].StatType == _type)
             {
-                m_StatButtons[i].UpdateLevels(activatingPlayer.GetStatLevel_Current(_type), activatingPlayer.GetStatLevel_Max(_type));
+                m_StatButtons[i].UpdateLevels(activatingPlayer.GetCurrentStatLevel(_type), activatingPlayer.GetMaxStatLevel(_type));
             }
         }
     }

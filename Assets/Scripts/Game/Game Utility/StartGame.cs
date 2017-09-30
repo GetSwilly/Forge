@@ -5,7 +5,7 @@ using System.Collections.Generic;
 public class StartGame : InteractableObject
 {
 
-    public override bool Use(PlayerController player)
+    public override bool Interact(PlayerController player)
     {
 
         if (activatingObjects.Count == 0)
@@ -21,12 +21,6 @@ public class StartGame : InteractableObject
         OnUseTrigger();
 
         return true;
-    }
-    public override bool Give(PlayerController player)
-    {
-        OnGiveTrigger();
-
-        return false;
     }
 
     public override void Drop()

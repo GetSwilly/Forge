@@ -2,9 +2,10 @@
 using System.Collections;
 using System.Collections.Generic;
 using System;
+using Pathfinding;
 
-[RequireComponent(typeof(MovementController))]
-public class Wander : BaseUtilityBehavior{
+public class Wander : BaseUtilityBehavior
+{
 
     static readonly float ANGLE_GROWTH_RATE = 25f;
     static readonly int MAX_ITERATIONS = 2;
@@ -51,112 +52,149 @@ public class Wander : BaseUtilityBehavior{
     [SerializeField]
     [Range(0f, 2f)]
     protected float wanderRotateSpeedup = 1f;
-    
+
 
     Transform patrolTarget;
     Vector3 patrolPosition;
 
-    MovementController m_Movement;
+ 
+
+    //void Update()
+    //{
+    //    if (!IsActive)
+    //        return;
 
 
+    //}
 
-    public override void Awake()
+    private void PathFound(Path p)
     {
-        base.Awake();
-        
-        m_Movement = GetComponent<MovementController>();
+        //throw new NotImplementedException();
     }
-    
-
-
-    IEnumerator WanderAround()
+    private void WaitAfterPathCompletion(Path p)
     {
-        patrolPosition = m_Transform.position;
-
-        while (IsActive)
-        {
-
-            float t = 0;
-            float waitTime = (float)Utilities.GetRandomGaussian(waitDelay);
-            waitTime = Mathf.Max(0.1f, waitTime);
-
-
-
-            yield return new WaitForSeconds(waitTime);
-
-
-            Vector3 wanderPosition;
-            Node wanderNode;
-            int counter = 0;
-            float maxAngle = wanderAngle;
-
-            do
-            {
-                yield return null;
-
-                counter++;
-                maxAngle += Time.deltaTime * ANGLE_GROWTH_RATE;
-
-                m_Actor.MoveAlongPath();
-
-                float _angle = UnityEngine.Random.Range(0f, maxAngle);
-                _angle *= UnityEngine.Random.value <= 0.5f ? 1f : -1f;
-
-                Vector3 wanderDir = Quaternion.AngleAxis(_angle, m_Transform.up) * m_Transform.forward;
-
-                wanderPosition = wanderDir.normalized * maxWanderDistance;
-
-                wanderPosition += GetWanderOrigin();
-
-
-                wanderPosition.y = m_Transform.position.y;
-                wanderNode = A_Star_Pathfinding.Instance.WalkableNodeFromWorldPoint(wanderPosition, m_Actor.Bounds, m_Actor.WalkableNodes);
-               // wanderNode = A_Star_Pathfinding.Instance.NodeFromWorldPoint(wanderPosition);  //.WalkableNodeFromWorldPoint(wanderPosition, myActor.Bounds, myActor.WalkableNodes);
-
-            } while (counter < MAX_ITERATIONS && (wanderNode == null || !wanderNode.IsWalkable(m_Actor.WalkableNodes)));
-            
-
-            if(counter >= MAX_ITERATIONS)
-            {
-                EndBehavior(true, true);
-                yield return null;
-            }
-       
-
-
-            m_Actor.FindPathTo(wanderPosition);
-
-            do
-            {
-                yield return null;
-                m_Actor.MoveAlongPath();
-            } while (m_Actor.SearchingForPath);
-
-            float updateTime = (float)Utilities.GetRandomGaussian(updateDelay);
-            updateTime = Mathf.Max(.05f, updateTime);
-
-            t = 0;
-            while (t < updateTime && m_Actor.MoveAlongPath())
-            {
-                yield return null;
-
-                t += Time.deltaTime;
-            }
-        }
-
-
-        yield return null;
-
-
-        EndBehavior(true, true);
+        StartCoroutine(WaitDelay());
     }
+
+
+
+
+    IEnumerator WaitDelay()
+    {
+        float waitTime = (float)Utilities.GetRandomGaussian(waitDelay);
+        waitTime = Mathf.Max(0.1f, waitTime);
+
+        yield return new WaitForSeconds(waitTime);
+
+        Vector3 wanderPosition = FindWanderPosition();
+
+        m_Pathfinder.SetAndSearch(wanderPosition);
+    }
+
+    Vector3 FindWanderPosition()
+    {
+        float _angle = UnityEngine.Random.Range(-wanderAngle, wanderAngle);
+
+        Vector3 wanderDir = Quaternion.AngleAxis(_angle, m_Transform.up) * m_Transform.forward;
+
+        Vector3 wanderPosition = GetWanderOrigin();
+        wanderPosition += (wanderDir.normalized * maxWanderDistance);
+
+        wanderPosition.y = m_Transform.position.y;
+
+
+        return wanderPosition;
+    }
+
+
+    //IEnumerator WanderAround()
+    //{
+    //    patrolPosition = m_Transform.position;
+
+    //    while (IsActive)
+    //    {
+
+    //        float t = 0;
+    //        float waitTime = (float)Utilities.GetRandomGaussian(waitDelay);
+    //        waitTime = Mathf.Max(0.1f, waitTime);
+
+
+
+    //        yield return new WaitForSeconds(waitTime);
+
+
+    //        Vector3 wanderPosition;
+    //        Node wanderNode;
+    //        int counter = 0;
+    //        float maxAngle = wanderAngle;
+
+    //        do
+    //        {
+    //            yield return null;
+
+    //            counter++;
+    //            maxAngle += Time.deltaTime * ANGLE_GROWTH_RATE;
+
+    //            m_Actor.MoveAlongPath();
+
+    //            float _angle = UnityEngine.Random.Range(0f, maxAngle);
+    //            _angle *= UnityEngine.Random.value <= 0.5f ? 1f : -1f;
+
+    //            Vector3 wanderDir = Quaternion.AngleAxis(_angle, m_Transform.up) * m_Transform.forward;
+
+    //            wanderPosition = wanderDir.normalized * maxWanderDistance;
+
+    //            wanderPosition += GetWanderOrigin();
+
+
+    //            wanderPosition.y = m_Transform.position.y;
+    //            wanderNode = A_Star_Pathfinding.Instance.WalkableNodeFromWorldPoint(wanderPosition, m_Actor.Bounds, m_Actor.WalkableNodes);
+    //            // wanderNode = A_Star_Pathfinding.Instance.NodeFromWorldPoint(wanderPosition);  //.WalkableNodeFromWorldPoint(wanderPosition, myActor.Bounds, myActor.WalkableNodes);
+
+    //        } while (counter < MAX_ITERATIONS && (wanderNode == null || !wanderNode.IsWalkable(m_Actor.WalkableNodes)));
+
+
+    //        if (counter >= MAX_ITERATIONS)
+    //        {
+    //            EndBehavior(true, true);
+    //            yield return null;
+    //        }
+
+    //        m_Actor.FindPathTo(wanderPosition);
+
+    //        do
+    //        {
+    //            yield return null;
+    //            m_Actor.MoveAlongPath();
+    //        } while (m_Actor.SearchingForPath);
+
+    //        float updateTime = (float)Utilities.GetRandomGaussian(updateDelay);
+    //        updateTime = Mathf.Max(.05f, updateTime);
+
+    //        t = 0;
+    //        while (t < updateTime && m_Actor.MoveAlongPath())
+    //        {
+    //            yield return null;
+
+    //            t += Time.deltaTime;
+    //        }
+    //    }
+
+
+    //    yield return null;
+
+
+    //    EndBehavior(true, true);
+    //}
+
+
 
     private Vector3 GetWanderOrigin()
     {
         List<Vector3> potentialOrigins = new List<Vector3>();
-        
-        if(Utilities.HasFlag(m_WanderType, WanderType.PatrolStartLevel))
-            {
+
+        if (Utilities.HasFlag(m_WanderType, WanderType.PatrolStartLevel))
+        {
 
         }
 
@@ -202,22 +240,29 @@ public class Wander : BaseUtilityBehavior{
     {
         IsActive = true;
 
-        m_Movement.AddSpeedMultiplier(wanderMoveSpeedup);
-        m_Movement.AddRotationMultiplier(wanderRotateSpeedup);
-
-        m_Actor.ClearPath();
-
+        //m_Movement.AddSpeedMultiplier(wanderMoveSpeedup);
+        //m_Movement.AddRotationMultiplier(wanderRotateSpeedup);
+        
         PatrolTarget = GetTarget();
 
-        StartCoroutine(WanderAround());
+        //StartCoroutine(WanderAround());
+
+        m_Pathfinder.OnPathFound += PathFound;
+        m_Pathfinder.OnPathTraversalCompleted += WaitAfterPathCompletion;
     }
+
+
     public override void EndBehavior(bool shouldNotifySuper, bool shouldNotifyActor)
     {
-        
-        m_Movement.RemoveSpeedMultiplier(wanderMoveSpeedup);
-        m_Movement.RemoveRotationMultiplier(wanderRotateSpeedup);
+        //m_Movement.RemoveSpeedMultiplier(wanderMoveSpeedup);
+        //m_Movement.RemoveRotationMultiplier(wanderRotateSpeedup);
 
         StopAllCoroutines();
+
+        m_Pathfinder.StopPathTraversal();
+
+        m_Pathfinder.OnPathFound -= PathFound;
+        m_Pathfinder.OnPathTraversalCompleted -= WaitAfterPathCompletion;
 
         base.EndBehavior(shouldNotifySuper, shouldNotifyActor);
     }
@@ -232,13 +277,16 @@ public class Wander : BaseUtilityBehavior{
     {
         return utilityCurve.Evaluate(UnityEngine.Random.value);
     }
-    
+
+
+
+
+
 
     public override bool CanEndBehavior
     {
         get { return true; }
     }
-
 
     public override bool CanStartSubBehavior
     {

@@ -11,6 +11,37 @@ public static class Utilities
 {
     public static readonly float EPSILON = 0.0001f;
 
+    public static void DrawCube(Vector3 position, Quaternion rotation, Vector3 scale)
+    {
+        DrawCube(position, rotation, scale, Vector3.one);
+    }
+    public static void DrawCube(Vector3 position, Quaternion rotation, Vector3 scale, Vector3 size)
+    {
+        Matrix4x4 cubeTransform = Matrix4x4.TRS(position, rotation, scale);
+        Matrix4x4 oldGizmosMatrix = Gizmos.matrix;
+
+        Gizmos.matrix *= cubeTransform;
+
+        Gizmos.DrawCube(Vector3.zero, size);
+
+        Gizmos.matrix = oldGizmosMatrix;
+    }
+
+    public static void DrawWireCube(Vector3 position, Quaternion rotation, Vector3 scale)
+    {
+        DrawWireCube(position, rotation, scale, Vector3.one);
+    }
+    public static void DrawWireCube(Vector3 position, Quaternion rotation, Vector3 scale, Vector3 size)
+    {
+        Matrix4x4 cubeTransform = Matrix4x4.TRS(position, rotation, scale);
+        Matrix4x4 oldGizmosMatrix = Gizmos.matrix;
+
+        Gizmos.matrix *= cubeTransform;
+
+        Gizmos.DrawWireCube(Vector3.zero, size);
+
+        Gizmos.matrix = oldGizmosMatrix;
+    }
 
 
 
@@ -18,7 +49,8 @@ public static class Utilities
     {
         return GetRandomGaussian(value.Mean, value.Sigma);
     }
-    public static double GetRandomGaussian(float mean, float stdDev) {
+    public static double GetRandomGaussian(float mean, float stdDev)
+    {
 
         if (stdDev == 0)
             return mean;
@@ -54,7 +86,8 @@ public static class Utilities
 
             randVal -= probabilities[i];
 
-            if (randVal <= 0) {
+            if (randVal <= 0)
+            {
                 return objectArray[i];
             }
         }
@@ -76,7 +109,7 @@ public static class Utilities
 
         return WeightedSelection(weightedObjs, weightedProbs, luckBonus);
     }
-    public static T WeightedSelection<T>(CustomTuple2<T,int>[] _objs, float luckBonus)
+    public static T WeightedSelection<T>(CustomTuple2<T, int>[] _objs, float luckBonus)
     {
         T[] weightedObjs = new T[_objs.Length];
         int[] weightedProbs = new int[_objs.Length];
@@ -115,18 +148,21 @@ public static class Utilities
 	}*/
 
     public static T WeightedSelection<T>(T[] objectArray, float[] probabilities) { return WeightedSelection(objectArray, probabilities, 0f); }
-    public static T WeightedSelection<T>(T[] objectArray, float[] probabilities, float bonus) {
+    public static T WeightedSelection<T>(T[] objectArray, float[] probabilities, float bonus)
+    {
         if (objectArray.Length == 0 || (objectArray.Length != probabilities.Length))
             return default(T);
 
         float totalProb = 0;
-        for (int i = 0; i < probabilities.Length; i++) {
+        for (int i = 0; i < probabilities.Length; i++)
+        {
             totalProb += probabilities[i];
         }
 
         float randVal = UnityEngine.Random.Range(0, totalProb) + (bonus * totalProb);
 
-        for (int i = 0; i < probabilities.Length; i++) {
+        for (int i = 0; i < probabilities.Length; i++)
+        {
 
             randVal -= probabilities[i];
 
@@ -169,9 +205,10 @@ public static class Utilities
 
         return _renderer.bounds.size;
         //return GetMaxBounds(obj);
-       // return CalculateObjectBounds(obj, 2, checkTriggers);
+        // return CalculateObjectBounds(obj, 2, checkTriggers);
     }
-    public static Vector3 CalculateObjectBounds(GameObject obj, int checkType, bool checkTriggers) {
+    public static Vector3 CalculateObjectBounds(GameObject obj, int checkType, bool checkTriggers)
+    {
         float x = 0;
         float y = 0;
         float z = 0;
@@ -212,7 +249,8 @@ public static class Utilities
 
 
 
-        for (int i = 0; i < obj.transform.childCount; i++) {
+        for (int i = 0; i < obj.transform.childCount; i++)
+        {
             Vector3 temp = Utilities.CalculateObjectBounds(obj.transform.GetChild(i).gameObject, checkTriggers);
 
             Vector3 toVector = obj.transform.GetChild(i).position - obj.transform.position;
@@ -286,15 +324,20 @@ public static class Utilities
 
 
 
-    public static bool IsInLayerMask(GameObject obj, LayerMask mask) {
+    public static bool IsInLayerMask(GameObject obj, LayerMask mask)
+    {
         return obj == null ? false : IsInLayerMask(obj.layer, mask);
     }
-    public static bool IsInLayerMask(int layer, LayerMask mask) {
+    public static bool IsInLayerMask(int layer, LayerMask mask)
+    {
         return ((mask.value & 1 << layer) > 0);
     }
 
 
-
+    public static bool HasFlag(TeamTag a, TeamTag b)
+    {
+        return (a & b) == b;
+    }
     public static bool HasFlag(NodeType a, NodeType b)
     {
         return (a & b) == b;
@@ -304,6 +347,10 @@ public static class Utilities
         return (a & b) == b;
     }
     public static bool HasFlag(StatType a, StatType b)
+    {
+        return (a & b) == b;
+    }
+    public static bool HasFlag(SpawnWave.CompletionMetric a, SpawnWave.CompletionMetric b)
     {
         return (a & b) == b;
     }
@@ -323,6 +370,7 @@ public static class Utilities
     {
         return (a & b) == b;
     }
+  
 
 
     public static List<CurrencyType> AggregateFlags(CurrencyType c)
@@ -390,7 +438,7 @@ public static class Utilities
 
     public static Color GetAttributeColor(string attrString)
     {
-       
+
         switch (attrString)
         {
             case "Fire":
@@ -414,7 +462,7 @@ public static class Utilities
         return Color.cyan;
     }
     public static Color GetAttributeColor(Attribute attr)
-    { 
+    {
         switch (attr)
         {
             case Attribute.Fire:
@@ -446,27 +494,32 @@ public static class Utilities
 
 
 
-    public static Color FadeColor(Color fadeColor, float fadeRate) {
+    public static Color FadeColor(Color fadeColor, float fadeRate)
+    {
         return FadeColor(fadeColor, fadeRate, 0, 1);
     }
 
-    public static Color FadeColor(Color fadeColor, float fadeRate, float alphaMin, float alphaMax) {
+    public static Color FadeColor(Color fadeColor, float fadeRate, float alphaMin, float alphaMax)
+    {
         Color newColor = fadeColor;
         newColor.a = Mathf.Clamp(newColor.a + fadeRate, alphaMin, alphaMax);
 
         return newColor;
     }
 
-    public static Color GetComplementaryColor(Color originalColor, float hueVariation) {
+    public static Color GetComplementaryColor(Color originalColor, float hueVariation)
+    {
         Vector3 hsvColor = RGBtoHSV(originalColor);
         hsvColor.x += 180 + UnityEngine.Random.Range(-hueVariation, hueVariation);
 
         return HSVtoRGB(hsvColor);
     }
-    public static Color GetSimilarColor(Color originalColor, float hueVariation) {
+    public static Color GetSimilarColor(Color originalColor, float hueVariation)
+    {
         return GetSimilarColor(originalColor, hueVariation, 0f, 0f);
     }
-    public static Color GetSimilarColor(Color originalColor, float hueVariation, float saturationVariation, float valueVariation) {
+    public static Color GetSimilarColor(Color originalColor, float hueVariation, float saturationVariation, float valueVariation)
+    {
 
         //Debug.Log("Original Color: " + originalColor.ToString());
 
@@ -505,7 +558,8 @@ public static class Utilities
         return c;
     }
 
-    public static bool IsInOppositeDirection(Vector3 primaryDir, Vector3 secondaryDir) {
+    public static bool IsInOppositeDirection(Vector3 primaryDir, Vector3 secondaryDir)
+    {
         return Vector3.Angle(primaryDir, secondaryDir) >= 135f;
     }
 
@@ -523,7 +577,8 @@ public static class Utilities
 
         if (max != 0)
             s = delta / max;        // s
-        else {
+        else
+        {
             // r = g = b = 0		// s = 0, v is undefined
             s = 0;
             h = -1;
@@ -546,7 +601,8 @@ public static class Utilities
         float r, g, b;
         int i;
         float f, p, q, t;
-        if (hsvVector.y == 0) {
+        if (hsvVector.y == 0)
+        {
             // achromatic (grey)
             r = g = b = hsvVector.z;
             return new Color(r, g, b);
@@ -558,7 +614,8 @@ public static class Utilities
         p = hsvVector.z * (1 - hsvVector.y);
         q = hsvVector.z * (1 - hsvVector.y * f);
         t = hsvVector.z * (1 - hsvVector.y * (1 - f));
-        switch (i) {
+        switch (i)
+        {
             case 0:
                 r = hsvVector.z;
                 g = t;
@@ -639,7 +696,7 @@ public static class Utilities
     {
         SetCollidersEnabled(_transform.gameObject, status);
     }
-    public static void SetCollidersEnabled(GameObject obj, bool status) 
+    public static void SetCollidersEnabled(GameObject obj, bool status)
     {
         Collider[] colliders = obj.GetComponents<Collider>();
         for (int i = 0; i < colliders.Length; i++)
@@ -660,7 +717,7 @@ public static class Utilities
             renderers[i].enabled = status;
         }
     }
- 
+
 
     public static Component CopyComponent(Component original, GameObject destination)
     {
@@ -727,7 +784,7 @@ public static class Utilities
 
         _curve.keys = _keys.ToArray();
     }
-    
+
     public static void ValidateCurve_Values(AnimationCurve _curve, float _valueMin, float _valueMax)
     {
         if (_curve == null || _valueMax <= _valueMin)
@@ -735,19 +792,19 @@ public static class Utilities
 
 
         List<Keyframe> _keys = new List<Keyframe>(_curve.keys);
-        
+
         for (int i = 0; i < _keys.Count; i++)
         {
             Keyframe _frame = _keys[i];
             _frame.value = Mathf.Clamp(_keys[i].value, _valueMin, _valueMax);
-            
+
             _keys[i] = _frame;
         }
         _curve.keys = _keys.ToArray();
     }
 
 
-  
+
 
 
     public static MeshFilter MakeMeshLowPoly(MeshFilter _filter)

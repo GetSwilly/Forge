@@ -105,17 +105,6 @@ public class GameManager : MonoBehaviour
 
     [SerializeField]
     BalancingProbabilities m_ItemClassProbabilities = new BalancingProbabilities();
-
-
-    [SerializeField]
-    GameObject StartGameWorld;
-
-    [SerializeField]
-    GameObject MidLevelWorld;
-
-    [SerializeField]
-    [Range(0f, 10f)]
-    float m_TimeScale = 1f;
     
     FrameRateTracker frameTracker;
     Settings m_Settings;
@@ -219,11 +208,6 @@ public class GameManager : MonoBehaviour
         }
 
         LevelController.Instance.DestroyAllGenerated();
-        if (StartGameWorld != null)
-        {
-            StartGameWorld.SetActive(true);
-        }
-
 
         currentLevel = 0;
 
@@ -247,25 +231,8 @@ public class GameManager : MonoBehaviour
 
     IEnumerator NewLevel()
     {
-
         UIManager.Instance.DeflateAll();
-
-        if (StartGameWorld != null)
-        {
-            StartGameWorld.SetActive(false);
-        }
-
-        if (MidLevelWorld != null)
-        {
-            MidLevelWorld.SetActive(false);
-        }
-
-        List<UtilityActor> playerFollowers = pController.Followers;
-        for (int i = 0; i < playerFollowers.Count; i++)
-        {
-            playerFollowers[i].gameObject.SetActive(false);
-        }
-
+        
         player.SetActive(false);
 
         numKilled = 0;
@@ -314,32 +281,10 @@ public class GameManager : MonoBehaviour
         {
 
             LevelController.Instance.DestroyAllGenerated();
-            ResetMidLevelWorld();
-
-            //ShowUpgradeScreen(true);
-
-            //CheckPlayerLevelUp();
-
-            //StartCoroutine(WaitForUpgradeScreen());
-            //NewLevel();
         }
     }
 
-    void ResetMidLevelWorld()
-    {
-        if (MidLevelWorld != null)
-        {
-            MidLevelWorld.gameObject.SetActive(true);
-
-            player.transform.position = MidLevelWorld.transform.TransformPoint(HUB_WORLD_PLAYER_SPAWN);
-            pController.enabled = true;
-            pController.GetComponent<UserInput>().enabled = true;
-            pController.GetComponent<UserInput>().CanAttack = false;
-
-            Camera.main.transform.position = MidLevelWorld.transform.TransformPoint(HUB_WORLD_PLAYER_SPAWN);
-        }
-    }
-
+    
     IEnumerator DisasterTimerRoutine()
     {
         canStartDisaster = false;
@@ -436,18 +381,7 @@ public class GameManager : MonoBehaviour
         pController.enabled = true;
         pInput.CanAttack = true;
 
-
-        List<UtilityActor> playerFollowers = pController.Followers;
-        Rigidbody followerRigidbody;
-
-        for (int i = 0; i < playerFollowers.Count; i++)
-        {
-            playerFollowers[i].gameObject.SetActive(true);
-            followerRigidbody = playerFollowers[i].GetComponent<Rigidbody>();
-            followerRigidbody.velocity = Vector3.zero;
-        }
-
-
+        
         //Health pHealth = player.GetComponent<Health>();
         //pHealth.ReviveMax();
 
@@ -637,16 +571,6 @@ public class GameManager : MonoBehaviour
     {
         return LevelPoints + delta >= 0;
     }
-    public void StoreLevelPoint()
-    {
-
-        int newLevels = pController.GetLevelPoints(1);
-
-
-        if (newLevels > 0)
-            AddLevelPoints(newLevels);
-
-    }
     public void AddLevelPoints(int delta)
     {
 
@@ -769,7 +693,7 @@ public class GameManager : MonoBehaviour
 
         Health _health = droppingObject.GetComponent<Health>();
 
-        float luckBonus = (_health == null || _health.LastAttacker != Player.transform) ? 0f : pController.GetStatValue(StatType.Luck);
+        float luckBonus = (_health == null || _health.LastAttacker != Player.transform) ? 0f : pController.GetCurrentStatLevel(StatType.Luck);
 
 
 

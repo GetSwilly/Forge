@@ -5,6 +5,7 @@ using System.Collections.Generic;
 
 public class SacrificialAltar : InteractableObject
 {
+    static readonly float TEMP_BONUS = 0f;
 
     static readonly float SPAWN_DELAY = 0.25f;
     //static readonly float REWARD_START_HEIGHT_OFFSET = 2f;
@@ -85,9 +86,9 @@ public class SacrificialAltar : InteractableObject
 
     
 
-	public override bool Use(PlayerController player)
+	public override bool Interact(PlayerController player)
     {
-        if (!isUsable || !base.Use(player))
+        if (!isUsable || !base.Interact(player))
         {
             return false;
         }
@@ -96,7 +97,7 @@ public class SacrificialAltar : InteractableObject
         StartCoroutine(RechargeAltar());
 
 
-        DropStandardRewards(player.GetStatValue(StatType.Luck));
+        DropStandardRewards(player.GetCurrentStatLevel(StatType.Luck));
 
 
         if (summonChance > 0 && Random.value <= summonChance)
@@ -110,12 +111,6 @@ public class SacrificialAltar : InteractableObject
         OnUseTrigger();
 
         return true;
-	}
-	public override bool Give(PlayerController player)
-    {
-        OnGiveTrigger();
-
-        return false;
 	}
 
     public override void Drop()
@@ -140,13 +135,13 @@ public class SacrificialAltar : InteractableObject
     }
 
 
-    void DropStandardRewards(float luckBonus)
+    void DropStandardRewards(int _level)
     {
-        StartCoroutine(DropRewards(m_StandardListDefinition, useCustomStandard, true, luckBonus));
+        StartCoroutine(DropRewards(m_StandardListDefinition, useCustomStandard, true, TEMP_BONUS));
     }
-    void DropExtinctionRewards(float luckBonus)
+    void DropExtinctionRewards(int _level)
     {
-        StartCoroutine(DropRewards(m_RewardListDefinition, useCustomExtinction, false, luckBonus));
+        StartCoroutine(DropRewards(m_RewardListDefinition, useCustomExtinction, false, TEMP_BONUS));
     }
 
 	IEnumerator DropRewards(ListDefinitionName lstName, bool useCustom, bool isStandard, float luckBonus)
@@ -292,7 +287,7 @@ public class SacrificialAltar : InteractableObject
 
         if (!summonTracker.ContainsValue(true))
         {
-            DropExtinctionRewards(0f);
+            DropExtinctionRewards(0);
 
             /*
             GameObject reward = null;

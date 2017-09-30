@@ -2,10 +2,9 @@
 using System.Collections;
 using System.Collections.Generic;
 
-[RequireComponent(typeof(Rigidbody))]
-public class MovementController : MonoBehaviour {
-
-    static readonly float GROUND_CHECK_DISTANCE = .6f;
+public class MovementController : MonoBehaviour
+{
+    //static readonly float GROUND_CHECK_DISTANCE = .6f;
     static readonly float SLOPE_CHECK_HEIGHT = 0.05f;
 
     [Tooltip("Should show debug information?")]
@@ -15,10 +14,9 @@ public class MovementController : MonoBehaviour {
 
     [Tooltip("Speed of movement")]
     [SerializeField]
-    DeviatingFloat m_Speed;
+    float movementSpeed;
 
-    float speedValue;
-	float additionalSpeedMultiplier = 0f;
+    float additionalSpeedMultiplier = 0f;
 
 
     //Move with different speed based on direction of movement
@@ -26,34 +24,20 @@ public class MovementController : MonoBehaviour {
     [SerializeField]
     AnimationCurve directionalSpeedupCurve = AnimationCurve.Linear(0f, 1f, 180f, .5f);
 
-    //Strength of returning to zero movement
-    [Tooltip("Ratio applied to speed whenever zero movement is desired.")]
-    [SerializeField]
-    [Range(0.25f, 5f)]
-    float stoppingPower = 1.5f;
-
-
     [Tooltip("Speed at which object is capable of rotating.")]
     [SerializeField]
-    [Range(0f, 10f)]
     float rotationSpeed = 5f;
 
-    //Time between steps
-    [Tooltip("Time delay between object's steps. Object is not capable of applied movement during this time.")]
-    [SerializeField]
-    float stepTime = 0f;
-    bool canStep = true;
-
- 
-    [SerializeField]
-    LayerMask groundMask;
+    //[SerializeField]
+    //LayerMask groundMask;
 
 
-	protected Transform m_Transform;
-	Rigidbody m_Rigidbody;
+    protected Transform m_Transform;
+    CharacterController m_Character;
+    Rigidbody m_Rigidbody;
 
     List<float> speedMultipliers = new List<float>();
-    float totalSpeedMultiplier = 1f;
+    float totalMovementMultiplier = 1f;
 
     List<float> rotationMultipliers = new List<float>();
     float totalRotationMultiplier = 1f;
@@ -63,50 +47,44 @@ public class MovementController : MonoBehaviour {
     float maxBoundsValue;
 
 
-	public virtual void Awake ()
+    public virtual void Awake()
     {
-		m_Transform = this.GetComponent<Transform>();
-		m_Rigidbody = this.GetComponent<Rigidbody>();
+        m_Transform = this.GetComponent<Transform>();
+        m_Rigidbody = this.GetComponent<Rigidbody>();
+        m_Character = GetComponent<CharacterController>();
 
-        
-		speedValue = (float)Utilities.GetRandomGaussian(m_Speed);
-	}
+        // speedValue = (float)Utilities.GetRandomGaussian(m_Speed);
+    }
     void Start()
     {
         bounds = Utilities.CalculateObjectBounds(gameObject, false);
         maxBoundsValue = Mathf.Max(bounds.x, bounds.z);
     }
 
-    IEnumerator StepWait()
-    {
-        canStep = false;
-        yield return new WaitForSeconds(stepTime);
-        canStep = true;
-    }
 
     public void MoveInLocalDirection(Vector3 localDir)
     {
         Move(m_Transform.TransformDirection(localDir));
     }
 
-	public virtual void Move(Vector3 moveDir)
+    public virtual void Move(Vector3 moveDir)
     {
-        if (!canStep || !this.enabled)
+        if (!this.enabled)
             return;
-        
 
-		if(moveDir.magnitude == 0)
-			return;
-       
-        Vector3 originPos = m_Transform.position + (Vector3.down * (bounds.y / 2f)) + (Vector3.up * SLOPE_CHECK_HEIGHT);
 
-       if (showDebug)
-            {
-                Debug.DrawRay(originPos, moveDir.normalized * GROUND_CHECK_DISTANCE, Color.red);
-            }
+        if (moveDir.magnitude == 0)
+            return;
+
+        Vector3 originPos = m_Transform.position + (Vector3.up * SLOPE_CHECK_HEIGHT);
+
+        //if (showDebug)
+        //{
+        //    Debug.DrawRay(originPos, moveDir.normalized * GROUND_CHECK_DISTANCE, Color.red);
+        //}
 
         if (moveDir.magnitude > 1)
-			moveDir.Normalize();
+            moveDir.Normalize();
 
         if (showDebug)
             Debug.DrawLine(m_Transform.position, m_Transform.position + (moveDir * 3f), Color.cyan);
@@ -119,16 +97,12 @@ public class MovementController : MonoBehaviour {
         velVector.Normalize();
 
         float dirSpeedup = directionalSpeedupCurve.Evaluate(Vector3.Angle(m_Transform.forward, moveDir));
-        float desiredAcceleration = Utilities.IsInOppositeDirection(moveDir, velVector) ? Speed * stoppingPower : Speed;
 
-        Vector3 forceVector = moveDir.normalized * desiredAcceleration * dirSpeedup * Time.deltaTime;
+        Vector3 forceVector = moveDir.normalized * MovementSpeed * dirSpeedup * Time.deltaTime;
 
-		m_Rigidbody.AddForce(forceVector, ForceMode.Acceleration);
+        m_Rigidbody.AddForce(forceVector, ForceMode.Acceleration);
+    }
 
-        if(stepTime > 0)
-           StartCoroutine(StepWait());
-	}
-    
 
     public void RotateTowards(Transform t)
     {
@@ -136,20 +110,20 @@ public class MovementController : MonoBehaviour {
     }
     public void RotateTowards(Transform t, float _multiplier)
     {
-		if(t != null)
-			RotateTowards(t.position, _multiplier);
-	}
+        if (t != null)
+            RotateTowards(t.position, _multiplier);
+    }
     public void RotateTowards(Vector3 lookAtPosition)
     {
         RotateTowards(lookAtPosition, 1f);
     }
-	public void RotateTowards(Vector3 lookAtPosition, float _multiplier)
+    public void RotateTowards(Vector3 lookAtPosition, float _multiplier)
     {
         if (!this.enabled)
             return;
 
 
-		Vector3 dispVector = lookAtPosition - m_Transform.position;
+        Vector3 dispVector = lookAtPosition - m_Transform.position;
 
         /*
         if (showDebug)
@@ -159,24 +133,67 @@ public class MovementController : MonoBehaviour {
         }
         */
 
-		if (dispVector.magnitude <= maxBoundsValue)
-			return;
+        if (dispVector.magnitude <= maxBoundsValue)
+            return;
 
-		//Quaternion desiredQ = Quaternion.LookRotation(Vector3.forward, lookAtPosition - myTransform.position);
+        //Quaternion desiredQ = Quaternion.LookRotation(Vector3.forward, lookAtPosition - myTransform.position);
 
-		//myTransform.rotation =  Quaternion.Slerp(myTransform.rotation, desiredQ, rotationSmoothing);
+        //myTransform.rotation =  Quaternion.Slerp(myTransform.rotation, desiredQ, rotationSmoothing);
 
-		Quaternion desiredQ  = Quaternion.LookRotation(lookAtPosition - m_Transform.position);
+        Quaternion desiredQ = Quaternion.LookRotation(lookAtPosition - m_Transform.position);
 
-		m_Transform.rotation = Quaternion.RotateTowards(m_Transform.rotation, desiredQ, RotationSpeed * _multiplier);// * Time.deltaTime);
-	}
+        m_Transform.rotation = Quaternion.RotateTowards(m_Transform.rotation, desiredQ, RotationSpeed * _multiplier);// * Time.deltaTime);
+    }
 
 
-	public void MoveTowards(Vector3 targetPosition)
+    public void MoveTowards(Vector3 targetPosition)
     {
-		RotateTowards(targetPosition);
+        RotateTowards(targetPosition);
         Move(targetPosition - m_Transform.position);
-	}
+    }
+
+
+    public void Move(Vector3 position3D, Vector3 deltaPosition, bool useDeltaAsDirection)
+    {
+        if (m_Character != null && m_Character.enabled)
+        {
+            if (useDeltaAsDirection)
+            {
+                deltaPosition = deltaPosition.normalized * MovementSpeed * Time.deltaTime;
+            }
+
+
+            // Use CharacterController
+            m_Transform.position = position3D;
+            m_Character.Move(deltaPosition);
+            // Grab the position after the movement to be able to take physics into account
+            // TODO: Add this into the clampedPosition calculation below to make RVO better respond to physics
+            position3D = m_Transform.position;
+        }
+
+        if (m_Rigidbody != null)
+        {
+            m_Rigidbody.MovePosition(position3D);
+        }
+        else
+        {
+            m_Transform.position = position3D;
+        }
+    }
+    public virtual void RotateTowards(Vector2 direction)
+    {
+        if (direction == Vector2.zero)
+            return;
+
+        Quaternion targetRotation = Quaternion.LookRotation(direction, m_Transform.up);
+
+        m_Transform.rotation = Quaternion.RotateTowards(m_Transform.rotation, targetRotation, RotationSpeed);// * Time.deltaTime);
+    }
+
+
+
+
+
 
 
 
@@ -187,14 +204,14 @@ public class MovementController : MonoBehaviour {
             return;
 
         speedMultipliers.Add(Mathf.Abs(_multiplier));
-        totalSpeedMultiplier *= _multiplier;
+        totalMovementMultiplier *= _multiplier;
     }
     public void RemoveSpeedMultiplier(float _multiplier)
     {
-        if(speedMultipliers.Count == 1 && Mathf.Approximately(speedMultipliers[0], _multiplier))
+        if (speedMultipliers.Count == 1 && Mathf.Approximately(speedMultipliers[0], _multiplier))
         {
             speedMultipliers.Clear();
-            totalSpeedMultiplier = 1f;
+            totalMovementMultiplier = 1f;
             return;
         }
 
@@ -220,24 +237,24 @@ public class MovementController : MonoBehaviour {
         if (_multiplier == 0)
         {
 
-            totalSpeedMultiplier = 1f;
+            totalMovementMultiplier = 1f;
 
 
             for (int i = 0; i < speedMultipliers.Count; i++)
             {
-                totalSpeedMultiplier *= speedMultipliers[i];
+                totalMovementMultiplier *= speedMultipliers[i];
             }
         }
         else
         {
-            totalSpeedMultiplier /= _multiplier;
+            totalMovementMultiplier /= _multiplier;
         }
 
     }
 
     public void AddRotationMultiplier(float _multiplier)
     {
-        if(Mathf.Approximately(_multiplier, 1f))
+        if (Mathf.Approximately(_multiplier, 1f))
             return;
 
         rotationMultipliers.Add(Mathf.Abs(_multiplier));
@@ -245,7 +262,7 @@ public class MovementController : MonoBehaviour {
     }
     public void RemoveRotationMultiplier(float _multiplier)
     {
-        if (rotationMultipliers.Count == 1 && Mathf.Approximately(rotationMultipliers[0],_multiplier))
+        if (rotationMultipliers.Count == 1 && Mathf.Approximately(rotationMultipliers[0], _multiplier))
         {
             rotationMultipliers.Clear();
             totalRotationMultiplier = 1f;
@@ -288,59 +305,61 @@ public class MovementController : MonoBehaviour {
 
     }
 
-   
+
 
     #region Accessors
 
-    public float Speed
+    public float MovementSpeed
     {
-		get
+        get
         {
-          return speedValue * (1f + AdditionalSpeedMultiplier) * SpeedMultiplier;
+            return movementSpeed * (1f + AdditionalSpeedMultiplier) * MovementSpeedMultiplier;
         }
-	}
-	public float SpeedMultiplier
+        set { movementSpeed = Mathf.Clamp(value, 0f, value); }
+    }
+    public float MovementSpeedMultiplier
     {
-		get { return totalSpeedMultiplier; }
-        set { totalSpeedMultiplier = value; }
-	}
-    
+        get { return totalMovementMultiplier; }
+        set { totalMovementMultiplier = value; }
+    }
 
-	public float RotationSpeed
+
+    public float RotationSpeed
     {
-		get { return rotationSpeed * RotationMultiplier; }
-	}
-	public float RotationMultiplier
+        get { return rotationSpeed * RotationMultiplier; }
+        set { rotationSpeed = Mathf.Clamp(value, 0f, value); }
+    }
+    public float RotationMultiplier
     {
-		get { return totalRotationMultiplier; }
-		set { totalRotationMultiplier = value; }
-	}
+        get { return totalRotationMultiplier; }
+        set { totalRotationMultiplier = value; }
+    }
 
     public float AdditionalSpeedMultiplier
     {
         get { return additionalSpeedMultiplier; }
         set { additionalSpeedMultiplier = value; }
     }
-	public Vector3 Velocity
+    public Vector3 Velocity
     {
-		get
+        get
         {
             if (m_Rigidbody != null)
                 return m_Rigidbody.velocity;
 
             return Vector3.zero;
         }
-	}
+    }
 
-	#endregion
+    #endregion
 
 
 
 
     void OnValidate()
     {
-        m_Speed.Mean = Mathf.Max(0f, m_Speed.Mean);
-        stepTime = Mathf.Max(0f, stepTime);
+        MovementSpeed = MovementSpeed;
+        RotationSpeed = RotationSpeed;
 
         Utilities.ValidateCurve_Times(directionalSpeedupCurve, 0f, 180f);
     }

@@ -48,18 +48,16 @@ public class UserInput : MonoBehaviour {
 
     void Update()
     {
-        
         if (isThrowing)
             return;
 
 
 
-        int type = Input.GetButtonDown("Use") ? 1 : -1; // (Input.GetButtonDown("Give") ? 2 : -1);
-
-        if (type != -1)
-            player.Interact(type);
-
-        if (canAttack)
+        if (Input.GetButtonDown("Interact"))
+        {
+            player.Interact();
+        }
+        else if (canAttack)
         {
             bool isBusy = false;
 

@@ -202,7 +202,7 @@ public class Dodge : BaseUtilityBehavior {
     }
     IEnumerator Teleport(Vector3 teleportPosition)
     {
-        Node _node = A_Star_Pathfinding.Instance.WalkableNodeFromWorldPoint(teleportPosition, m_Actor.Bounds, m_Actor.WalkableNodes);
+        Node _node = null; // A_Star_Pathfinding.Instance.WalkableNodeFromWorldPoint(teleportPosition, m_Actor.Bounds, m_Actor.WalkableNodes);
 
         if (m_Actor.ShowDebug)
         {
@@ -213,7 +213,7 @@ public class Dodge : BaseUtilityBehavior {
 
         while (Vector3.Distance(m_Transform.position, teleportPosition) > 0.01f)
         {
-            m_Transform.position = Vector3.MoveTowards(m_Transform.position, teleportPosition, m_Movement.Speed * TELEPORT_SPEEDUP * Time.deltaTime);
+            m_Transform.position = Vector3.MoveTowards(m_Transform.position, teleportPosition, m_Movement.MovementSpeed * TELEPORT_SPEEDUP * Time.deltaTime);
              yield return null;
         }
 

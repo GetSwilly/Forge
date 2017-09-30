@@ -25,54 +25,54 @@ public class ItemDrop : MonoBehaviour
     void OnCollisionEnter(Collision coll)
     {
 
-        switch (myType)
-        {
-            case ItemType.Health:
-                Health _health = coll.gameObject.GetComponent<Health>();
+        //switch (myType)
+        //{
+        //    case ItemType.Health:
+        //        Health _health = coll.gameObject.GetComponent<Health>();
 
-                if (_health != null && _health.NeedsHealth)
-                {
-                    _health.HealthArithmetic(amount, false, transform);
+        //        if (_health != null && _health.NeedsHealth)
+        //        {
+        //            _health.HealthArithmetic(amount, false, transform);
 
-                    GameObject _info = ObjectPoolerManager.Instance.DynamicInfoPooler.GetPooledObject();
-                    _info.transform.position = transform.position;
+        //            GameObject _info = ObjectPoolerManager.Instance.DynamicInfoPooler.GetPooledObject();
+        //            _info.transform.position = transform.position;
 
-                    DynamicInfoScript _infoScript = _info.GetComponent<DynamicInfoScript>();
-                    //_infoScript.infoText.text = Mathf.Abs(amount).ToString();
-                    //_infoScript.infoColor = Color.red;
+        //            DynamicInfoScript _infoScript = _info.GetComponent<DynamicInfoScript>();
+        //            //_infoScript.infoText.text = Mathf.Abs(amount).ToString();
+        //            //_infoScript.infoColor = Color.red;
 
-                    _info.SetActive(true);
-                    _infoScript.Initialize(amount, Color.red, true);
-
-
+        //            _info.SetActive(true);
+        //            _infoScript.Initialize(amount, Color.red, true);
 
 
-                    //gameObject.SetActive(false);
-                    Destroy(gameObject);
-                }
 
-                break;
-            case ItemType.Experience:
-                PlayerController _controller = coll.gameObject.GetComponent<PlayerController>();
 
-                if (_controller != null && _controller.ShouldCollectExp)
-                {
-                    _controller.ModifyExp(amount);
+        //            //gameObject.SetActive(false);
+        //            Destroy(gameObject);
+        //        }
 
-                    GameObject _info = ObjectPoolerManager.Instance.DynamicInfoPooler.GetPooledObject();
-                    _info.transform.position = transform.position;
+        //        break;
+        //    case ItemType.Experience:
+        //        PlayerController _controller = coll.gameObject.GetComponent<PlayerController>();
 
-                    DynamicInfoScript _infoScript = _info.GetComponent<DynamicInfoScript>();
+        //        if (_controller != null && _controller.ShouldCollectExp)
+        //        {
+        //            _controller.ModifyExp(amount);
 
-                    _info.SetActive(true);
-                    _infoScript.Initialize(amount, Color.green, true);
+        //            GameObject _info = ObjectPoolerManager.Instance.DynamicInfoPooler.GetPooledObject();
+        //            _info.transform.position = transform.position;
 
-                    //gameObject.SetActive(false);
-                    Destroy(gameObject);
-                }
+        //            DynamicInfoScript _infoScript = _info.GetComponent<DynamicInfoScript>();
 
-                break;
-        }
+        //            _info.SetActive(true);
+        //            _infoScript.Initialize(amount, Color.green, true);
+
+        //            //gameObject.SetActive(false);
+        //            Destroy(gameObject);
+        //        }
+
+        //        break;
+        //}
 
     }
 }

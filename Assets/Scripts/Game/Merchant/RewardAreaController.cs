@@ -38,7 +38,7 @@ public class RewardAreaController : MonoBehaviour {
     void OnEnable()
     {
         PlayerController pController = GameManager.Instance.PlayerController;
-        SpawnRewards(pController == null ? 0f : pController.GetStatValue(StatType.Luck));
+        SpawnRewards(pController == null ? 0f : pController.GetCurrentStatLevel(StatType.Luck));
     }
 
     public void SpawnRewards(float luckBonus)

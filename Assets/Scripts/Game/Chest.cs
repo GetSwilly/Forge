@@ -4,6 +4,7 @@ using System;
 
 public class Chest : InteractableObject
 {
+    static readonly float TEMP_BONUS = 0f;
     static readonly float SPAWN_DELAY = 0.25f;
 
     [SerializeField]
@@ -45,13 +46,13 @@ public class Chest : InteractableObject
 
 
 
-    public override bool Use(PlayerController player)
+    public override bool Interact(PlayerController player)
     {
         if (!isUsable)
             return false;
 
 
-        StartCoroutine(DropRewards(player.GetStatValue(StatType.Luck)));
+        StartCoroutine(DropRewards(player.GetCurrentStatLevel(StatType.Luck)));
         StartCoroutine(RechargeChest());
         
 
@@ -60,13 +61,7 @@ public class Chest : InteractableObject
 
         return true;
     }
-    public override  bool Give(PlayerController player)
-    {
 
-        OnGiveTrigger();
-
-        return false;
-    }
 
     public override void Drop()
     {
@@ -87,9 +82,10 @@ public class Chest : InteractableObject
     }
 
 
-   
-    IEnumerator DropRewards(float luckBonus)
+
+    IEnumerator DropRewards(int luckLevel)
     {
+        float luckBonus = TEMP_BONUS;
 
         int _num = (int)numberOfRewardsCurve.Evaluate(UnityEngine.Random.value);
 

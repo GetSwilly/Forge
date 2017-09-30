@@ -2,9 +2,9 @@
 using System.Collections;
 using System.Collections.Generic;
 using System;
+using Pathfinding;
 
 [RequireComponent(typeof(Chase))]
-[RequireComponent(typeof(MovementController))]
 [RequireComponent(typeof(Rigidbody))]
 public class Chase_Teleport : BaseUtilityBehavior {
 
@@ -29,7 +29,6 @@ public class Chase_Teleport : BaseUtilityBehavior {
     
     
     Rigidbody m_Rigidbody;
-    MovementController m_Movement;
 
     Collider[] m_Colliders;
     Renderer[] m_Renderers;
@@ -39,7 +38,6 @@ public class Chase_Teleport : BaseUtilityBehavior {
         base.Awake();
 
         m_Rigidbody = GetComponent<Rigidbody>();
-        m_Movement = GetComponent<MovementController>();
 
         m_Colliders = GetComponents<Collider>();
         m_Renderers = GetComponents<Renderer>();
@@ -82,7 +80,9 @@ public class Chase_Teleport : BaseUtilityBehavior {
         m_Rigidbody.isKinematic = false;
     }
    
-    IEnumerator TeleportToTarget()
+
+
+    void AttemptTeleport()
     {
 
         SightedObject target = m_Actor.TargetObject;
@@ -93,46 +93,29 @@ public class Chase_Teleport : BaseUtilityBehavior {
             EndBehavior(true, true);
         }
 
-
-        Vector3 toTarget;
-        Vector3 teleportPos = m_Transform.position;
-        Node _node;
-
-        bool isValid = false;
-        int iterationCounter = 0;
-
-        do
-        {
-            if (iterationCounter >= MAX_ITERATIONS)
-            {
-                iterationCounter = 0;
-                yield return null;
-            }
+    
 
 
             if (target == null || !target.SightedTransform.gameObject.activeInHierarchy)
             {
                 Debug.Log("Null Target");
                 EndBehavior(true, true);
-                break;
             }
 
 
-            isValid = true;
+
+        Vector3 toTarget = target.LastKnownPosition - m_Transform.position;
 
 
-            toTarget = target.LastKnownPosition - m_Transform.position;
-
-
-            teleportPos = UnityEngine.Random.insideUnitSphere;
+        Vector3 teleportPos = UnityEngine.Random.insideUnitSphere;
 
 
 
-            isValid = Vector3.Angle(teleportPos.normalized, toTarget) <= maxTeleportAngle;
-
-            if (!isValid)
-                continue;
-
+            if(Vector3.Angle(teleportPos.normalized, toTarget) > maxTeleportAngle)
+        {
+            EndBehavior(true, true);
+        }
+            
 
             float dist = (float)Utilities.GetRandomGaussian(teleportDistance);
 
@@ -141,80 +124,58 @@ public class Chase_Teleport : BaseUtilityBehavior {
             teleportPos *= dist;
             teleportPos += m_Transform.position;
 
-
-
-            _node = A_Star_Pathfinding.Instance.WalkableNodeFromWorldPoint(teleportPos, m_Actor.Bounds, m_Actor.WalkableNodes);
-
-
-            if (_node == null)
-            {
-                //teleportPos = A_Star_Pathfinding.Instance.WorldPointFromWorldPoint(teleportPos);
-                teleportPos.y = m_Transform.position.y;
-                teleportPos.y -= Utilities.CalculateObjectBounds(gameObject, false).y / 2;
-            }
-            else
-            {
-                isValid = _node.IsWalkable(m_Actor.WalkableNodes);
-                teleportPos = _node.WorldPosition;
-            }
-           
-
-            if (!isValid)
-                continue;
-
-
-
-            teleportPos.y += Utilities.CalculateObjectBounds(gameObject, false).y / 2;
-            teleportPos.y += 0.01f;
-
-
-
-
-            isValid = Vector3.Distance(teleportPos, target.LastKnownPosition) > minDistanceFromTarget;
-
-            if (!isValid)
-                continue;
-
-            //yield return StartCoroutine(TeleportToPosition(newPos));
-
-        } while (!isValid);
-
-        if (m_Actor.ShowDebug)
+        if(Vector3.Distance(teleportPos, target.LastKnownPosition) < minDistanceFromTarget)
         {
-            Debug.DrawLine(m_Transform.position, teleportPos, Color.yellow, 5f);
+            EndBehavior(true, true);
+            return;
         }
 
-        Vector3 toPos = teleportPos - m_Transform.position;
-        toPos = toPos.normalized * m_Movement.Speed;
+        m_Pathfinder.SearchPath(teleportPos, CheckValidTeleport);
+    }
+
+
+    void CheckValidTeleport(Path p)
+    {
+        if (!IsActive)
+            return;
+
+        if (p.error)
+        {
+            EndBehavior(true, true);
+        }
+
+        m_Pathfinder.CanMove = false;
+
+       Vector3 pos = (Vector3)p.path[p.path.Count-1].position;
+
 
         ActivateSpectral();
 
-        while (target != null && target.SightedTransform.gameObject.activeInHierarchy && Vector3.Distance(m_Transform.position, teleportPos) > 0.01f)
+        SightedObject target = m_Actor.TargetObject;
+
+        while (target != null && target.SightedTransform.gameObject.activeInHierarchy && Vector3.Distance(m_Transform.position, pos) > 0.01f)
         {
-            m_Transform.position = Vector3.MoveTowards(m_Transform.position, teleportPos, m_Movement.Speed * TELEPORT_SPEEDUP * Time.deltaTime);
-            m_Movement.RotateTowards(target.LastKnownPosition);
-            yield return null;
+            m_Transform.position = Vector3.MoveTowards(m_Transform.position, pos, m_Pathfinder.Speed * TELEPORT_SPEEDUP * Time.deltaTime);
+            //m_Movement.RotateTowards(target.LastKnownPosition);
         }
 
-        DeactivateSpectral();
 
-
-        EndBehavior(true,true);
+        EndBehavior(true, true);
     }
-
 
 
     public override void StartBehavior()
     {
         IsActive = true;
 
-        StartCoroutine(TeleportToTarget());   
+        AttemptTeleport();
     }
    
     public override void EndBehavior(bool shouldNotifySuper, bool shouldNotifyActor)
     {
         StopAllCoroutines();
 
+        m_Pathfinder.CanMove = true;
         DeactivateSpectral();
 
         base.EndBehavior(shouldNotifySuper, shouldNotifyActor);

@@ -5,8 +5,8 @@ using System.Collections;
 public interface IProjectile {
 
 
-    void Initialize(Transform newOwner, LayerMask newFriendly, Vector3 dir, int newPower, bool _critical, float newRange);
-    void Initialize(Transform newOwner, LayerMask newFriendly, Vector3 dir, int newPower, bool _critical, float newSpeed, float newRange);
+    void Initialize(Transform newOwner, Team _team, Vector3 dir, int newPower, bool _critical, float newRange);
+    void Initialize(Transform newOwner, Team _team, Vector3 dir, int newPower, bool _critical, float newSpeed, float newRange);
     
     void Disable();
     void Disable(Transform hitTransform);
@@ -19,7 +19,7 @@ public interface IProjectile {
     Vector3 Direction { get; }
 
     bool IsCritical { get; }
-    LayerMask FriendlyMask { get; }
+    Team Team { get; }
     Transform Owner { get; }
     int Power { get; }
     double MaxRange { get; set; }

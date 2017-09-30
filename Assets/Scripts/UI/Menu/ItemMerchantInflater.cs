@@ -7,58 +7,7 @@ using UnityEngine;
 public class ItemMerchantInflater : MenuInflater {
 
     static readonly int MAX_MERCHANDISE_CHECKS = 1000;
-
-    [Serializable]
-    struct Merchandise {
-
-        [SerializeField]
-        GameObject m_Object;
-
-        [SerializeField]
-        Cost activeCost;
-
-        ItemPrice m_Price;
-
-        public Merchandise(GameObject obj, ItemPrice _price, CurrencyType _currency, StatType _stat)
-        {
-            m_Object = obj;
-            m_Price = _price;
-
-            activeCost = m_Price.GetCost(_currency, _stat);
-        }
-
-
-        public void SetCost(CurrencyType _currency, StatType _stat)
-        {
-            ActiveCost = Price.GetCost(_currency, _stat);
-        }
-
-
-
-        public string Name
-        {
-            get { return m_Object.name; }
-        }
-        public GameObject Object
-        {
-            get { return m_Object; }
-            set { m_Object = value; }
-        }
-        public Cost ActiveCost
-        {
-            get { return activeCost; }
-            set { activeCost = value; }
-        }
-        public ItemPrice Price
-        {
-            get { return m_Price; }
-        }
-    }
-
-
-
-
-
+    
 
     [SerializeField]
     ListDefinitionName m_ListDefinition;
@@ -102,9 +51,9 @@ public class ItemMerchantInflater : MenuInflater {
     }
 
 
-    public override bool Use(PlayerController _player)
+    public override bool Interact(PlayerController _player)
     {
-        if (!base.Use(_player))
+        if (!base.Interact(_player))
         {
             return false;
         }

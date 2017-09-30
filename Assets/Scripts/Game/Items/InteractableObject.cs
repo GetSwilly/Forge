@@ -36,14 +36,9 @@ public abstract class InteractableObject : MonoBehaviour, IAcquirableObject, IId
     UIManager.Component m_UIComponents;
 
 
-
-
-    public delegate void AlertEvent();
-
     public event UIManager.UIEvent OnUI_Inflate;
     public event UIManager.UIEvent OnUI_Deflate;
-    public event AlertEvent OnUse;
-    public event AlertEvent OnGive;
+    public event Delegates.Alert OnUse;
     public event EventHandler ObjectAcquired;
 
     protected List<GameObject> activatingObjects = new List<GameObject>();
@@ -62,10 +57,13 @@ public abstract class InteractableObject : MonoBehaviour, IAcquirableObject, IId
         m_Audio.loop = false;
         m_Audio.playOnAwake = false;
     }
+    void OnDisable()
+    {
+        DeflateUI();
+    }
 
 
-
-    public virtual bool Use(PlayerController player)
+    public virtual bool Interact(PlayerController player)
     {
         if (activatingObjects.Count == 0)
             return false;
@@ -165,10 +163,6 @@ public abstract class InteractableObject : MonoBehaviour, IAcquirableObject, IId
 
         return true;
     }
-    public abstract bool Give(PlayerController player);
-
-
-
     public abstract void Drop();
 
     /*
@@ -197,13 +191,6 @@ public abstract class InteractableObject : MonoBehaviour, IAcquirableObject, IId
 
 
 
-
-
-    public virtual bool IsUsable
-    {
-        get { return gameObject.activeInHierarchy; }
-    }
-    public abstract bool IsUsableOutsideFOV { get; }
 
 
 
@@ -457,15 +444,6 @@ public abstract class InteractableObject : MonoBehaviour, IAcquirableObject, IId
         }
     }
 
-    protected void OnGiveTrigger()
-    {
-        if (OnGive != null)
-        {
-            OnGive();
-        }
-    }
-
-   
     #endregion
 
 
@@ -476,12 +454,20 @@ public abstract class InteractableObject : MonoBehaviour, IAcquirableObject, IId
 
 
 
+    #region Accessors
 
     public string Name
     {
         get { return m_ObjectName; }
         set { m_ObjectName = value; }
     }
+
+    public virtual bool IsUsable
+    {
+        get { return gameObject.activeInHierarchy; }
+    }
+    public abstract bool IsUsableOutsideFOV { get; }
+
 
     public GameObject Object
     {
@@ -494,4 +480,6 @@ public abstract class InteractableObject : MonoBehaviour, IAcquirableObject, IId
     {
         get { return m_ActivationCosts; }
     }
+
+    #endregion
 }

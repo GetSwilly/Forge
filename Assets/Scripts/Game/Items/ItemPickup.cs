@@ -31,7 +31,7 @@ public class ItemPickup : InteractableObject
         Name = myType == PickupType.Handheld ? m_Handheld.ToString() : m_Ability.ToString();
     }
 
-    public override bool Use(PlayerController _player)
+    public override bool Interact(PlayerController _player)
     {
         pController = _player;
 
@@ -49,13 +49,6 @@ public class ItemPickup : InteractableObject
         return true;
     }
 
-    public override bool Give(PlayerController _player)
-    {
-        pController = _player;
-
-        OnGiveTrigger();
-        return false;
-    }
 
 
 

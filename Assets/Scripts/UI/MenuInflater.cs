@@ -12,7 +12,6 @@ public abstract class MenuInflater : InteractableObject
 
 
     [SerializeField]
-    Menu menuPrefab;
     protected Menu m_Menu;
 
     [SerializeField]
@@ -20,38 +19,9 @@ public abstract class MenuInflater : InteractableObject
     
     [SerializeField]
     bool disablePlayerMovement = false;
-    
-    [SerializeField]
-    bool moveCameraToPosition = false;
-
-    [SerializeField]
-    Vector3 cameraOffset = new Vector3(0, 5, -10);
-
-    [SerializeField]
-    [Range(0f, 1f)]
-    float cameraMoveLerp = 0.2f;
-
-    [SerializeField]
-    Vector3 cameraEulerAngles = new Vector3(0, 0, 0);
-
-    [SerializeField]
-    [Range(0f,1f)]
-    float cameraRotateLerp = 0.2f;
-
-    [SerializeField]
-    [Range(1, 179)]
-    int cameraFOV = 60;
-
-    [SerializeField]
-    [Range(0f, 180f)]
-    float fovDelta = 20f;
-
+  
     [SerializeField]
     bool requireLOS = true;
-
-    [SerializeField]
-    [EnumFlags]
-    UIManager.Component m_UIComponents;
 
     [SerializeField]
     string menuText = "";
@@ -72,9 +42,9 @@ public abstract class MenuInflater : InteractableObject
     //}
 
 
-    public override bool Use(PlayerController _player)
+    public override bool Interact(PlayerController _player)
     {
-        if (isInflated)
+        if (!CanInflateMenu())
             return false;
 
         activatingPlayer = _player;
@@ -84,35 +54,20 @@ public abstract class MenuInflater : InteractableObject
 
         return true;
     }
-    public override bool Give(PlayerController player)
-    {
-      
-        throw new NotImplementedException();
-    }
 
     public override void Drop()
     {
-
+       
     }
-
-
 
 
     public void InflateMenu()
     {
-        if (menuPrefab == null || buttonPrefab == null || isInflated)
+        if (m_Menu == null || buttonPrefab == null || isInflated)
             return;
 
-
         isInflated = true;
-
-        GameObject genObj = GameObject.Find("Generated Objects");
-
-        m_Menu = Instantiate(menuPrefab) as Menu;
-        m_Menu.transform.position = m_Transform.position;// MenuPosition;
-
-       
-        m_Menu.gameObject.transform.SetParent(genObj == null ? null : genObj.transform);
+        
         m_Menu.gameObject.SetActive(true);
         m_Menu.Inflate(this);
         m_Menu.SetText(menuText);
@@ -138,10 +93,6 @@ public abstract class MenuInflater : InteractableObject
             _movement.AddRotationMultiplier(PLAYER_ROTATION_MULTIPLIER);
             _movement.AddSpeedMultiplier(PLAYER_SPEED_MULTIPLIER);
         }
-
-
-
-        CameraRelocate();
 
 
         StartCoroutine(DeflateCheckRoutine());
@@ -195,43 +146,16 @@ public abstract class MenuInflater : InteractableObject
         }
 
     }
-
-
+    
+    protected virtual bool CanInflateMenu()
+    {
+        return !isInflated;
+    }
 
 
 
     protected abstract void AddButtons();
     
-
-
-    protected void CameraRelocate()
-    {
-        if (!moveCameraToPosition)
-            return;
-
-        CameraFollow _follow = Camera.main.GetComponent<CameraFollow>();
-
-        if (_follow != null)
-            _follow.enabled = false;
-
-        StartCoroutine(CameraRelocateRoutine(Camera.main));
-    }
-    private IEnumerator CameraRelocateRoutine(Camera cam)
-    {
-        Transform camTransform = cam.transform;
-
-        while (true)
-        {
-            yield return null;
-
-            camTransform.position = Vector3.Lerp(camTransform.position, m_Transform.position + cameraOffset, cameraMoveLerp);
-            camTransform.rotation = Quaternion.Lerp(camTransform.rotation, Quaternion.Euler(cameraEulerAngles), cameraRotateLerp);
-            
-            cam.fieldOfView = Mathf.MoveTowards(cam.fieldOfView, cameraFOV, fovDelta * Time.deltaTime);
-        }
-    }
-
-
 
     IEnumerator DeflateCheckRoutine()
     {
@@ -246,11 +170,7 @@ public abstract class MenuInflater : InteractableObject
         DeflateMenu();
     }
    
-
-   
-
-
-
+    
 
     #region Accessors
     

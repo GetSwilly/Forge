@@ -3,13 +3,14 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 
-public class PlayerController : UnitController {
+public class PlayerController : UnitController
+{
 
 
-	static readonly float EXP_COLLECT_SPEED = 1f;
+    static readonly float EXP_COLLECT_SPEED = 1f;
     static readonly float DROP_UTILITY_DELAY = 0.5f;
 
-	
+
 
 
     [Space(15)]
@@ -17,28 +18,27 @@ public class PlayerController : UnitController {
     [Space(5)]
 
     [Tooltip("Current Character Level")]
-    [SerializeField]
     int currentLevel = 1;
 
     [Tooltip("Current Character Exp")]
-    [SerializeField]
     int currentExp = 0;
 
-	int numNewLevels = 0;
 
-    [Tooltip("Attract Exp orbs from a distance?")]
-    [SerializeField]
-    bool shouldCollectExp = false;
+    [Space(15)]
+    [Header("Interaction")]
+    [Space(5)]
 
-    [Tooltip("Range to attract Exp orbs")]
-    [SerializeField]
-    float expCollectRange = 2;
-   
     [Tooltip("Minimum distance necessary to interact with object")]
     [SerializeField]
     float interactDistance = 4f;
 
+    [Tooltip("Should collect collectables?")]
+    [SerializeField]
+    bool shouldCollect = false;
 
+    [Tooltip("Minimum distance necessary to collect a collectable")]
+    [SerializeField]
+    float collectRange = 4f;
 
     [Space(15)]
     [Header("Utility")]
@@ -78,8 +78,8 @@ public class PlayerController : UnitController {
     [Space(15)]
     [Header("Items")]
     [Space(5)]
-    
-    
+
+
     [Tooltip("Current HandheldItem")]
     [SerializeField]
     protected HandheldItem m_HandheldItem;
@@ -117,8 +117,10 @@ public class PlayerController : UnitController {
     DisplayEffect experienceLostEffect;
 
 
+    [SerializeField]
+    LayerMask ignoreCollisionLayer;
 
-    InteractableObject m_Interactable;
+    InteractableObject currentInteractable;
 
     Coroutine handheldPickupRoutine = null;
     Coroutine abilityPickupRoutine = null;
@@ -136,16 +138,16 @@ public class PlayerController : UnitController {
 
     public override void Start()
     {
-		base.Start();
+        base.Start();
 
-		if(GameManager.Instance != null)
+        if (GameManager.Instance != null)
         {
-			m_Health.OnDamaged += GameManager.Instance.PlayerDamaged;
-			m_Health.OnKilled += GameManager.Instance.PlayerKilled;
-		}
+            m_Health.OnDamaged += GameManager.Instance.PlayerDamaged;
+            m_Health.OnKilled += GameManager.Instance.PlayerKilled;
+        }
 
-		
-		OnExpChange += UpdateExperienceProgressBar;
+
+        OnExpChange += UpdateExperienceProgressBar;
 
         m_Handler.ShowUI(true);
         m_Handler.UpdateUI(Attribute.Experience, CurrentExperienceLevelProgress, false);
@@ -160,7 +162,7 @@ public class PlayerController : UnitController {
             PickupNativeAbility();
         }
 
-        if(AuxiliaryAbility != null)
+        if (AuxiliaryAbility != null)
         {
             GameObject obj = Instantiate(AuxiliaryAbility.gameObject) as GameObject;
             obj.transform.position = m_Transform.position;
@@ -169,7 +171,7 @@ public class PlayerController : UnitController {
             Pickup(AuxiliaryAbility);
         }
 
-        if(HandheldItem != null)
+        if (HandheldItem != null)
         {
             GameObject obj = Instantiate(HandheldItem.gameObject) as GameObject;
             obj.transform.position = m_Transform.position;
@@ -178,48 +180,48 @@ public class PlayerController : UnitController {
             Pickup(HandheldItem);
         }
 
-        if(UtilityItem != null)
+        if (UtilityItem != null)
         {
             //GameObject obj = Instantiate(UtilityItem.gameObject) as GameObject;
             //obj.transform.position = m_Transform.position;
 
-        //UtilityItem = obj.GetComponent<UtilityItem>();
+            //UtilityItem = obj.GetComponent<UtilityItem>();
             //Pickup(UtilityItem);
         }
 
-		//HandheldItem startingHandheld = GetComponentInChildren<HandheldItem>();
-		//Pickup(startingHandheld);
-        
-		//if(nativeAbility != null)
-  //      {
-  //          nativeAbility.transform.SetParent(m_Transform, true);
-		//	StartCoroutine(PickupObject(nativeAbility.transform, Vector3.zero, Quaternion.identity));
-			
-			
-		//	ItemPickup _pickup = nativeAbility.GetComponent<ItemPickup>();
-		//	_pickup.enabled = false;
-			
-		//	Rigidbody _rigidbody = nativeAbility.GetComponent<Rigidbody>();
-  //          //_rigidbody.useGravity = false;
-		//	_rigidbody.isKinematic = true;
-			
-		//	Collider _collider = nativeAbility.GetComponent<Collider>();
-		//	_collider.enabled = false;
+        //HandheldItem startingHandheld = GetComponentInChildren<HandheldItem>();
+        //Pickup(startingHandheld);
+
+        //if(nativeAbility != null)
+        //      {
+        //          nativeAbility.transform.SetParent(m_Transform, true);
+        //	StartCoroutine(PickupObject(nativeAbility.transform, Vector3.zero, Quaternion.identity));
 
 
-  //          nativeAbility.Initialize(m_Transform);
-		//}
+        //	ItemPickup _pickup = nativeAbility.GetComponent<ItemPickup>();
+        //	_pickup.enabled = false;
+
+        //	Rigidbody _rigidbody = nativeAbility.GetComponent<Rigidbody>();
+        //          //_rigidbody.useGravity = false;
+        //	_rigidbody.isKinematic = true;
+
+        //	Collider _collider = nativeAbility.GetComponent<Collider>();
+        //	_collider.enabled = false;
 
 
-		//Pickup(auxiliaryAbility);
+        //          nativeAbility.Initialize(m_Transform);
+        //}
+
+
+        //Pickup(auxiliaryAbility);
 
 
 
-		m_Health.ReverseTextMovement();
-	}
+        m_Health.ReverseTextMovement();
+    }
     void OnEnable()
     {
-       m_Handler.ShowUI(true);
+        m_Handler.ShowUI(true);
 
         if (ShowDebug)
         {
@@ -230,39 +232,31 @@ public class PlayerController : UnitController {
     {
         base.OnDisable();
 
-        RemoveInteractable(m_Interactable);
+        RemoveInteractable(currentInteractable);
     }
 
 
    
+   
 
     #region Interactable Stuff
 
-    public void Interact(int interactionType)
+    public void Interact()
     {
-
-        if (m_Interactable == null)
+        if (currentInteractable == null)
             return;
 
 
-        if (!m_Interactable.IsUsable)
+        if (!currentInteractable.IsUsable)
             return;
 
-        Vector3 toVector = m_Interactable.transform.position - m_Transform.position;
-        if (toVector.magnitude <= InteractDistance && (m_Interactable.IsUsableOutsideFOV || CanSee(m_Interactable.transform)))//Vector3.Angle(toVector, myTransform.forward) <= FOV / 2f))
+        Vector3 toVector = currentInteractable.transform.position - m_Transform.position;
+        if (toVector.magnitude <= InteractDistance && (currentInteractable.IsUsableOutsideFOV || CanSee(currentInteractable.transform)))
         {
-            switch (interactionType)
-            {
-                case 1:
-                    m_Interactable.Use(this);
-                    break;
-                case 2:
-                    m_Interactable.Give(this);
-                    break;
-            }
+            currentInteractable.Interact(this);
         }
 
-        RemoveInteractable(m_Interactable);
+        RemoveInteractable(currentInteractable);
     }
 
 
@@ -277,26 +271,26 @@ public class PlayerController : UnitController {
         AddInteractable(iObj);
     }
     void AddInteractable(InteractableObject tempInteractable)
-    { 
-        if (tempInteractable == null || !tempInteractable.IsUsable || tempInteractable == m_Interactable)
+    {
+        if (tempInteractable == null || !tempInteractable.IsUsable || tempInteractable == currentInteractable)
             return;
 
 
 
-        if (m_Interactable == null || !m_Interactable.IsUsable || (!m_Interactable.IsUsableOutsideFOV && !CanSee(m_Interactable.transform) && CanSee(tempInteractable.transform))) //Vector3.Angle(tempInteractable.transform.position - myInteractable.transform.position, myTransform.forward) > FOV/2f))
+        if (currentInteractable == null || !currentInteractable.IsUsable || (!currentInteractable.IsUsableOutsideFOV && !CanSee(currentInteractable.transform) && CanSee(tempInteractable.transform))) //Vector3.Angle(tempInteractable.transform.position - myInteractable.transform.position, myTransform.forward) > FOV/2f))
         {
-            RemoveInteractable(m_Interactable);
-            m_Interactable = tempInteractable;
+            RemoveInteractable(currentInteractable);
+            currentInteractable = tempInteractable;
         }
-        else if(Vector3.Distance(m_Transform.position, m_Interactable.transform.position) > Vector3.Distance(m_Transform.position, tempInteractable.transform.position))
+        else if (Vector3.Distance(m_Transform.position, currentInteractable.transform.position) > Vector3.Distance(m_Transform.position, tempInteractable.transform.position))
         {
-            RemoveInteractable(m_Interactable);
-            m_Interactable = tempInteractable;
+            RemoveInteractable(currentInteractable);
+            currentInteractable = tempInteractable;
         }
 
-        m_Interactable.InflateUI();
-	}
-	void RemoveInteractable(GameObject tempObj)
+        currentInteractable.InflateUI();
+    }
+    void RemoveInteractable(GameObject tempObj)
     {
         if (tempObj == null)
             return;
@@ -307,15 +301,15 @@ public class PlayerController : UnitController {
     }
     void RemoveInteractable(InteractableObject tempInteractable)
     {
-        if (m_Interactable == null || tempInteractable == null)
+        if (currentInteractable == null || tempInteractable == null)
             return;
 
-        if(tempInteractable == m_Interactable)
+        if (tempInteractable == currentInteractable)
         {
-            m_Interactable.DeflateUI();
-            m_Interactable = null;
+            currentInteractable.DeflateUI();
+            currentInteractable = null;
         }
-	}
+    }
 
     #endregion
 
@@ -352,12 +346,12 @@ public class PlayerController : UnitController {
 
         GameObject _obj = (GameObject)Instantiate(m_UtilityItem.gameObject, HandheldHolderPosition, m_Transform.rotation);
         UtilityItem _uScript = _obj.GetComponent<UtilityItem>();
-       
+
 
         if (m_UtilityItem.ShouldBeThrown)
         {
             Vector3 launchVector = m_Transform.TransformDirection(throwVector).normalized * ThrowPower * percentage;
-            
+
 
             Rigidbody _rigidbody = _obj.GetComponent<Rigidbody>();
 
@@ -393,7 +387,7 @@ public class PlayerController : UnitController {
             _dropObj.SetActive(true);
 
             Rigidbody _rigid = _dropObj.GetComponent<Rigidbody>();
-            if(_rigid != null)
+            if (_rigid != null)
             {
                 _rigid.velocity = Vector3.zero;
                 _rigid.AddForce(_dropObj.transform.forward * DROP_FORCE, ForceMode.Impulse);
@@ -430,8 +424,8 @@ public class PlayerController : UnitController {
             return;
 
         nativeAbility.ActivateAbility();
-        
-	}
+
+    }
     public void DeactivateNativeAbility()
     {
         if (nativeAbility == null)
@@ -441,20 +435,20 @@ public class PlayerController : UnitController {
     }
 
 
-	public void ActivateAuxiliaryAbility()
+    public void ActivateAuxiliaryAbility()
     {
         if (auxiliaryAbility == null || !auxiliaryAbility.CanUseAbility())
             return;
 
         auxiliaryAbility.ActivateAbility();
-	}
+    }
     public void DeactivateAuxiliaryAbility()
     {
         if (auxiliaryAbility == null)
             return;
 
         auxiliaryAbility.DeactivateAbility();
-       
+
     }
 
 
@@ -525,27 +519,27 @@ public class PlayerController : UnitController {
         Collider _collider = NativeAbility.GetComponent<Collider>();
         _collider.enabled = false;
     }
-	public void Pickup(Ability newAbility)
+    public void Pickup(Ability newAbility)
     {
-		if(newAbility == null)
-			return;
+        if (newAbility == null)
+            return;
 
-		DropAbility();
+        DropAbility();
 
-		auxiliaryAbility = newAbility;
-		auxiliaryAbility.transform.parent = m_Transform;
-		abilityPickupRoutine = StartCoroutine(PickupObject(auxiliaryAbility.transform, Vector3.zero, Quaternion.identity));
+        auxiliaryAbility = newAbility;
+        auxiliaryAbility.transform.parent = m_Transform;
+        abilityPickupRoutine = StartCoroutine(PickupObject(auxiliaryAbility.transform, Vector3.zero, Quaternion.identity));
         auxiliaryAbility.Initialize(m_Transform);
 
-		ItemPickup _pickup = auxiliaryAbility.GetComponent<ItemPickup>();
-		_pickup.enabled = false;
-		
-		Rigidbody _rigidbody = auxiliaryAbility.GetComponent<Rigidbody>();
-		_rigidbody.isKinematic = true;
-		
-		Collider _collider = auxiliaryAbility.GetComponent<Collider>();
-		_collider.enabled = false;
-	}
+        ItemPickup _pickup = auxiliaryAbility.GetComponent<ItemPickup>();
+        _pickup.enabled = false;
+
+        Rigidbody _rigidbody = auxiliaryAbility.GetComponent<Rigidbody>();
+        _rigidbody.isKinematic = true;
+
+        Collider _collider = auxiliaryAbility.GetComponent<Collider>();
+        _collider.enabled = false;
+    }
 
     public virtual void DropAbility(Ability _ability)
     {
@@ -556,92 +550,90 @@ public class PlayerController : UnitController {
     }
     protected virtual void DropAbility()
     {
-		if(auxiliaryAbility != null)
+        if (auxiliaryAbility != null)
         {
 
             auxiliaryAbility.Terminate();
 
 
-			GameObject g = GameObject.Find("Generated Objects");
-			auxiliaryAbility.transform.parent = null;
+            GameObject g = GameObject.Find("Generated Objects");
+            auxiliaryAbility.transform.parent = null;
 
-			if(g != null)
+            if (g != null)
             {
-				auxiliaryAbility.transform.parent = g.transform;
-			}
+                auxiliaryAbility.transform.parent = g.transform;
+            }
 
 
             auxiliaryAbility.transform.localRotation = Quaternion.identity;
 
 
-			
-			ItemPickup _pickup = auxiliaryAbility.GetComponent<ItemPickup>();
-			
-			if(_pickup != null)
-				_pickup.enabled = true;
 
-			Rigidbody _rigidbody = auxiliaryAbility.GetComponent<Rigidbody>();
-			_rigidbody.velocity = Vector3.zero;
-			_rigidbody.isKinematic = false;
+            ItemPickup _pickup = auxiliaryAbility.GetComponent<ItemPickup>();
+
+            if (_pickup != null)
+                _pickup.enabled = true;
+
+            Rigidbody _rigidbody = auxiliaryAbility.GetComponent<Rigidbody>();
+            _rigidbody.velocity = Vector3.zero;
+            _rigidbody.isKinematic = false;
             _rigidbody.velocity = Vector3.zero;
             _rigidbody.AddForce(auxiliaryAbility.transform.forward * DROP_FORCE, ForceMode.Impulse);
-           
+
 
             Collider _collider = auxiliaryAbility.GetComponent<Collider>();
-			_collider.enabled = true;
+            _collider.enabled = true;
 
 
-			if(abilityPickupRoutine != null)
-				StopCoroutine(abilityPickupRoutine);
-		}
-	}
+            if (abilityPickupRoutine != null)
+                StopCoroutine(abilityPickupRoutine);
+        }
+    }
 
 
 
-	public void Pickup(HandheldItem newHandheld)
+    public void Pickup(HandheldItem newHandheld)
     {
-		
-		if(newHandheld == null)
-			return;
-		
-		DropHandheld();
+
+        if (newHandheld == null)
+            return;
+
+        DropHandheld();
 
         m_HandheldItem = newHandheld;
         m_HandheldItem.transform.parent = m_Transform;
-		handheldPickupRoutine = StartCoroutine(PickupObject(m_HandheldItem.transform, handheldHolder.localPosition, Quaternion.identity));
+        handheldPickupRoutine = StartCoroutine(PickupObject(m_HandheldItem.transform, handheldHolder.localPosition, Quaternion.identity));
 
-		ItemPickup _pickup = m_HandheldItem.GetComponent<ItemPickup>();
-		_pickup.enabled = false;
+        ItemPickup _pickup = m_HandheldItem.GetComponent<ItemPickup>();
+        _pickup.enabled = false;
 
-		Rigidbody _rigidbody = m_HandheldItem.GetComponent<Rigidbody>();
-		_rigidbody.isKinematic = true;
+        Rigidbody _rigidbody = m_HandheldItem.GetComponent<Rigidbody>();
+        _rigidbody.isKinematic = true;
 
-		Collider _collider = m_HandheldItem.GetComponent<Collider>();
-		_collider.enabled = false;
-
-       
+        Collider _collider = m_HandheldItem.GetComponent<Collider>();
+        _collider.enabled = false;
 
 
-        m_HandheldItem.OnActivatePrimary += HandheldActivationPrimary;
-        m_HandheldItem.OnActivateSecondary += HandheldActivationSecondary;
-        m_HandheldItem.OnActivateUtility += HandheldActivationUtility;
+
+
+        //m_HandheldItem.OnActivatePrimary += HandheldActivationPrimary;
+        //m_HandheldItem.OnActivateSecondary += HandheldActivationSecondary;
+        //m_HandheldItem.OnActivateUtility += HandheldActivationUtility;
         m_HandheldItem.OnWeaponChanged += UpdateHandheldProgressBar;
         m_HandheldItem.OnWeaponCasualty += CasualtyAchieved;
 
         if (m_HandheldItem is Weapon)
         {
             Weapon _weapon = (Weapon)m_HandheldItem;
-
-
-            _weapon.FriendlyMask = friendlyMask;
+            
             //_weapon.BonusAttackPower = GetStatValue(StatType.Damage);
             //_weapon.BonusCriticalHitChance = GetStatValue(StatType.Luck);
             //_weapon.BonusCriticalHitMultiplier = GetStatValue(StatType.CriticalDamage);
         }
 
-        m_HandheldItem.Initialize(m_Transform, CurrentStats);
+        m_HandheldItem.Initialize(this);
         //m_HandheldItem.SetVolume(currentLevel);
-	}
+    }
 
     public virtual void DropHandheld(HandheldItem _item)
     {
@@ -690,79 +682,79 @@ public class PlayerController : UnitController {
     }
 
 
-	
 
 
 
 
 
-	void HandheldActivationPrimary()
-    {
-        if (m_HandheldItem == null)
-            return;
 
-		CameraShake.Instance.Shake(m_HandheldItem.ShakeAmountPrimary, m_HandheldItem.ShakeTime);
-	}
-	void HandheldActivationSecondary()
-    {
-        if (m_HandheldItem == null)
-            return;
+    //void HandheldActivationPrimary()
+    //{
+    //    if (m_HandheldItem == null)
+    //        return;
 
-        CameraShake.Instance.Shake(m_HandheldItem.ShakeAmountSecondary, m_HandheldItem.ShakeTime);
-	}
-	void HandheldActivationUtility()
-    {
-        if (m_HandheldItem == null)
-            return;
+    //    CameraShake.Instance.Shake(m_HandheldItem.ShakeAmountPrimary, m_HandheldItem.ShakeTime);
+    //}
+    //void HandheldActivationSecondary()
+    //{
+    //    if (m_HandheldItem == null)
+    //        return;
 
-        CameraShake.Instance.Shake(m_HandheldItem.ShakeAmountTertiary, m_HandheldItem.ShakeTime);
-    }
-	
-	#endregion
+    //    CameraShake.Instance.Shake(m_HandheldItem.ShakeAmountSecondary, m_HandheldItem.ShakeTime);
+    //}
+    //void HandheldActivationUtility()
+    //{
+    //    if (m_HandheldItem == null)
+    //        return;
 
-	
+    //    CameraShake.Instance.Shake(m_HandheldItem.ShakeAmountTertiary, m_HandheldItem.ShakeTime);
+    //}
+
+    #endregion
+
+
     #region Stat Stuff
 
-	//protected override void UpdateStatEffects(StatType _type)
- //   {
-	//	base.UpdateStatEffects(_type);
-        
-	//	Stat _stat = GetStat(_type);
+    //protected override void UpdateStatEffects(StatType _type)
+    //   {
+    //	base.UpdateStatEffects(_type);
 
- //       if (_stat == null || m_HandheldItem == null)
- //           return;
+    //	Stat _stat = GetStat(_type);
 
- //       m_HandheldItem.UpdateStat(new CustomTuple2<StatType, float>(_stat.Type, _stat.CurrentValue));
+    //       if (_stat == null || m_HandheldItem == null)
+    //           return;
 
- //       //if(_stat == null || m_HandheldItem == null || !(m_HandheldItem is Weapon))
- //       //	return;
+    //       m_HandheldItem.UpdateStat(new CustomTuple2<StatType, float>(_stat.Type, _stat.CurrentValue));
 
-
- //       //      Weapon _weapon = (Weapon)m_HandheldItem;
+    //       //if(_stat == null || m_HandheldItem == null || !(m_HandheldItem is Weapon))
+    //       //	return;
 
 
- //       //switch(_type)
- //       //      {
- //       //          case StatType.Dexterity:
- //       //              _weapon.BonusAttackRate = _stat.CurrentValue;
+    //       //      Weapon _weapon = (Weapon)m_HandheldItem;
 
- //       //              break;
- //       //          case StatType.Damage:
- //       //              _weapon.BonusAttackPower = _stat.CurrentValue;
 
- //       //	    break;
- //       //    case StatType.CriticalDamage:
- //       //              _weapon.BonusCriticalHitMultiplier = _stat.CurrentValue;
+    //       //switch(_type)
+    //       //      {
+    //       //          case StatType.Dexterity:
+    //       //              _weapon.BonusAttackRate = _stat.CurrentValue;
 
- //       //	    break;
- //       //    case StatType.Luck:
- //       //              _weapon.BonusCriticalHitChance = _stat.CurrentValue;
+    //       //              break;
+    //       //          case StatType.Damage:
+    //       //              _weapon.BonusAttackPower = _stat.CurrentValue;
 
- //       //	    break;
- //       //    default:
- //       //	    break;
- //       //}
- //   }
+    //       //	    break;
+    //       //    case StatType.CriticalDamage:
+    //       //              _weapon.BonusCriticalHitMultiplier = _stat.CurrentValue;
+
+    //       //	    break;
+    //       //    case StatType.Luck:
+    //       //              _weapon.BonusCriticalHitChance = _stat.CurrentValue;
+
+    //       //	    break;
+    //       //    default:
+    //       //	    break;
+    //       //}
+    //   }
 
     #endregion
 
@@ -771,16 +763,13 @@ public class PlayerController : UnitController {
 
     public void ModifyExp(int delta)
     {
-		if(delta == 0)
-			return;
+        if (delta == 0)
+            return;
 
         CurrentExperience += delta;
-        
-
-		CheckLevel();
 
 
-		if(SoundManager.Instance != null)
+        if (SoundManager.Instance != null)
         {
             if (delta > 0)
             {
@@ -793,85 +782,44 @@ public class PlayerController : UnitController {
                 //SoundManager.Instance.PlaySound(expLostSound);
                 PlayEffect(experienceLostEffect);
             }
-		}
+        }
 
-		if(OnExpChange != null)
+        if (OnExpChange != null)
         {
-			OnExpChange();
-		}
-	}
+            OnExpChange();
+        }
+    }
 
-	public bool CanModifyExp(int delta)
+    public bool CanModifyExp(int delta)
     {
-		int temp = CurrentExperience + delta;
+        int temp = CurrentExperience + delta;
 
-		return temp >= GetExpRequiredForLevel(CurrentLevel); // ? false : true;
-	}
+        return temp >= GetExpRequiredForLevel(CurrentLevel); // ? false : true;
+    }
 
 
-	public int GetLevelPoints(int delta)
+
+
+    public void ResetExp()
     {
+        CurrentExperience = GetExpRequiredForLevel(CurrentLevel);
 
-		if(delta <= 0)
-			return 0;
-
-		int temp = numNewLevels - delta;
-
-
-		if(temp < 0)
-			return 0;
-
-
-		numNewLevels = temp;
-
-		return delta;
-	}
-
-
-	
-
-	public void ResetExp()
-    {
-		CurrentExperience = GetExpRequiredForLevel(CurrentLevel);
-		
-		if(OnExpChange != null)
+        if (OnExpChange != null)
         {
-			OnExpChange();
-		}
-	}
+            OnExpChange();
+        }
+    }
 
-	
-	void CheckLevel()
+
+
+
+    public int GetExpRequiredForLevel(int lvl)
     {
-		int currentExpRequired = GetExpRequiredForLevel(CurrentLevel);
-		int nextExpRequired = GetExpRequiredForLevel(CurrentLevel+1);
+        if (lvl <= 1)
+            return 0;
 
-		//Level up
-		if(CurrentExperience >= nextExpRequired)
-        {
-			CurrentLevel++;
-			numNewLevels++;
-		
-		//Level down
-		}
-        else if (CurrentExperience < currentExpRequired)
-        {
-			CurrentLevel--;
-			numNewLevels--;
-            
-			if(numNewLevels < 0)
-				numNewLevels = 0;
-		}
-	}
-
-	
-	public int GetExpRequiredForLevel(int lvl)
-    {
-		if(lvl <= 1)
-			return 0;
-		
-		return (int)((Mathf.Pow(2, lvl) * 100f) + 100);
-	}
+        return (int)((Mathf.Pow(2, lvl) * 100f) + 100);
+    }
 
 
     #endregion
@@ -914,7 +862,7 @@ public class PlayerController : UnitController {
     {
         base.UpdateUI();
 
-        UpdateHandheldProgressBar(m_HandheldItem == null ? 0f : m_HandheldItem.GetPercentage(),false);
+        UpdateHandheldProgressBar(m_HandheldItem == null ? 0f : m_HandheldItem.GetPercentage(), false);
         UpdateAbilityProgressBar(false);
         UpdateExperienceProgressBar();
     }
@@ -950,40 +898,40 @@ public class PlayerController : UnitController {
 
     public void CasualtyAchieved(Health _casualtyHealth)
     {
-		if(_casualtyHealth.IsAlive)
+        if (_casualtyHealth.IsAlive)
         {
-			if(nativeAbility != null)
-				nativeAbility.DamageAchieved(_casualtyHealth.LastHealthChange);
+            if (nativeAbility != null)
+                nativeAbility.DamageAchieved(_casualtyHealth.LastHealthChange);
 
-			if(auxiliaryAbility != null)
-				auxiliaryAbility.DamageAchieved(_casualtyHealth.LastHealthChange);
+            if (auxiliaryAbility != null)
+                auxiliaryAbility.DamageAchieved(_casualtyHealth.LastHealthChange);
 
             //if(SoundManager.Instance != null)
             //	SoundManager.Instance.PlaySound(damageAchievedEffect);
 
 
             PlayEffect(damageAchievedEffect);
-		}
+        }
         else
         {
-			if(nativeAbility != null)
-				nativeAbility.KillAchieved();
+            if (nativeAbility != null)
+                nativeAbility.KillAchieved();
 
-			if(auxiliaryAbility != null)
-				auxiliaryAbility.KillAchieved();
+            if (auxiliaryAbility != null)
+                auxiliaryAbility.KillAchieved();
 
             //if(SoundManager.Instance != null)
             //	SoundManager.Instance.PlaySound(killAchievedEffect);
 
             PlayEffect(killAchievedEffect);
-		}
-	}
+        }
+    }
 
 
 
 
     #region Accessors
-    
+
     public string CharacterName
     {
         get { return characterName; }
@@ -997,7 +945,7 @@ public class PlayerController : UnitController {
 
             StatType[] _types = Enum.GetValues(typeof(StatType)) as StatType[];
 
-            for(int i = 0; i < _types.Length; i++)
+            for (int i = 0; i < _types.Length; i++)
             {
                 Stat _stat = GetStat(_types[i]);
 
@@ -1012,27 +960,27 @@ public class PlayerController : UnitController {
         }
     }
 
-    public bool ShouldCollectExp
+    public bool ShouldCollect
     {
-		get { return shouldCollectExp; }
-		set { shouldCollectExp = value; }
-	}
-    public float ExpCollectRange
+        get { return shouldCollect; }
+        set { shouldCollect = value; }
+    }
+    public float CollectRange
     {
-        get { return expCollectRange; }
-        private set { expCollectRange = Mathf.Clamp(value,0f,value); }
+        get { return collectRange; }
+        private set { collectRange = Mathf.Clamp(value, 0f, value); }
     }
 
 
     public int CurrentLevel
     {
         get { return currentLevel; }
-        private set { currentLevel = Mathf.Clamp(value,1,value); }
+        private set { currentLevel = Mathf.Clamp(value, 1, value); }
     }
     public int CurrentExperience
     {
         get { return currentExp; }
-        private set { currentExp = Mathf.Clamp(value,0,value); }
+        private set { currentExp = Mathf.Clamp(value, 0, value); }
     }
     public float CurrentExperienceLevelProgress
     {
@@ -1040,7 +988,7 @@ public class PlayerController : UnitController {
         {
             int totalDiff = GetExpRequiredForLevel(CurrentLevel + 1) - GetExpRequiredForLevel(CurrentLevel);
             int curDiff = CurrentExperience - GetExpRequiredForLevel(CurrentLevel);
-            
+
             return curDiff / (float)totalDiff;
         }
     }
@@ -1111,10 +1059,14 @@ public class PlayerController : UnitController {
 
 
     #region OnCollision / OnTrigger
-
+    void OnCollisionStay(Collision coll)
+    {
+        Debug.Log(coll.gameObject);
+    }
     public virtual void OnTriggerEnter(Collider coll)
     {
-
+        if (coll.transform == m_Transform || Utilities.IsInLayerMask(coll.gameObject, ignoreCollisionLayer))
+            return;
         /*
 		IInteractable _interactable = coll.GetComponent<IInteractable>();
 		
@@ -1132,59 +1084,62 @@ public class PlayerController : UnitController {
         }
     }
 
-	public virtual void OnTriggerStay(Collider coll)
+    public virtual void OnTriggerStay(Collider coll)
     {
+        if (coll.transform == m_Transform || Utilities.IsInLayerMask(coll.gameObject, ignoreCollisionLayer))
+            return;
+        
+        Vector3 toVector = coll.transform.position - m_Transform.position;
 
-		Vector3 toVector = coll.transform.position - m_Transform.position;
-
-
-		//Debug.DrawLine(myTransform.position, coll.transform.position, Color.yellow);
-		//Debug.DrawLine(myTransform.position, myTransform.position + (myTransform.forward * 5f), Color.cyan);
-
-
-		ItemDrop _drop = coll.GetComponent<ItemDrop>();
-
-		if(shouldCollectExp && _drop != null && _drop.Type == ItemDrop.ItemType.Experience)
+        if (showDebug)
         {
-			Rigidbody _rigidbody = coll.GetComponent<Rigidbody>();
-			
-			if(toVector.magnitude <= ExpCollectRange && _rigidbody != null)
-            {
-				Vector3 forceVector = -toVector * EXP_COLLECT_SPEED;
-				_rigidbody.AddForce(forceVector);
-			}
-		}
+            Debug.DrawLine(m_Transform.position, coll.transform.position, Color.yellow);
+            //Debug.DrawLine(myTransform.position, myTransform.position + (myTransform.forward * 5f), Color.cyan);
+        }
 
+        ICollectible _collectible = coll.GetComponent<ICollectible>();
 
-
-
-		InteractableObject _interactable = coll.GetComponent<InteractableObject>();
-		
-		if(_interactable != null && _interactable.IsUsable)
+        if (shouldCollect && _collectible != null)
         {
+            Rigidbody _rigidbody = coll.GetComponent<Rigidbody>();
 
-			toVector.y = 0;
-
-			if(toVector.magnitude <= InteractDistance && (_interactable.IsUsableOutsideFOV || Vector3.Angle(toVector, m_Transform.forward) <= FOV / 2f))
+            if (toVector.magnitude <= CollectRange && _rigidbody != null)
             {
-				AddInteractable(coll.gameObject);
-			}
+                Vector3 forceVector = -toVector * EXP_COLLECT_SPEED;
+                _rigidbody.AddForce(forceVector);
+            }
+        }
+
+
+
+
+        InteractableObject _interactable = coll.GetComponent<InteractableObject>();
+
+        if (_interactable != null && _interactable.IsUsable)
+        {
+            if (toVector.magnitude <= InteractDistance && (_interactable.IsUsableOutsideFOV || Vector3.Angle(toVector, m_Transform.forward) <= FOV / 2f))
+            {
+                AddInteractable(coll.gameObject);
+            }
             else
             {
-				RemoveInteractable(coll.gameObject);
-			}
-		}
+                RemoveInteractable(coll.gameObject);
+            }
+        }
 
 
-       
-	}
 
-	public virtual void OnTriggerExit(Collider coll)
+    }
+
+    public virtual void OnTriggerExit(Collider coll)
     {
+        if (coll.transform == m_Transform || Utilities.IsInLayerMask(coll.gameObject, ignoreCollisionLayer))
+            return;
+
         InteractableObject _interactable = coll.GetComponent<InteractableObject>();
-		
-		if(_interactable != null)
-			RemoveInteractable(coll.gameObject);
+
+        if (_interactable != null)
+            RemoveInteractable(coll.gameObject);
 
 
         if (!coll.isTrigger)
@@ -1197,7 +1152,7 @@ public class PlayerController : UnitController {
         }
     }
 
-	#endregion
+    #endregion
 
 
 
@@ -1229,52 +1184,41 @@ public class PlayerController : UnitController {
 
 
 
-    public void OnGUI()
+
+    public override void OnDrawGizmos()
     {
-        if (!showDebug)
-            return;
+        base.OnDrawGizmos();
 
-
-        Vector3 vel = m_Movement.Velocity;
-        vel.y = 0;
-
-
-        GUI.Label(new Rect(10, 10, 150, 20), "Current Speed: " + vel.magnitude);
-    }
-
-	public override void OnDrawGizmos()
-    {
-		base.OnDrawGizmos();
-
-		if(showDebug && m_Transform != null)
+        if (showDebug && m_Transform != null)
         {
 
-            if (m_Interactable != null && m_Interactable.gameObject.activeInHierarchy)
+            if (currentInteractable != null && currentInteractable.gameObject.activeInHierarchy)
             {
                 Gizmos.color = Color.green;
 
-                Gizmos.DrawLine(m_Transform.position, m_Interactable.transform.position);
+                Gizmos.DrawLine(m_Transform.position, currentInteractable.transform.position);
             }
-       
+
 
 
             Gizmos.color = Color.white;
             Gizmos.DrawLine(m_Transform.position, m_Transform.position + (m_Transform.forward * SightRange));
-		}
+        }
 
 
     }
 
-	public override void OnValidate()
+    public override void OnValidate()
     {
         base.OnValidate();
 
         CurrentLevel = CurrentLevel;
         CurrentExperience = CurrentExperience;
-        ExpCollectRange = ExpCollectRange;
+
+        CollectRange = CollectRange;
 
         InteractDistance = InteractDistance;
         ThrowPower = ThrowPower;
-	}
+    }
 }
 

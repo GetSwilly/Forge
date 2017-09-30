@@ -1,7 +1,11 @@
 ﻿using UnityEngine;
 using System.Collections;
 
-public abstract class Tool : HandheldItem {
+namespace Weapons
+{
+    public abstract class Tool : HandheldItem
+    {
 
 
+    }
 }

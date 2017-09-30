@@ -4,7 +4,7 @@ using System;
 
 
 [RequireComponent(typeof(Light))]
-public class Flashlight : Tool
+public class Flashlight : Weapons.Tool
 {
     static readonly float DELAY_TIME = 1f;
 
@@ -30,13 +30,16 @@ public class Flashlight : Tool
     }
 
 
-    public override void UpdateStat(Stat _stat)
-    {
-        Range = Range;
-        Angle = Angle;
-    }
+    //public override void UpdateStat(Stat _stat)
+    //{
+    //    Range = Range;
+    //    Angle = Angle;
+    //}
 
+    //protected override void UpdateStatEffect(StatType type, int level)
+    //{
 
+    //}
 
     public override void ActivatePrimary()
     {
@@ -110,6 +113,7 @@ public class Flashlight : Tool
         isUsable = true;
     }
 
+    #region Accessors
 
     public bool IsActive
     {
@@ -146,9 +150,13 @@ public class Flashlight : Tool
         }
     }
 
+    #endregion
 
-   void OnValidate()
+
+    protected override void OnValidate()
     {
+        base.OnValidate();
+
         Range = Range;
         Angle = Angle;
         IsActive = IsActive;

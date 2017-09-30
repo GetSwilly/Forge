@@ -3,7 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System;
 
-[RequireComponent(typeof(MovementController))]
+
 public class Strafe : BaseUtilityBehavior {
     
 

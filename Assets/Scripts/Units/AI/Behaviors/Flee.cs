@@ -1,8 +1,8 @@
 ﻿using UnityEngine;
 using System.Collections;
 using System;
+using Pathfinding;
 
-[RequireComponent(typeof(MovementController))]
 public class Flee : BaseUtilityBehavior
 {
     //static readonly int MAX_ITERATIONS = 25;
@@ -30,29 +30,20 @@ public class Flee : BaseUtilityBehavior
     [Range(1, 180)]
     int initialFleeAngle = 30;
     
-
-
-    MovementController m_Movement;
-    
-
-    public override void Awake()
-    {
-        base.Awake();
-        
-        m_Movement = GetComponent<MovementController>();
-    }
+  
 
 
     public void FleeFromThreats()
     {
         Vector3 pos = FindThreatPosition();
 
-        FleeFromPosition(pos);
+        CalulcateFleeVector(pos);
     }
     public Vector3 FindThreatPosition()
     {
         //Attempt to continue moving in same direction
-        Vector3 offset = -m_Movement.Velocity;
+        Vector3 offset = -m_Pathfinder.Velocity;
+        offset.y = 0f;
 
         //If not moving, construct own offset
         if (offset.magnitude <= 0.1f)
@@ -67,14 +58,14 @@ public class Flee : BaseUtilityBehavior
 
         for (int i = 0; i < m_Actor.NearbyEnemies.Count; i++)
         {
-            threatPos += m_Actor.NearbyEnemies[i].transform.position;
+            threatPos += m_Actor.NearbyEnemies[i].Transform.position;
         }
 
         threatPos /= m_Actor.NearbyEnemies.Count + 1;
 
         return threatPos;
     }
-    public Vector3 FleeFromPosition(Vector3 threatPosition)
+    public Vector3 CalulcateFleeVector(Vector3 threatPosition)
     {
 
         Vector3 fleeVector = (m_Transform.position - threatPosition).normalized;
@@ -86,15 +77,20 @@ public class Flee : BaseUtilityBehavior
         return fleePos;
     }
 
-    IEnumerator FleeRoutine()
+
+
+
+
+    void AttemptFlee()
     {
         Vector3 threatPos = FindThreatPosition();
 
         if (m_Actor.ShowDebug)
+        {
             Debug.DrawLine(m_Transform.position, threatPos, Color.red, 2f);
+        }
 
-
-        Vector3 worldPosition = FleeFromPosition(threatPos);
+        Vector3 worldPosition = CalulcateFleeVector(threatPos);
 
         Vector3 zeroAngleVector = worldPosition - m_Transform.position;
         zeroAngleVector = zeroAngleVector.magnitude == 0 ? m_Transform.forward : zeroAngleVector.normalized;
@@ -109,61 +105,38 @@ public class Flee : BaseUtilityBehavior
         }
 
 
-        Node _node = A_Star_Pathfinding.Instance.NodeFromWorldPoint(worldPosition);
+        m_Pathfinder.SetAndSearch(worldPosition, CheckFleePath);
+    }
 
-
-        float checkAngle = initialFleeAngle;
-
-
-        checkAngle += SEARCH_ANGLE_DELTA * Time.deltaTime;
-
-
-        float _angle = UnityEngine.Random.Range(0f, checkAngle);
-        _angle *= UnityEngine.Random.value <= 0.5f ? 1f : -1f;
-
-        Vector3 fleeDir = Quaternion.AngleAxis(_angle, m_Transform.up) * zeroAngleVector;
-        worldPosition = m_Transform.position + (fleeDir.normalized * MEAN_TO_OFFSET_RATIO * (float)Utilities.GetRandomGaussian(fleeDistance));
-
-        _node = A_Star_Pathfinding.Instance.NodeFromWorldPoint(worldPosition);
-
-
-        if (_node != null && _node.IsWalkable(m_Actor.WalkableNodes))
+ void CheckFleePath(Path p)
+    {
+        if (p.error)
         {
-
-            m_Actor.FindPathTo(_node.WorldPosition);
-
-            yield return null;
-
-
-            
-            while (m_Actor.MoveAlongPath())
-            {
-                if (m_Actor.ShowDebug)
-                    Debug.DrawLine(m_Transform.position, _node.WorldPosition, Color.yellow);
-
-
-                yield return null;
-            }
-            
+            EndBehavior(true, true);
         }
 
+        m_Pathfinder.OnPathTraversalCompleted += FleeComplete;
+    }
 
+
+    void FleeComplete(Path p)
+    {
         EndBehavior(true, true);
     }
 
- 
+
 
     public override void StartBehavior()
     {
         IsActive = true;
 
-        m_Movement.AddSpeedMultiplier(fleeSpeedup);
-        StartCoroutine(FleeRoutine());
+        // m_Movement.AddSpeedMultiplier(fleeSpeedup);
+        AttemptFlee();
     }
     public override void EndBehavior(bool shouldNotifySuper, bool shouldNotifyActor)
     {
         StopAllCoroutines();
-        m_Movement.RemoveSpeedMultiplier(fleeSpeedup);
+        //m_Movement.RemoveSpeedMultiplier(fleeSpeedup);
        
         base.EndBehavior(shouldNotifySuper, shouldNotifyActor);
     }

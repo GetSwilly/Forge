@@ -29,10 +29,7 @@ public class Melee : Weapon {
             m_Detectors.Add(_detectors[i]);
         }
     }
-
-    public override void UpdateStat(Stat _stat) { }
-
-
+    
 
     private void EnableDetectors()
     {

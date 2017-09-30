@@ -8,8 +8,7 @@ using System;
 [RequireComponent(typeof(AudioSource))]
 public class StandardProjectile : MonoBehaviour, IProjectile {
 
-
-    LayerMask friendlyMask;
+    Team m_Team;
 
     Transform owner;
     Vector3 direction;
@@ -45,11 +44,11 @@ public class StandardProjectile : MonoBehaviour, IProjectile {
     }
 
 
-    public void Initialize(Transform newOwner, LayerMask newFriendly, Vector3 dir, int newPower, bool _critical, float newRange)
+    public void Initialize(Transform newOwner, Team _team, Vector3 dir, int newPower, bool _critical, float newRange)
     {
         throw new NotImplementedException();
     }
-    public void Initialize(Transform newOwner, LayerMask newFriendly, Vector3 dir, int newPower, bool _critical, float newSpeed, float newRange)
+    public void Initialize(Transform newOwner, Team _team, Vector3 dir, int newPower, bool _critical, float newSpeed, float newRange)
     {
 
         if (m_Transform == null)
@@ -80,7 +79,7 @@ public class StandardProjectile : MonoBehaviour, IProjectile {
         previousPosition = m_Transform.position;
         totalDist = 0;
 
-        friendlyMask = newFriendly;
+        m_Team = _team;
 
         power = newPower;
 
@@ -165,23 +164,20 @@ public class StandardProjectile : MonoBehaviour, IProjectile {
 
 
 
-
-
     public bool IsCritical
     {
        get { return isCritical; }
     }
-
-    public LayerMask FriendlyMask
-    {
-        get { return friendlyMask; }
-    }
+   
 
     public Transform Owner
     {
         get { return owner; }
     }
-
+    public Team Team
+    {
+        get { return m_Team; }
+    }
     public int Power
     {
         get { return power; }
@@ -223,8 +219,9 @@ public class StandardProjectile : MonoBehaviour, IProjectile {
         if (coll.collider.isTrigger)
             return;
 
+        ITeamMember teamMember = coll.gameObject.GetComponent<ITeamMember>();
 
-        if (!Utilities.IsInLayerMask(coll.gameObject, friendlyMask))
+        if (!(teamMember != null && TeamUtility.IsFriendly(Team.FriendlyTeams, teamMember.GetCurrentTeam())))
         {
             Health otherHealth = coll.gameObject.GetComponent<Health>();
 
