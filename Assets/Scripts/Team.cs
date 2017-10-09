@@ -3,61 +3,109 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-
-public interface ITeamMember
-{
-    Team GetTeam();
-
-    SingleTeamClassification GetCurrentTeam();
-    TeamClassification[] GetFriendlyTeams();
-    TeamClassification[] GetEnemyTeams();
-
-    Transform Transform { get; }
-}
-
-[System.Serializable]
-public class Team
+public class Team : MonoBehaviour
 {
     [SerializeField]
-    SingleTeamClassification m_Team;
+    SingleTeamClassification m_Team = new SingleTeamClassification();
 
     [SerializeField]
-    protected TeamClassification[] friendlyTeams;
+    protected List<TeamClassification> friendlyTeams = new List<TeamClassification>();
 
     [SerializeField]
-    protected TeamClassification[] enemyTeams;
+    protected List<TeamClassification> enemyTeams = new List<TeamClassification>();
 
+    public static TeamClassification GetTeam(TeamTag tag)
+    {
+        TeamClassification classification = new TeamClassification();
+        classification.Team = tag;
+        classification.Types = new TeamTypeTag[] { TeamTypeTag.All };
 
-    public void SetCurrentTeamTag(TeamTag tag)
-    {
-        m_Team.Team = tag;
+        return classification;
     }
-    public void SetFriendlyTeams(TeamClassification[] _teams)
+
+    public bool IsFriendly(Team team)
     {
-        FriendlyTeams = _teams;
+        return IsFriendly(team.CurrentTeam);
     }
-    public void SetEnemyTeams(TeamClassification[] _teams)
+    public bool IsFriendly(SingleTeamClassification teamClassification)
     {
-        EnemyTeams = _teams;
+        return IsFriendly(FriendlyTeams, teamClassification);
+    }
+    public static bool IsFriendly(List<TeamClassification> friendlyClassifications, SingleTeamClassification teamClassification)
+    {
+        for (int i = 0; i < friendlyClassifications.Count; i++)
+        {
+            if (friendlyClassifications[i].Team == TeamTag.All)
+                return true;
+
+            if (friendlyClassifications[i].Team != teamClassification.Team)
+                continue;
+
+            for (int k = 0; i < friendlyClassifications[i].Types.Length; k++)
+            {
+                if (friendlyClassifications[i].Types[k] == TeamTypeTag.All)
+                    return true;
+
+                if (friendlyClassifications[i].Types[k] != teamClassification.Type)
+                    continue;
+
+                return true;
+            }
+        }
+
+        return false;
+    }
+    public bool IsEnemy(Team team)
+    {
+        return IsEnemy(team.CurrentTeam);
+    }
+    public bool IsEnemy(SingleTeamClassification teamClassification)
+    {    
+        for (int i = 0; i < EnemyTeams.Count; i++)
+        {
+            if (EnemyTeams[i].Team == TeamTag.All)
+                return true;
+
+            if (EnemyTeams[i].Team != teamClassification.Team)
+                continue;
+
+            for (int k = 0; k < EnemyTeams[i].Types.Length; k++)
+            {
+                if (EnemyTeams[i].Types[k] == TeamTypeTag.All)
+                    return true;
+
+                if (EnemyTeams[i].Types[k] != teamClassification.Type)
+                    continue;
+
+                return true;
+            }
+        }
+
+        return false;
     }
 
     #region Accessors
 
+    public TeamTag CurrentTeamTag
+    {
+        get { return m_Team.Team; }
+        set { m_Team.Team = value; }
+    }
     public SingleTeamClassification CurrentTeam
     {
         get { return m_Team; }
         private set { m_Team = value; }
     }
 
-    public TeamClassification[] FriendlyTeams
+    public List<TeamClassification> FriendlyTeams
     {
         get { return friendlyTeams; }
-        private set { friendlyTeams = value; }
+        set { friendlyTeams = value; }
     }
-    public TeamClassification[] EnemyTeams
+    public List<TeamClassification> EnemyTeams
     {
         get { return enemyTeams; }
-        private set { enemyTeams = value; }
+        set { enemyTeams = value; }
     }
 
     #endregion
@@ -101,81 +149,5 @@ public class TeamClassification
     {
         get { return m_Types; }
         set { m_Types = value; }
-    }
-}
-
-
-public enum TeamTag
-{
-    All,
-    Player,
-    Wild
-}
-
-public enum TeamTypeTag
-{
-    All,
-    Player,
-    Forge,
-    Reaper
-      
-}
-
-
-public static class TeamUtility
-{
-    public static bool IsFriendly(ITeamMember teamMember, SingleTeamClassification teamClassification)
-    {
-        return IsFriendly(teamMember.GetFriendlyTeams(), teamClassification);
-    }
-    public static bool IsFriendly(TeamClassification[] friendlyClassifications, SingleTeamClassification teamClassification)
-    {
-        for(int i = 0; i < friendlyClassifications.Length; i++)
-        {
-            if (friendlyClassifications[i].Team == TeamTag.All)
-                return true;
-
-            if (friendlyClassifications[i].Team != teamClassification.Team)
-                continue;
-
-            for(int k = 0; i < friendlyClassifications[i].Types.Length; k++)
-            {
-                if (friendlyClassifications[i].Types[k] == TeamTypeTag.All)
-                    return true;
-
-                if (friendlyClassifications[i].Types[k] != teamClassification.Type)
-                    continue;
-
-                return true;
-            }
-        }
-
-        return false;
-    }
-    public static bool IsEnemy(ITeamMember teamMember, SingleTeamClassification teamClassification)
-    {
-        TeamClassification[] enemyClassifications = teamMember.GetEnemyTeams();
-
-        for (int i = 0; i < enemyClassifications.Length; i++)
-        {
-            if (enemyClassifications[i].Team == TeamTag.All)
-                return true;
-
-            if (enemyClassifications[i].Team != teamClassification.Team)
-                continue;
-
-            for (int k = 0; k < enemyClassifications[i].Types.Length; k++)
-            {
-                if (enemyClassifications[i].Types[k] == TeamTypeTag.All)
-                    return true;
-
-                if (enemyClassifications[i].Types[k] != teamClassification.Type)
-                    continue;
-
-                return true;
-            }
-        }
-
-        return false;
     }
 }

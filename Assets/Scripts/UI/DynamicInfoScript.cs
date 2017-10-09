@@ -27,11 +27,11 @@ public class DynamicInfoScript : MonoBehaviour {
 	}
 
 	
-	public void Initialize(int numToDisplay, Color textColor, bool moveUpward)
+	public void Initialize(int numToDisplay, Color textColor)
     {
-		Initialize(numToDisplay.ToString(), textColor, moveUpward);
+		Initialize(numToDisplay.ToString(), textColor);
 	}
-	public void Initialize(string textToDisplay, Color textColor, bool moveUpward)
+	public void Initialize(string textToDisplay, Color textColor)
     {
 
 		infoText.text = textToDisplay;
@@ -42,18 +42,8 @@ public class DynamicInfoScript : MonoBehaviour {
 
 		Vector3 randomDir = Random.insideUnitSphere;
 		randomDir.y = Mathf.Abs(randomDir.y);
-
-		if(moveUpward && randomDir.z < 0)
-        {
-			randomDir.z *= -1;
-		}
-        else if(!moveUpward && randomDir.z > 0)
-        {
-			randomDir.z *= -1;
-		}
-
-
-
+        randomDir.z = Mathf.Abs(randomDir.z);
+        
 		moveDir = randomDir; //(myTransform.right * randomDir.x) + (myTransform.up * randomDir.y);
 		moveDir.Normalize();
 

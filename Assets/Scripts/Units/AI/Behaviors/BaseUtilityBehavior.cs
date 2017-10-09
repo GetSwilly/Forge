@@ -45,6 +45,7 @@ public abstract class BaseUtilityBehavior : MonoBehaviour
     float minimumRechargeDelay = 0f;
 
     protected UtilityActor m_Actor;
+    protected Team m_Team;
     protected IPathfinder m_Pathfinder;
     protected UtilityMind m_Mind;
     protected Transform m_Transform;
@@ -54,6 +55,7 @@ public abstract class BaseUtilityBehavior : MonoBehaviour
     {
         m_Transform = GetComponent<Transform>();
         m_Actor = GetComponent<UtilityActor>();
+        m_Team = GetComponent<Team>();
         m_Mind = GetComponent<UtilityMind>();
 
         m_Pathfinder = GetComponent<IPathfinder>();

@@ -105,7 +105,7 @@ public class FireProjectile : BaseUtilityBehavior {
 
                 float _range = AttackRange * shots[i].RangeModifier;
 
-                pScript.Initialize(m_Transform.parent, m_Actor.GetTeam(), fireDir, -(int)_power, isCrit, _speed, _range);
+                pScript.Initialize(m_Transform.parent, m_Team, fireDir, -(int)_power, isCrit, _speed, _range);
 
                 if (ShowDebug)
                 {

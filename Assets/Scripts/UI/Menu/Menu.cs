@@ -126,17 +126,22 @@ public class Menu : MonoBehaviour {
     public void FadeIn()
     {
         StopAllCoroutines();
-        StartCoroutine(FadeRoutine(1f, false));
+
+        m_CanvasGroup.alpha = 1f;
+        //StartCoroutine(FadeRoutine(1f, false));
     }
     public void FadeOut()
     {
         StopAllCoroutines();
-        StartCoroutine(FadeRoutine(0f, true));
+
+        m_CanvasGroup.alpha = 0f;
+        this.gameObject.SetActive(false);
+        //StartCoroutine(FadeRoutine(0f, true));
     }
     
 
 
-    protected IEnumerator FadeRoutine(float desiredAlpha, bool shouldDestroyOnCompletion)
+    protected IEnumerator FadeRoutine(float desiredAlpha, bool shouldDisableOnCompletion)
     {
         desiredAlpha = Mathf.Clamp01(desiredAlpha);
 
@@ -167,9 +172,10 @@ public class Menu : MonoBehaviour {
 
         m_CanvasGroup.alpha = desiredAlpha;
 
-        if (shouldDestroyOnCompletion)
+        if (shouldDisableOnCompletion)
         {
-            Destroy(this.gameObject);
+            //Destroy(this.gameObject);
+            this.gameObject.SetActive(false);
         }
     }
    

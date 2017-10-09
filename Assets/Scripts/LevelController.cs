@@ -12,7 +12,8 @@ namespace TestRealm
         [SerializeField]
         List<SpawnWave> m_Waves;
 
-
+        [SerializeField]
+        Dictionary<string, int> creditTracker = new Dictionary<string, int>();
 
         void Start()
         {

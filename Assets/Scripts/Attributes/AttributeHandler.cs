@@ -50,8 +50,7 @@ public class AttributeHandler : MonoBehaviour
 
     List<string> activeTrackers = new List<string>();
 
-
-    UnitUI m_UI;
+   
     Transform m_Transform;
 
 
@@ -197,7 +196,7 @@ public class AttributeHandler : MonoBehaviour
         if (index == -1)
             return;
 
-        RemoveUI(activeAttributes[index]);
+        //RemoveUI(activeAttributes[index]);
         activeAttributes[index].OnAttributeChange -= AttributeChanged;
 
         activeAttributes.RemoveAt(index);
@@ -277,34 +276,33 @@ public class AttributeHandler : MonoBehaviour
 
 
 
-    public void AddTracker(Transform target)
-    {
-        if (target == null || target.gameObject.activeInHierarchy || activeTrackers.Contains(NameTargetTracker(target)))
-            return;
+    //public void AddTracker(Transform target)
+    //{
+    //    if (target == null || target.gameObject.activeInHierarchy || activeTrackers.Contains(NameTargetTracker(target)))
+    //        return;
 
-        GameObject _trackerPrefab = UI.GetPrefab("Tracker");
+    //    GameObject _trackerPrefab = UI.GetPrefab("Tracker");
 
-        if (_trackerPrefab == null)
-            return;
-
-
-        TrackGoal _trackerScript = _trackerPrefab.GetComponent<TrackGoal>();
-        _trackerScript.Target = target;
-
-        UI.AddAttribute(new GenericUI.DisplayProperties(NameTargetTracker(target), new Orientation(new Vector3(0,0,1), Vector3.zero, Vector3.one), _trackerScript));
-        activeTrackers.Add(NameTargetTracker(target));
-    }
-    public void RemoveTracker(Transform target)
-    {
-        UI.RemoveAttribute(NameTargetTracker(target));
-        activeTrackers.Remove(NameTargetTracker(target));
-    }
+    //    if (_trackerPrefab == null)
+    //        return;
 
 
+    //    TrackGoal _trackerScript = _trackerPrefab.GetComponent<TrackGoal>();
+    //    _trackerScript.Target = target;
+
+    //    UI.AddAttribute(new GenericUI.DisplayProperties(NameTargetTracker(target), new Orientation(new Vector3(0,0,1), Vector3.zero, Vector3.one), _trackerScript));
+    //    activeTrackers.Add(NameTargetTracker(target));
+    //}
+    //public void RemoveTracker(Transform target)
+    //{
+    //    UI.RemoveAttribute(NameTargetTracker(target));
+    //    activeTrackers.Remove(NameTargetTracker(target));
+    //}
+    
 
     public void AttributeChanged(AttributeEffect _effect)
     {
-        UpdateUI(_effect);
+        // UpdateUI(_effect);
 
         if (_effect.GetPercentage().Equals(0f))
         {
@@ -313,144 +311,129 @@ public class AttributeHandler : MonoBehaviour
     }
 
 
-    //public void StartCoroutines(List<IEnumerator> _coroutines)
+    //void GetUI()
     //{
-    //    for (int i = 0; i < _coroutines.Count; i++)
+    //    if (ObjectPoolerManager.Instance == null)
+    //        return;
+
+    //    if (m_UI != null || ObjectPoolerManager.Instance.Unit_UIPooler == null)
+    //        return;
+
+
+
+    //    GameObject g = ObjectPoolerManager.Instance.Unit_UIPooler.GetPooledObject();
+    //    m_UI = g.GetComponent<UnitUI>();
+
+    //    if (m_UI == null)
     //    {
-    //        StartCoroutine(_coroutines[i]);
+    //        m_UI = null;
+    //        g.SetActive(false);
+    //        return;
     //    }
+
+
+    //    //  g.transform.position = myTransform.position;
+    //    //  g.SetActive(true);
+    //    // myUI.Initialize(myTransform, false);
     //}
-    //public void StopCoroutines(List<IEnumerator> _coroutines)
+    //public void ShowUI(bool shouldShowExp)
     //{
-    //    for (int i = 0; i < _coroutines.Count; i++)
+    //    if (UI == null || m_Transform == null)
+    //        return;
+
+
+    //    if (!UI.gameObject.activeInHierarchy)
     //    {
-    //        StopCoroutine(_coroutines[i]);
+    //        UI.gameObject.SetActive(true);
+    //        UI.transform.position = m_Transform.position;
     //    }
+
+    //    UI.SetFollowOffset(Vector3.zero);
+
+    //    UI.Initialize(m_Transform, false, shouldShowExp);
+
+    //    UpdateUI();
     //}
 
-    void GetUI()
-    {
-        if (ObjectPoolerManager.Instance == null)
-            return;
+    //public void HideUI()
+    //{
+    //    //Debug.Log($"{Time.realtimeSinceStartup} --{myTransform.name} --- Hide UI");
 
-        if (m_UI != null || ObjectPoolerManager.Instance.Unit_UIPooler == null)
-            return;
-
-
-
-        GameObject g = ObjectPoolerManager.Instance.Unit_UIPooler.GetPooledObject();
-        m_UI = g.GetComponent<UnitUI>();
-
-        if (m_UI == null)
-        {
-            m_UI = null;
-            g.SetActive(false);
-            return;
-        }
-
-
-        //  g.transform.position = myTransform.position;
-        //  g.SetActive(true);
-        // myUI.Initialize(myTransform, false);
-    }
-    public void ShowUI(bool shouldShowExp)
-    {
-        if (UI == null || m_Transform == null)
-            return;
-
-
-        if (!UI.gameObject.activeInHierarchy)
-        {
-            UI.gameObject.SetActive(true);
-            UI.transform.position = m_Transform.position;
-        }
-
-        UI.SetFollowOffset(Vector3.zero);
-
-        UI.Initialize(m_Transform, false, shouldShowExp);
-
-        UpdateUI();
-    }
-
-    public void HideUI()
-    {
-        //Debug.Log($"{Time.realtimeSinceStartup} --{myTransform.name} --- Hide UI");
-
-        if (UI == null)
-            return;
+    //    if (UI == null)
+    //        return;
         
-        UI.Terminate();
-    }
-    public void UpdateUI()
-    {
-        //throw new NotImplementedException();
-    }
-    public void UpdateUI(Attribute attr, float percentage, bool shouldSetImmediate)
-    {
-        UI.UpdateAttribute(attr.ToString(), percentage);
-    }
-    public void UpdateUI(string attrString, float percentage, bool shouldSetImmediate)
-    {
-        //Debug.Log(string.Format("Updating attribute: {0} to percentage {1} %", attrString , percentage* 100f));
+    //    UI.Terminate();
+    //}
+    //public void UpdateUI()
+    //{
+    //    //throw new NotImplementedException();
+    //}
+    //public void UpdateUI(Attribute attr, float percentage, bool shouldSetImmediate)
+    //{
+    //    UI.UpdateAttribute(attr.ToString(), percentage);
+    //}
+    //public void UpdateUI(string attrString, float percentage, bool shouldSetImmediate)
+    //{
+    //    //Debug.Log(string.Format("Updating attribute: {0} to percentage {1} %", attrString , percentage* 100f));
 
-        if (!UI.HasAttribute(attrString))
-        {
-            GameObject attrObject = UI.GetPrefab("Attribute");
-            DisplayUI attrUI = attrObject.GetComponent<DisplayUI>();
+    //    if (!UI.HasAttribute(attrString))
+    //    {
+    //        GameObject attrObject = UI.GetPrefab("Attribute");
+    //        DisplayUI attrUI = attrObject.GetComponent<DisplayUI>();
 
-            if (attrUI != null)
-            {
-                Debug.Log(Utilities.GetAttributeColor(attrString));
+    //        if (attrUI != null)
+    //        {
+    //            Debug.Log(Utilities.GetAttributeColor(attrString));
 
-                attrUI.SetColor(Utilities.GetAttributeColor(attrString));
-            }
+    //            attrUI.SetColor(Utilities.GetAttributeColor(attrString));
+    //        }
 
-            //Debug.Log("Adding attribute: " + attrString);
-            UI.AddAttribute(new GenericUI.DisplayProperties(attrString, new Orientation(Vector3.zero, Vector3.zero, Vector3.one), attrUI), "Attributes");
-        }
+    //        //Debug.Log("Adding attribute: " + attrString);
+    //        UI.AddAttribute(new GenericUI.DisplayProperties(attrString, new Orientation(Vector3.zero, Vector3.zero, Vector3.one), attrUI), "Attributes");
+    //    }
 
-        UI.UpdateAttribute(attrString, percentage);
+    //    UI.UpdateAttribute(attrString, percentage);
 
-    }
-    public void UpdateUI(AttributeEffect _effect)
-    {
-        GetUI();
+    //}
+    //public void UpdateUI(AttributeEffect _effect)
+    //{
+    //    GetUI();
 
-        if (!UI.HasAttribute(_effect.Attribute.ToString()))
-        {
-            GameObject attrObject = UI.GetPrefab("Attribute");
-            attrObject.name = _effect.Attribute.ToString();
-            DisplayUI attrUI = attrObject.GetComponent<DisplayUI>();
+    //    if (!UI.HasAttribute(_effect.Attribute.ToString()))
+    //    {
+    //        GameObject attrObject = UI.GetPrefab("Attribute");
+    //        attrObject.name = _effect.Attribute.ToString();
+    //        DisplayUI attrUI = attrObject.GetComponent<DisplayUI>();
 
-            if (attrUI != null)
-            {
-                attrUI.SetColor(Utilities.GetAttributeColor(_effect.Attribute));
-            }
+    //        if (attrUI != null)
+    //        {
+    //            attrUI.SetColor(Utilities.GetAttributeColor(_effect.Attribute));
+    //        }
 
-            // Debug.Log("Adding attribute: " + _effect.Attribute.ToString());
-            UI.AddAttribute(new GenericUI.DisplayProperties(_effect.Attribute.ToString(), new Orientation(Vector3.zero, Vector3.zero, Vector3.one), attrUI), "Attributes");
-        }
+    //        // Debug.Log("Adding attribute: " + _effect.Attribute.ToString());
+    //        UI.AddAttribute(new GenericUI.DisplayProperties(_effect.Attribute.ToString(), new Orientation(Vector3.zero, Vector3.zero, Vector3.one), attrUI), "Attributes");
+    //    }
 
-        UI.UpdateAttribute(_effect.Attribute.ToString(), _effect.GetPercentage());
-    }
+    //    UI.UpdateAttribute(_effect.Attribute.ToString(), _effect.GetPercentage());
+    //}
 
 
-    public void RemoveUI(AttributeEffect _effect)
-    {
-        if (UI.HasAttribute(_effect.Attribute.ToString()))
-        {
-            UI.RemoveAttribute(_effect.Attribute.ToString());
+    //public void RemoveUI(AttributeEffect _effect)
+    //{
+    //    if (UI.HasAttribute(_effect.Attribute.ToString()))
+    //    {
+    //        UI.RemoveAttribute(_effect.Attribute.ToString());
 
-            if (showDebug)
-            {
-                Debug.Log(m_Transform.name + " -- AttributeHandler --- RemoveUI() -- Removing Attribute: " + _effect.Attribute);
-            }
-        }
-        else if (showDebug)
-        {
-            Debug.Log(m_Transform.name + " -- AttributeHandler --- RemoveUI() -- Does not contain Attribute: " + _effect.Attribute + ". Can't remove.");
-        }
-    }
+    //        if (showDebug)
+    //        {
+    //            Debug.Log(m_Transform.name + " -- AttributeHandler --- RemoveUI() -- Removing Attribute: " + _effect.Attribute);
+    //        }
+    //    }
+    //    else if (showDebug)
+    //    {
+    //        Debug.Log(m_Transform.name + " -- AttributeHandler --- RemoveUI() -- Does not contain Attribute: " + _effect.Attribute + ". Can't remove.");
+    //    }
+    //}
 
 
 
@@ -509,21 +492,6 @@ public class AttributeHandler : MonoBehaviour
     //        }
     //    }
     //}
-
-    protected UnitUI UI
-    {
-        get
-        {
-            if (m_UI == null)
-            {
-                GetUI();
-            }
-
-
-            return m_UI;
-        }
-    }
-
 
 
     void OnValidate()

@@ -9,24 +9,6 @@ public enum CurrencyType
     LevelPoints,
     Health,
     Experience,
-    StatLevel
+    StatLevel,
+    Credits
 }
-
-
-//[System.Serializable]
-//struct ColorMatch_Currency
-//{
-//    [SerializeField]
-//    public CurrencyType currency;
-
-//    [SerializeField]
-//    public Color color;
-
-
-
-//    public ColorMatch_Currency(CurrencyType _currency, Color _color)
-//    {
-//        currency = _currency;
-//        color = _color;
-//    }
-//}

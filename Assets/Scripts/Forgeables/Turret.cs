@@ -3,41 +3,32 @@ using System.Collections.Generic;
 using UnityEngine;
 
 [RequireComponent(typeof(Gun))]
-public class Turret : MonoBehaviour, IForgeable, IMemorable, ITeamMember
+public class Turret : ForgeableObject
 {
     [SerializeField]
-    string turretName;
-
-    [SerializeField]
     float sightRange = 10f;
-
-    [SerializeField]
-    Team m_Team;
-
+    
     [SerializeField]
     float minimumFireAngle = 1f;
 
     [SerializeField]
     float rotationSmoothing = 1f;
-
-    [SerializeField]
-    Transform m_Pivot;
-
-    [SerializeField]
-    bool showDebug = false;
-
-
+    
     List<GameObject> nearbyTargets = new List<GameObject>();
 
     GameObject target;
     Gun m_Gun;
-    Transform m_Transform;
 
-    void Awake()
+    protected override void Awake()
     {
-        m_Transform = GetComponent<Transform>();
+        base.Awake();
+
         m_Gun = GetComponent<Gun>();
 
+        AddSightCollider();
+    }
+    void AddSightCollider()
+    {
         SphereCollider sightCollider = m_Transform.gameObject.AddComponent<SphereCollider>();
         sightCollider.isTrigger = true;
 
@@ -55,20 +46,15 @@ public class Turret : MonoBehaviour, IForgeable, IMemorable, ITeamMember
     }
 
 
-    public void Initialize(ForgeSite forgeActivator)
+    public override void Initialize(ForgeSite forgeActivator, Team team)
     {
-        Initialize(forgeActivator, null);
-    }
-    public void Initialize(ForgeSite forgeActivator, ITeamMember teamMember)
-    {
-        if (teamMember != null)
+        if (team != null)
         {
-            m_Team.SetCurrentTeamTag(teamMember.GetCurrentTeam().Team);
-            m_Team.SetEnemyTeams(teamMember.GetEnemyTeams());
+            m_Team.CurrentTeamTag = team.CurrentTeamTag;
+            m_Team.EnemyTeams = team.EnemyTeams;
         }
     }
-
-
+    
 
     void Update()
     {
@@ -143,41 +129,8 @@ public class Turret : MonoBehaviour, IForgeable, IMemorable, ITeamMember
         }
     }
 
-    #region Team
-
-    public Team GetTeam()
-    {
-        return m_Team;
-    }
-    public SingleTeamClassification GetCurrentTeam()
-    {
-        return m_Team.CurrentTeam;
-    }
-    public TeamClassification[] GetFriendlyTeams()
-    {
-        return m_Team.FriendlyTeams;
-    }
-    public TeamClassification[] GetEnemyTeams()
-    {
-        return m_Team.EnemyTeams;
-    }
-    #endregion
-
     #region Accessors
 
-    public string Name
-    {
-        get { return turretName; }
-        set { turretName = value; }
-    }
-    public GameObject GameObject
-    {
-        get { return this.gameObject; }
-    }
-    public Transform Transform
-    {
-        get { return m_Transform; }
-    }
     public float SightRange
     {
         get { return sightRange; }
@@ -203,9 +156,9 @@ public class Turret : MonoBehaviour, IForgeable, IMemorable, ITeamMember
             return;
 
 
-        ITeamMember teamMember = coll.gameObject.GetComponent<ITeamMember>();
+        Team teamMember = coll.gameObject.GetComponent<Team>();
 
-        if (teamMember != null && TeamUtility.IsEnemy(this, teamMember.GetCurrentTeam()))
+        if (teamMember != null && m_Team.IsEnemy(teamMember.CurrentTeam))
         {
             AddTarget(coll.gameObject);
         }
@@ -216,16 +169,20 @@ public class Turret : MonoBehaviour, IForgeable, IMemorable, ITeamMember
         if (coll.isTrigger)
             return;
 
-        ITeamMember teamMember = coll.gameObject.GetComponent<ITeamMember>();
+        Team teamMember = coll.gameObject.GetComponent<Team>();
 
-        if (teamMember != null && TeamUtility.IsEnemy(this, teamMember.GetCurrentTeam()))
+        if (teamMember != null && m_Team.IsEnemy(teamMember.CurrentTeam))
         {
             RemoveTarget(coll.gameObject);
         }
 
     }
-    void OnValidate()
+
+
+    protected override void OnValidate()
     {
+        base.OnValidate();
+
         SightRange = SightRange;
         MinimumFireAngle = MinimumFireAngle;
         RotationSmoothing = RotationSmoothing;

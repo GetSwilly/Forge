@@ -6,7 +6,7 @@ using System;
 [RequireComponent(typeof(Light))]
 public class Flashlight : Weapons.Tool
 {
-    static readonly float DELAY_TIME = 1f;
+    static readonly float DELAY_TIME = 0.1f;
 
     [SerializeField]
     [Range(0f, 360f)]
@@ -36,16 +36,18 @@ public class Flashlight : Weapons.Tool
     //    Angle = Angle;
     //}
 
-    //protected override void UpdateStatEffect(StatType type, int level)
-    //{
+    protected override void UpdateStatEffect(StatType type, int level)
+    {
+        base.UpdateStatEffect(type, level);
 
-    //}
+        Range = Range;
+        Angle = Angle;
+    }
 
     public override void ActivatePrimary()
     {
         if (!isUsable)
             return;
-
 
         IsActive = !IsActive;
 

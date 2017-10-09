@@ -99,6 +99,15 @@ public abstract class Ability : MonoBehaviour, IIdentifier {
         ChargeArithmetic(0f);
     }
 
+    public float GetChargePercentage()
+    {
+        if (maxCharge.Equals(0f))
+        {
+            return 0f;
+        }
+
+        return Mathf.Clamp01(currentCharge / maxCharge);
+    }
 
 
     #region Accessors

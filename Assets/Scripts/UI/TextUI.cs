@@ -31,9 +31,4 @@ public class TextUI : DisplayUI {
         m_Text.text = txt;
     }
 
-
-    public override void SetColor(Color _color)
-    {
-        m_Text.color = _color;
-    }
 }

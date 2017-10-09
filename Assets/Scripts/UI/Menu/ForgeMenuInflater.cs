@@ -7,7 +7,7 @@ public class ForgeMenuInflater : MenuInflater
 {
     ForgeSite m_Site;
 
-    Dictionary<MenuButton, IForgeable> buttonToForgeDictionary;
+    Dictionary<MenuButton, ForgeableObject> buttonToForgeDictionary;
 
     protected override void Awake()
     {
@@ -18,7 +18,7 @@ public class ForgeMenuInflater : MenuInflater
 
     void Start()
     {
-        buttonToForgeDictionary = new Dictionary<MenuButton, IForgeable>();
+        buttonToForgeDictionary = new Dictionary<MenuButton, ForgeableObject>();
     }
 
     //public override bool Interact(PlayerController _player)
@@ -26,12 +26,24 @@ public class ForgeMenuInflater : MenuInflater
     //    return base.Interact(_player);
     //}
 
+    public override void DeflateMenu()
+    {
+        base.DeflateMenu();
+
+        Dictionary<MenuButton, ForgeableObject>.Enumerator enumerator = buttonToForgeDictionary.GetEnumerator();
+        while (enumerator.MoveNext())
+        {
+            Destroy(enumerator.Current.Key.gameObject);
+        }
+
+        buttonToForgeDictionary.Clear();
+    }
 
     protected override void AddButtons()
     {
         buttonToForgeDictionary.Clear();
 
-        List<IForgeable> forgeableComponents = m_Site.Forgeables;
+        List<ForgeableObject> forgeableComponents = m_Site.Forgeables;
 
         forgeableComponents.ForEach(f =>
         {
@@ -43,6 +55,17 @@ public class ForgeMenuInflater : MenuInflater
             
             _button.Initialize(m_Menu, null, f.Name);
 
+            ItemPrice _price = f.gameObject.GetComponent<ItemPrice>();
+
+            string costString = "";
+
+            for (int i = 0; i < _price.Costs.Count; i++)
+            {
+                costString += _price.Costs[i].ToString() + '\n';
+            }
+
+            _button.SecondaryText = costString;
+
             buttonToForgeDictionary.Add(_button, f);
         });
     }
@@ -52,10 +75,16 @@ public class ForgeMenuInflater : MenuInflater
         if (!buttonToForgeDictionary.ContainsKey(selectedButton))
             return;
 
-        IForgeable forgeable = buttonToForgeDictionary[selectedButton];
+        ForgeableObject forgeable = buttonToForgeDictionary[selectedButton];
 
-        GameObject g = Instantiate(forgeable.GameObject) as GameObject;
-        m_Site.Forge(g.GetComponent<IForgeable>(), activatingPlayer);
+        ItemPrice price =  forgeable.gameObject.GetComponent<ItemPrice>();
+        if (!activatingPlayer.CanAfford(price.Costs))
+        {
+            return;
+        }
+
+        GameObject g = Instantiate(forgeable.gameObject) as GameObject;
+        m_Site.Forge(g.GetComponent<ForgeableObject>(), activatingPlayer.GetComponent<Team>());
 
         DeflateMenu();
     }

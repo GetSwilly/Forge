@@ -2,11 +2,9 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class ForgeSite : MonoBehaviour, IMemorable, ITeamMember, IStat
+[RequireComponent(typeof(Team))]
+public class ForgeSite : MonoBehaviour, IMemorable, IStat
 {
-    [SerializeField]
-    Team m_Team;
-
     [SerializeField]
     List<GameObject> m_PossibleForges = new List<GameObject>();
 
@@ -24,6 +22,7 @@ public class ForgeSite : MonoBehaviour, IMemorable, ITeamMember, IStat
     UnitStats m_Stats;
 
     Transform m_Transform;
+    Team m_Team;
 
     public event Delegates.StatChanged OnLevelChanged;
 
@@ -31,32 +30,48 @@ public class ForgeSite : MonoBehaviour, IMemorable, ITeamMember, IStat
     void Awake()
     {
         m_Transform = GetComponent<Transform>();
+
+        m_Team = GetComponent<Team>();
     }
     void Start()
     {
         if (activeForge != null)
         {
-            Forge(activeForge.GetComponent<IForgeable>());
+            Forge(activeForge.GetComponent<ForgeableObject>());
         }
     }
 
-    public void Forge(IForgeable forgeObj)
+    public void Forge(ForgeableObject forgeObj)
     {
         Forge(forgeObj, null);
     }
-    public void Forge(IForgeable forgeObj, ITeamMember _member)
+    public void Forge(ForgeableObject forgeObj, Team _team)
+    {
+        StartCoroutine(AttemptForge(forgeObj, _team));
+    }
+    IEnumerator AttemptForge(ForgeableObject forgeObj, Team team)
+    {
+        yield return new WaitForSeconds(forgeObj.BuildTime);
+        ProcessForge(forgeObj, team);
+    }
+    void ProcessForge(ForgeableObject forgeObj, Team _team)
     {
         if (forgeObj == null)
             return;
-        
-        activeForge = forgeObj.GameObject;
+
+        activeForge = forgeObj.gameObject;
 
         activeForge.transform.SetParent(forgeOrigin == null ? m_Transform : forgeOrigin);
         activeForge.transform.localPosition = Vector3.zero;
         activeForge.transform.localRotation = Quaternion.identity;
         // activeForge.transform.localScale = Vector3.one;
 
-        forgeObj.Initialize(this, _member);
+        forgeObj.Initialize(this, _team);
+    }
+
+    public void CancelForgeAttempt()
+    {
+        StopAllCoroutines();
     }
     public void RemoveActiveForge()
     {
@@ -73,27 +88,7 @@ public class ForgeSite : MonoBehaviour, IMemorable, ITeamMember, IStat
     {
         return !isLockedIn;
     }
-
-    #region Team
-
-    public Team GetTeam()
-    {
-        return m_Team;
-    }
-    public SingleTeamClassification GetCurrentTeam()
-    {
-        return m_Team.CurrentTeam;
-    }
-    public TeamClassification[] GetFriendlyTeams()
-    {
-        return m_Team.FriendlyTeams;
-    }
-    public TeamClassification[] GetEnemyTeams()
-    {
-        return m_Team.EnemyTeams;
-    }
-    #endregion
-
+    
     #region Stats
 
     protected Stat GetStat(StatType _type)
@@ -149,14 +144,14 @@ public class ForgeSite : MonoBehaviour, IMemorable, ITeamMember, IStat
         get { return m_Transform; }
     }
 
-    public List<IForgeable> Forgeables
+    public List<ForgeableObject> Forgeables
     {
         get
         {
-            List<IForgeable> _forgeables = new List<IForgeable>();
+            List<ForgeableObject> _forgeables = new List<ForgeableObject>();
             m_PossibleForges.ForEach(p =>
             {
-                IForgeable f = p.GetComponent<IForgeable>();
+                ForgeableObject f = p.GetComponent<ForgeableObject>();
 
                 if (f != null)
                 {
@@ -173,4 +168,9 @@ public class ForgeSite : MonoBehaviour, IMemorable, ITeamMember, IStat
     //}
 
     #endregion
+
+    void OnValidate()
+    {
+        m_Stats.Validate();
+    }
 }

@@ -23,7 +23,6 @@ public class PlayerController : UnitController
     [Tooltip("Current Character Exp")]
     int currentExp = 0;
 
-
     [Space(15)]
     [Header("Interaction")]
     [Space(5)]
@@ -126,8 +125,7 @@ public class PlayerController : UnitController
     Coroutine abilityPickupRoutine = null;
 
 
-    public delegate void AlertEvent();
-    public event AlertEvent OnExpChange;
+    public event Delegates.Alert OnExpChange;
 
 
     [SerializeField]
@@ -146,11 +144,10 @@ public class PlayerController : UnitController
             m_Health.OnKilled += GameManager.Instance.PlayerKilled;
         }
 
+        OnExpChange += UpdateExperienceUI;
 
-        OnExpChange += UpdateExperienceProgressBar;
-
-        m_Handler.ShowUI(true);
-        m_Handler.UpdateUI(Attribute.Experience, CurrentExperienceLevelProgress, false);
+        //m_Handler.ShowUI(true);
+        //m_Handler.UpdateUI(Attribute.Experience, CurrentExperienceLevelProgress, false);
 
 
         if (NativeAbility != null)
@@ -214,14 +211,12 @@ public class PlayerController : UnitController
 
 
         //Pickup(auxiliaryAbility);
-
-
-
-        m_Health.ReverseTextMovement();
+        
+        UpdateUI();
     }
     void OnEnable()
     {
-        m_Handler.ShowUI(true);
+        // m_Handler.ShowUI(true);
 
         if (ShowDebug)
         {
@@ -236,8 +231,8 @@ public class PlayerController : UnitController
     }
 
 
-   
-   
+
+
 
     #region Interactable Stuff
 
@@ -248,10 +243,12 @@ public class PlayerController : UnitController
 
 
         if (!currentInteractable.IsUsable)
+        {
             return;
+        }
 
         Vector3 toVector = currentInteractable.transform.position - m_Transform.position;
-        if (toVector.magnitude <= InteractDistance && (currentInteractable.IsUsableOutsideFOV || CanSee(currentInteractable.transform)))
+        if (toVector.magnitude <= InteractDistance) // && (currentInteractable.IsUsableOutsideFOV || CanSee(currentInteractable.transform)))
         {
             currentInteractable.Interact(this);
         }
@@ -406,14 +403,11 @@ public class PlayerController : UnitController
 
 
 
-
     public override void NoiseHeard(AudioClip noise, Transform noiseOwner, Vector3 noisePosition, float noiseVolume)
     {
         if (noiseVolume < HearingThreshold)
             return;
     }
-
-
 
 
     #region Offensive Stuff
@@ -601,8 +595,10 @@ public class PlayerController : UnitController
         DropHandheld();
 
         m_HandheldItem = newHandheld;
-        m_HandheldItem.transform.parent = m_Transform;
-        handheldPickupRoutine = StartCoroutine(PickupObject(m_HandheldItem.transform, handheldHolder.localPosition, Quaternion.identity));
+        m_HandheldItem.transform.parent = handheldHolder;
+        m_HandheldItem.transform.localPosition = Vector3.zero;
+        m_HandheldItem.transform.localRotation = Quaternion.identity;
+        // handheldPickupRoutine = StartCoroutine(PickupObject(m_HandheldItem.transform, handheldHolder.position, Quaternion.identity));
 
         ItemPickup _pickup = m_HandheldItem.GetComponent<ItemPickup>();
         _pickup.enabled = false;
@@ -619,19 +615,19 @@ public class PlayerController : UnitController
         //m_HandheldItem.OnActivatePrimary += HandheldActivationPrimary;
         //m_HandheldItem.OnActivateSecondary += HandheldActivationSecondary;
         //m_HandheldItem.OnActivateUtility += HandheldActivationUtility;
-        m_HandheldItem.OnWeaponChanged += UpdateHandheldProgressBar;
+        m_HandheldItem.OnWeaponChanged += UpdateHandheldUI;
         m_HandheldItem.OnWeaponCasualty += CasualtyAchieved;
 
         if (m_HandheldItem is Weapon)
         {
             Weapon _weapon = (Weapon)m_HandheldItem;
-            
+
             //_weapon.BonusAttackPower = GetStatValue(StatType.Damage);
             //_weapon.BonusCriticalHitChance = GetStatValue(StatType.Luck);
             //_weapon.BonusCriticalHitMultiplier = GetStatValue(StatType.CriticalDamage);
         }
 
-        m_HandheldItem.Initialize(this);
+        m_HandheldItem.Initialize(m_Transform, m_Team);
         //m_HandheldItem.SetVolume(currentLevel);
     }
 
@@ -680,12 +676,6 @@ public class PlayerController : UnitController
         handheldPickupRoutine = null;
 
     }
-
-
-
-
-
-
 
 
     //void HandheldActivationPrimary()
@@ -768,7 +758,6 @@ public class PlayerController : UnitController
 
         CurrentExperience += delta;
 
-
         if (SoundManager.Instance != null)
         {
             if (delta > 0)
@@ -797,9 +786,6 @@ public class PlayerController : UnitController
         return temp >= GetExpRequiredForLevel(CurrentLevel); // ? false : true;
     }
 
-
-
-
     public void ResetExp()
     {
         CurrentExperience = GetExpRequiredForLevel(CurrentLevel);
@@ -809,9 +795,6 @@ public class PlayerController : UnitController
             OnExpChange();
         }
     }
-
-
-
 
     public int GetExpRequiredForLevel(int lvl)
     {
@@ -833,7 +816,7 @@ public class PlayerController : UnitController
             return false;
 
 
-        switch (_cost.Currency)
+        switch (_cost.Type)
         {
             case CurrencyType.Experience:
                 return CanModifyExp(_cost.Value);
@@ -862,30 +845,41 @@ public class PlayerController : UnitController
     {
         base.UpdateUI();
 
-        UpdateHandheldProgressBar(m_HandheldItem == null ? 0f : m_HandheldItem.GetPercentage(), false);
-        UpdateAbilityProgressBar(false);
-        UpdateExperienceProgressBar();
-    }
-    protected void UpdateHandheldProgressBar(float percentage, bool setImmediate)
-    {
-        m_Handler.UpdateUI("Handheld", m_HandheldItem == null ? 0f : m_HandheldItem.GetPercentage(), setImmediate);
+        UpdateHandheldUI(m_HandheldItem == null ? 0f : m_HandheldItem.GetPercentage(), false);
+        UpdateAbilityUI(false);
+        UpdateExperienceUI();
     }
 
-    protected void UpdateAbilityProgressBar(bool setImmediate)
+    protected void UpdateHandheldUI(float percentage, bool setImmediate)
     {
+        OnUIAttributeChanged(new UIEventArgs(UIManager.Component.Handheld, "",percentage, setImmediate));
+
+        // m_Handler.UpdateUI("Handheld", m_HandheldItem == null ? 0f : m_HandheldItem.GetPercentage(), setImmediate);
+    }
+
+    protected void UpdateAbilityUI(bool setImmediate)
+    {
+        if (NativeAbility != null)
+        {
+            OnUIAttributeChanged(new UIEventArgs(UIManager.Component.NativeAbility,"", NativeAbility.GetChargePercentage(), setImmediate));
+        }
+
+        if (AuxiliaryAbility != null)
+        {
+            OnUIAttributeChanged(new UIEventArgs(UIManager.Component.AuxiliaryAbility, "",AuxiliaryAbility.GetChargePercentage(), setImmediate));
+        }
+
         //base.UpdateAbilityProgressBar(NativeAbility, setImmediate);
         //base.UpdateAbilityProgressBar(AuxiliaryAbility, setImmediate);
     }
 
-    protected void UpdateExperienceProgressBar()
+    protected void UpdateExperienceUI()
     {
+        OnUIAttributeChanged(new UIEventArgs(UIManager.Component.Experience, "",CurrentExperienceLevelProgress, false));
+
         //Debug.Log(string.Format("Current Exp: {0}. Exp Required for next level: {1}. Percentage: {2} %", CurrentExperience, GetExpRequiredForLevel(CurrentLevel + 1), CurrentExperienceLevelProgress * 100f));
         //UpdateExpBar(CurrentExperienceLevelProgress);
-        m_Handler.UpdateUI(Attribute.Experience, CurrentExperienceLevelProgress, false);
-    }
-    protected void UpdateHandheldProgressBar()
-    {
-        m_Handler.UpdateUI("Handheld", m_HandheldItem == null ? 0f : m_HandheldItem.GetPercentage(), false);
+        //m_Handler.UpdateUI(Attribute.Experience, CurrentExperienceLevelProgress, false);
     }
 
 
@@ -898,6 +892,11 @@ public class PlayerController : UnitController
 
     public void CasualtyAchieved(Health _casualtyHealth)
     {
+        IIdentifier identifier = _casualtyHealth.GetComponent<IIdentifier>();
+        UIEventArgs args = new UIEventArgs(UIManager.Component.Enemy, (identifier != null ? identifier.Name : ""), _casualtyHealth.HealthPercentage, false);
+
+        OnUIAttributeChanged(args);
+
         if (_casualtyHealth.IsAlive)
         {
             if (nativeAbility != null)
@@ -908,7 +907,6 @@ public class PlayerController : UnitController
 
             //if(SoundManager.Instance != null)
             //	SoundManager.Instance.PlaySound(damageAchievedEffect);
-
 
             PlayEffect(damageAchievedEffect);
         }
@@ -1059,10 +1057,7 @@ public class PlayerController : UnitController
 
 
     #region OnCollision / OnTrigger
-    void OnCollisionStay(Collision coll)
-    {
-        Debug.Log(coll.gameObject);
-    }
+
     public virtual void OnTriggerEnter(Collider coll)
     {
         if (coll.transform == m_Transform || Utilities.IsInLayerMask(coll.gameObject, ignoreCollisionLayer))
@@ -1079,7 +1074,7 @@ public class PlayerController : UnitController
             AttributeHandler _handler = coll.GetComponent<AttributeHandler>();
             if (_handler != null)
             {
-                _handler.ShowUI(false);
+                //_handler.ShowUI(false);
             }
         }
     }
@@ -1088,10 +1083,10 @@ public class PlayerController : UnitController
     {
         if (coll.transform == m_Transform || Utilities.IsInLayerMask(coll.gameObject, ignoreCollisionLayer))
             return;
-        
+
         Vector3 toVector = coll.transform.position - m_Transform.position;
 
-        if (showDebug)
+        if (ShowDebug)
         {
             Debug.DrawLine(m_Transform.position, coll.transform.position, Color.yellow);
             //Debug.DrawLine(myTransform.position, myTransform.position + (myTransform.forward * 5f), Color.cyan);
@@ -1147,7 +1142,7 @@ public class PlayerController : UnitController
             AttributeHandler _handler = coll.GetComponent<AttributeHandler>();
             if (_handler != null)
             {
-                _handler.HideUI();
+                //_handler.HideUI();
             }
         }
     }

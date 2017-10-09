@@ -30,8 +30,9 @@ public class Health : MonoBehaviour
 	Transform lastAttacker;
 	Vector3 lastAttackDirection;
 
-	private bool isInvincible = false;
-
+    [SerializeField]
+	bool isInvincible = false;
+    
     [Tooltip("Should the unit receive Maximum Health on activation?")]
     [SerializeField]
     bool maxHealthOnActive = true;
@@ -66,8 +67,7 @@ public class Health : MonoBehaviour
     bool showDebug = false;
 
 	AudioSource m_Audio;
-
-	bool textUpwardOnDamage = false;
+   
 
 	void Awake()
     {
@@ -140,11 +140,9 @@ public class Health : MonoBehaviour
             //_infoScript.infoText.text = Mathf.Abs(dmgAmount).ToString();
             Color infoColor = isCritical ? Color.yellow : Color.white;
 
-            bool moveUp = dmgAmount > 0 ? !textUpwardOnDamage : textUpwardOnDamage;
-
             _info.SetActive(true);
 
-            _infoScript.Initialize(Mathf.Abs(dmgAmount).ToString(), infoColor, moveUp);
+            _infoScript.Initialize(Mathf.Abs(dmgAmount).ToString(), infoColor);
 
         }
 
@@ -260,19 +258,10 @@ public class Health : MonoBehaviour
     {
 		isInvincible = true;
 
-		yield return new WaitForSeconds(invincibilityTime);
+		yield return new WaitForSeconds(InvincibilityTime);
         
-
 		isInvincible = false;
 	}
-
-
-	public void ReverseTextMovement()
-    {
-		textUpwardOnDamage = !textUpwardOnDamage;
-	}
-
-
 
     public bool CanBeDamaged()
     {
@@ -284,7 +273,7 @@ public class Health : MonoBehaviour
     }
 
 
-    #region Getters / Setters
+    #region Accessors
 
     public float CurHealth
     {
@@ -298,7 +287,7 @@ public class Health : MonoBehaviour
 	public int MaxHealth
     {
 		get { return baseMaxHealth + AdditionalHealth; }
-		set { baseMaxHealth = value; }
+		set { baseMaxHealth = Mathf.Clamp(value, 0, value); ; }
 	}
 	public int AdditionalHealth
     {
@@ -308,9 +297,13 @@ public class Health : MonoBehaviour
 	public int DamageResistance
     {
 		get { return damageResistance; }
-		set { damageResistance = value; }
+		set { damageResistance = Mathf.Clamp(value, 0, value); ; }
 	}
-	
+    public float InvincibilityTime
+    {
+        get { return invincibilityTime; }
+        set { invincibilityTime = Mathf.Clamp(value, 0, value); }
+    }
 	public Transform LastAttacker
     {
 		get { return lastAttacker; }
@@ -345,4 +338,10 @@ public class Health : MonoBehaviour
 	}
 	#endregion
 
+    void OnValidate()
+    {
+        MaxHealth = MaxHealth;
+        InvincibilityTime = InvincibilityTime;
+        DamageResistance = DamageResistance;
+    }
 }

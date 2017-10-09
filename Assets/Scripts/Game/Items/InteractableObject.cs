@@ -36,8 +36,8 @@ public abstract class InteractableObject : MonoBehaviour, IAcquirableObject, IId
     UIManager.Component m_UIComponents;
 
 
-    public event UIManager.UIEvent OnUI_Inflate;
-    public event UIManager.UIEvent OnUI_Deflate;
+    public event UIManager.ExposeUIEvent OnUI_Inflate;
+    public event UIManager.ExposeUIEvent OnUI_Deflate;
     public event Delegates.Alert OnUse;
     public event EventHandler ObjectAcquired;
 
@@ -63,7 +63,7 @@ public abstract class InteractableObject : MonoBehaviour, IAcquirableObject, IId
     }
 
 
-    public virtual bool Interact(PlayerController player)
+    public virtual bool Interact(PlayerController controller)
     {
         if (activatingObjects.Count == 0)
             return false;
@@ -73,7 +73,7 @@ public abstract class InteractableObject : MonoBehaviour, IAcquirableObject, IId
 
         for (int i = 0; i < activatingObjects.Count; i++)
         {
-            if (activatingObjects[i] == player.gameObject)
+            if (activatingObjects[i] == controller.gameObject)
                 isActivator = true;
         }
 
@@ -84,7 +84,7 @@ public abstract class InteractableObject : MonoBehaviour, IAcquirableObject, IId
 
       
 
-        Health playerHealth = player.GetComponent<Health>();
+        Health playerHealth = controller.GetComponent<Health>();
 
 
 
@@ -108,54 +108,58 @@ public abstract class InteractableObject : MonoBehaviour, IAcquirableObject, IId
         //    throw new NotImplementedException();
         //}
 
-        int expSum = 0;
-        int healthSum = 0;
-        int levelSum = 0;
-        Dictionary<StatType, int> statSum = new Dictionary<StatType, int>();
+        //int expSum = 0;
+        //int healthSum = 0;
+        //int levelSum = 0;
+        //Dictionary<StatType, int> statSum = new Dictionary<StatType, int>();
 
-        for (int i = 0; i < ActivationCosts.Count; i++)
-        {
-            switch (ActivationCosts[i].Currency)
-            {
-                case CurrencyType.Experience:
-                    expSum += ActivationCosts[i].Value;
-                    break;
-                case CurrencyType.Health:
-                    healthSum += ActivationCosts[i].Value;
-                    break;
-                case CurrencyType.LevelPoints:
-                    levelSum += ActivationCosts[i].Value;
-                    break;
-                case CurrencyType.StatLevel:
-                    if (statSum.ContainsKey(ActivationCosts[i].StatType))
-                    {
-                        statSum[ActivationCosts[i].StatType] += ActivationCosts[i].Value;
-                    }
-                    else
-                    {
-                        statSum.Add(ActivationCosts[i].StatType, ActivationCosts[i].Value);
-                    }
-                    break;
-            }
+       
+        //for (int i = 0; i < ActivationCosts.Count; i++)
+        //{
+        //    switch (ActivationCosts[i].Currency)
+        //    {
+        //        case CurrencyType.Experience:
+        //            expSum += ActivationCosts[i].Value;
+        //            break;
+        //        case CurrencyType.Health:
+        //            healthSum += ActivationCosts[i].Value;
+        //            break;
+        //        case CurrencyType.LevelPoints:
+        //            levelSum += ActivationCosts[i].Value;
+        //            break;
+        //        case CurrencyType.StatLevel:
+        //            if (statSum.ContainsKey(ActivationCosts[i].StatType))
+        //            {
+        //                statSum[ActivationCosts[i].StatType] += ActivationCosts[i].Value;
+        //            }
+        //            else
+        //            {
+        //                statSum.Add(ActivationCosts[i].StatType, ActivationCosts[i].Value);
+        //            }
+        //            break;
+        //    }
 
-        }
+        //}
 
 
 
-        bool isSuccess = player.CanModifyExp(Mathf.RoundToInt(expSum));
+        //bool isSuccess = controller.CanModifyExp(Mathf.RoundToInt(expSum));
 
-        if (!isSuccess)
+        //if (!isSuccess)
+        //   return false;
+
+
+
+        //if (expSum != 0)
+        //    controller.ModifyExp(Mathf.RoundToInt(expSum));
+
+
+        //if (healthSum != 0)
+        //    playerHealth.HealthArithmetic(healthSum, false, transform);
+
+        if (!controller.AttemptCharge(ActivationCosts)){
             return false;
-
-
-
-        if (expSum != 0)
-            player.ModifyExp(Mathf.RoundToInt(expSum));
-
-
-        if (healthSum != 0)
-            playerHealth.HealthArithmetic(healthSum, false, transform);
-
+        }
 
         OnUseTrigger();
 
@@ -289,13 +293,13 @@ public abstract class InteractableObject : MonoBehaviour, IAcquirableObject, IId
 
                 for (int i = 0; i < ActivationCosts.Count; i++)
                 {
-                    if (ActivationCosts[i].Currency == CurrencyType.StatLevel)
+                    if (ActivationCosts[i].Type == CurrencyType.StatLevel)
                     {
-                        AddCostUI(ActivationCosts[i].Currency, ActivationCosts[i].StatType.ToString(), ActivationCosts[i].Value);
+                        AddCostUI(ActivationCosts[i].Type, ActivationCosts[i].StatType.ToString(), ActivationCosts[i].Value);
                     }
                     else
                     {
-                        AddCostUI(ActivationCosts[i].Currency, ActivationCosts[i].Currency.ToString(), m_ActivationCosts[i].Value);
+                        AddCostUI(ActivationCosts[i].Type, ActivationCosts[i].Type.ToString(), m_ActivationCosts[i].Value);
                     }
 
                     //    GameObject costUI = activeUI.GetPrefab("Cost");

@@ -47,8 +47,7 @@ public class GameManager : MonoBehaviour
 
     [SerializeField]
     bool showDebug;
-
-
+    
 
     public enum GameState { START, PLAYING, WON, LOST };
     GameState currentGameState;
@@ -59,7 +58,6 @@ public class GameManager : MonoBehaviour
 
     [SerializeField]
     int lives_Player = 0;
-    int lives_Ward = 0;
 
 
     [SerializeField]
@@ -92,6 +90,8 @@ public class GameManager : MonoBehaviour
     PlayerController pController;
     UserInput pInput;
 
+    [SerializeField]
+    int playerCredits;
 
 
     [SerializeField]
@@ -162,10 +162,7 @@ public class GameManager : MonoBehaviour
         currentLevel = 1;
 
         lives_Player = START_LIVES_PLAYER;
-        lives_Ward = START_LIVES_WARD;
-
-
-
+       
         CameraFollow camFollow = Camera.main.GetComponent<CameraFollow>();
         if (camFollow != null && player != null)
         {
@@ -422,9 +419,6 @@ public class GameManager : MonoBehaviour
             case "Player":
                 PlayerDamaged(unitObj);
                 break;
-            case "Ward":
-                WardDamaged(unitObj);
-                break;
             default:
                 break;
         }
@@ -450,28 +444,13 @@ public class GameManager : MonoBehaviour
             case "Player":
                 PlayerKilled(unitObj);
                 break;
-            case "Ward":
-                WardKilled(unitObj);
-                break;
             default:
                 numKilled++;
-                EnemyKilled(unitObj);
+                EnemyKilled(unitHealth);
                 break;
         }
 
         unitObj.SetActive(false);
-
-
-        /*
-		Transform attackerTransform = unitHealth.LastAttacker;
-		
-		if(attackerTransform != null){
-			MovementController attackerController = attackerTransform.GetComponent<MovementController>();
-			
-			if(attackerController != null){
-				//attackerController.KillAchieved(unitHealth);
-			}
-		} */
     }
 
 
@@ -512,61 +491,52 @@ public class GameManager : MonoBehaviour
     }
 
 
-    void WardDamaged(GameObject wardObj)
-    {
-        // ChangeScore(SCORE_ONWARDDAMAGED);
-        CameraShake.Instance.ShakeMajor();
-    }
-    void WardKilled(GameObject wardObj)
-    {
-        lives_Ward--;
-        //ChangeScore(SCORE_ONWARDKILLED);
-
-        if (lives_Ward <= 0)
-        {
-            GameOver();
-        }
-        else
-        {
-            //SpawnWard();
-        }
-    }
-
-
     public void EnemyKilled(Health enemyHealth)
     {
-        EnemyKilled(enemyHealth.gameObject);
-    }
-    public void EnemyKilled(GameObject enemyObj)
-    {
-        if (CurrentGameState != GameState.PLAYING)
+        if (enemyHealth == null)
             return;
 
+        //UnityEngine.Debug.Log("Enemy Killed: " + enemyHealth.gameObject);
+        //UnityEngine.Debug.Log("Last Attacker: " + enemyHealth.LastAttacker);
 
-        StartCoroutine(EnemyKilled_DropRoutine(enemyObj.GetComponent<Health>()));
+        StartCoroutine(EnemyKilled_DropRoutine(enemyHealth));
 
-        A_Star_Pathfinding.Instance.AddWeightToNode(enemyObj.transform.position, ENEMY_DEATH_WEIGHT);
-        enemyObj.SetActive(false);
-
-        //  ChangeScore(SCORE_ONKILL);
-
+        enemyHealth.gameObject.SetActive(false);
     }
-    IEnumerator EnemyKilled_DropRoutine(Health enemyHealth)
+    IEnumerator EnemyKilled_DropRoutine(Health _health)
     {
-        if (enemyHealth != null && enemyHealth.LastAttacker != null && enemyHealth.LastAttacker.tag == "Player")
+        if (_health != null && _health.LastAttacker != null && _health.LastAttacker.tag == "Player")
         {
-            int numObjs = enemyHealth.MaxHealth / DIV_HEALTH_VALUE;
+            DeathDrop dropScript = _health.GetComponent<DeathDrop>();
 
-            for (int i = 0; i < numObjs; i++)
+            if (dropScript != null)
             {
-                DropLoot(enemyHealth.gameObject);
+                for (int i = 0; i < dropScript.NumberOfDrops; i++)
+                {
+                    DropLoot(_health.gameObject);
 
-                yield return new WaitForSeconds(DROP_DELAY);
+                    yield return new WaitForSeconds(DROP_DELAY);
+                }
             }
         }
     }
 
 
+    public bool CanChargeCredits(int delta)
+    {
+        return (Credits - delta) >= 0;
+    }
+    public bool ChargeCredits(int delta)
+    {
+        if (!CanChargeCredits(delta))
+        {
+            return false;
+        }
+
+        Credits -= delta;
+        
+        return true;
+    }
     public bool CanModifyLevelPoints(int delta)
     {
         return LevelPoints + delta >= 0;
@@ -583,77 +553,6 @@ public class GameManager : MonoBehaviour
 
         currentLevelPoints += delta;
     }
-
-    //public GameObject GetLoot(RewardType _rewardType)
-    //{
-    //    return GetLoot(_rewardType, 0f);
-    //}
-    //public GameObject GetLoot(RewardType _rewardType, float _luckBonus)
-    //{
-    //    if (Utilities.HasFlag(_rewardType, RewardType.KillDrop))
-    //    {
-    //       return GetLoot_KillDrop(_luckBonus);
-    //    }
-    //    else if (Utilities.HasFlag(_rewardType, RewardType.Weapon))
-    //    {
-    //        if (Utilities.HasFlag(_rewardType, RewardType.Ability))
-    //        {
-    //            return GetLoot_WeaponOrAbilityDrop(_luckBonus);
-    //        }
-    //        else
-    //        {
-    //            return GetLoot_WeaponDrop(_luckBonus);
-    //        }
-    //    }
-    //    else if (Utilities.HasFlag(_rewardType, RewardType.Ability))
-    //    {
-    //        if (Utilities.HasFlag(_rewardType, RewardType.Weapon))
-    //        {
-    //            return GetLoot_WeaponOrAbilityDrop(_luckBonus);
-    //        }
-    //        else
-    //        {
-    //            return GetLoot_AbilityDrop(_luckBonus);
-    //        }
-    //    }
-
-    //    return null;
-    //}
-    //public GameObject GetLoot_KillDrop(float luckBonus)
-    //{
-    //    return killDropLootTable.GetLoot(luckBonus);
-    //}
-    //public GameObject GetLoot_WeaponDrop(float luckBonus)
-    //{
-    //    return weaponLootTable.GetLoot(luckBonus);
-    //}
-    //public GameObject GetLoot_AbilityDrop(float luckBonus)
-    //{
-    //    return abilityLootTable.GetLoot(luckBonus);
-    //}
-    //public GameObject GetLoot_WeaponOrAbilityDrop(float luckBonus)
-    //{
-
-    //    GameObject returnObj = null;
-
-    //    if (UnityEngine.Random.value < weaponChance)
-    //    {
-    //        returnObj = GetLoot_WeaponDrop(luckBonus);
-
-    //        if (returnObj == null)
-    //            returnObj = GetLoot_AbilityDrop(luckBonus);
-    //    }
-    //    else
-    //    {
-    //        returnObj = GetLoot_AbilityDrop(luckBonus);
-
-    //        if (returnObj == null)
-    //            returnObj = GetLoot_WeaponDrop(luckBonus);
-    //    }
-
-
-    //    return returnObj;
-    //}
 
     public GameObject GetItem(ListDefinitionName listName)
     {
@@ -687,17 +586,13 @@ public class GameManager : MonoBehaviour
 
     public void DropLoot(GameObject droppingObject)
     {
-
         if (droppingObject == null)
             return;
 
         Health _health = droppingObject.GetComponent<Health>();
 
-        float luckBonus = (_health == null || _health.LastAttacker != Player.transform) ? 0f : pController.GetCurrentStatLevel(StatType.Luck);
 
-
-
-        GameObject newItem = null; // GetLoot_KillDrop(luckBonus);
+        GameObject newItem = GetItem(ListDefinitionName.GeneralItems);
 
         if (newItem == null)
             return;
@@ -751,15 +646,6 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    /*
-    void ChangeScore(int delta){
-		score += delta;
-
-        if(UIManager.Instance != null)
-            UIManager.Instance.UpdateScore(Score);
-	}
-    */
-
     public void ChangeGodFavor(float delta)
     {
         if (OnFavorChange != null)
@@ -768,100 +654,7 @@ public class GameManager : MonoBehaviour
 
         DeityFavor += delta;
     }
-
-
-
-
-    //void LoadLootTables()
-    //{
-    //    lootDictionary.Clear();
-
-
-    //    //Map names to object prefabs
-    //    UnityEngine.Object[] _objects = Resources.LoadAll(IN_GAME_OBJECT_FOLDER_PATH, typeof(GameObject));
-
-    //    for (int i = 0; i < _objects.Length; i++)
-    //    {
-    //        GameObject obj = _objects[i] as GameObject;
-
-    //        if (obj == null || lootDictionary.ContainsKey(obj.name))
-    //            continue;
-
-    //        lootDictionary.Add(obj.name, obj);
-    //    }
-
-
-    //    encounteredItems.Clear();
-
-
-    //    //Load xml file
-    //    TextAsset databaseTextAsset = Resources.Load(LOOT_DATABASE_PATH) as TextAsset;
-
-    //    if (databaseTextAsset != null)
-    //    {
-    //       lootItems = ItemContainer.LoadFromText(databaseTextAsset.text);   //LOOT_DATABASE_PATH);
-
-    //        if (showDebug)
-    //        {
-    //            Debug.Log("Item database loaded");
-
-
-    //            Item[] _items = lootItems.items;
-    //            for (int i = 0; i < _items.Length; i++)
-    //            {
-    //                Debug.Log($"Loaded: {_items[i]}");
-    //            }
-    //        }
-    //    }
-    //}
-
-
-
-
-
-
-    //#region Element Table
-
-    //Dictionary<ElementTableKey, float> elementTable = new Dictionary<ElementTableKey, float>();
-
-    //struct ElementTableKey
-    //{
-    //    public readonly ElementType Element1;
-    //    public readonly ElementType Element2;
-
-    //    public ElementTableKey(ElementType e1, ElementType e2)
-    //    {
-    //        Element1 = e1;
-    //        Element2 = e2;
-    //    }
-    //}
-
-    //void LoadElementTable()
-    //{
-    //    elementTable.Clear();
-
-
-    //    ElementType[] _elements = (ElementType[])Enum.GetValues(typeof(ElementType));
-
-    //    for (int i = 0; i < _elements.Length; i++)
-    //    {
-    //        for (int k = 0; k < _elements.Length; k++)
-    //        {
-    //            ElementTableKey _key = new ElementTableKey(_elements[i], _elements[k]);
-    //            elementTable.Add(_key, 0f);
-    //        }
-    //    }
-
-    //}
-
-    //public float GetElementInteraction(ElementType e1, ElementType e2)
-    //{
-    //    return elementTable[new ElementTableKey(e1,e2)];
-    //}
-
-    //#endregion
-
-
+    
 
     #region Accessors
 
@@ -882,6 +675,11 @@ public class GameManager : MonoBehaviour
     public int CurrentLevel
     {
         get { return currentLevel; }
+    }
+    public int Credits
+    {
+        get { return playerCredits; }
+        private set { playerCredits = value; }
     }
     public int LevelPoints
     {
@@ -904,9 +702,12 @@ public class GameManager : MonoBehaviour
         get { return disasterChanceBase + (-godFavor * disasterChanceFavorBonus); }
     }*/
     #endregion
+        
 
-
-
+    void OnValidate()
+    {
+        ValidateItemPoolDefinitions();
+    }
     void ValidateItemPoolDefinitions()
     {
         HashSet<ListDefinitionName> encounteredNameSet = new HashSet<ListDefinitionName>();
@@ -939,9 +740,5 @@ public class GameManager : MonoBehaviour
 
         m_ItemClassProbabilities.Validate(true);
 
-    }
-    void OnValidate()
-    {
-        ValidateItemPoolDefinitions();
     }
 }

@@ -46,10 +46,9 @@ public abstract class MenuInflater : InteractableObject
     {
         if (!CanInflateMenu())
             return false;
-
+        
         activatingPlayer = _player;
 
-       
         InflateMenu();
 
         return true;
@@ -100,9 +99,8 @@ public abstract class MenuInflater : InteractableObject
         AddButtons();
         DeflateUI();
     }
-    public void DeflateMenu()
+    public virtual void DeflateMenu()
     {
-
         if (!isInflated)
             return;
 

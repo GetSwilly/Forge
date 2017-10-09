@@ -5,7 +5,8 @@ using System;
 
 [RequireComponent(typeof(AudioSource))]
 [RequireComponent(typeof(Rigidbody))]
-public abstract class HandheldItem : MonoBehaviour, IIdentifier, ITeamMember
+[RequireComponent(typeof(Team))]
+public abstract class HandheldItem : MonoBehaviour, IIdentifier
 {
 
     protected static readonly float DEBUG_DRAW_TIME = 2f;
@@ -128,9 +129,6 @@ public abstract class HandheldItem : MonoBehaviour, IIdentifier, ITeamMember
     protected List<WeightedObjectOfSoundClip> tertiaryActionSounds = new List<WeightedObjectOfSoundClip>();
 
     [SerializeField]
-    protected Team m_Team;
-
-    [SerializeField]
     StatSubscriptions m_StatSubscriptions;
 
 
@@ -147,8 +145,9 @@ public abstract class HandheldItem : MonoBehaviour, IIdentifier, ITeamMember
 
     protected Transform m_Transform;
     protected Transform m_Owner;
-    protected AudioSource myAudio;
+    protected AudioSource m_Audio;
 
+    protected Team m_Team;
     protected MovementController m_Movement;
 
     Dictionary<StatType, int> statLevelTracker = new Dictionary<StatType, int>();
@@ -156,19 +155,20 @@ public abstract class HandheldItem : MonoBehaviour, IIdentifier, ITeamMember
     public virtual void Awake()
     {
         m_Transform = GetComponent<Transform>();
-        myAudio = GetComponent<AudioSource>();
+        m_Audio = GetComponent<AudioSource>();
+        m_Team = GetComponent<Team>();
     }
 
 
 
-    public virtual void Initialize(ITeamMember teamMember)
+    public virtual void Initialize(Transform owner, Team team)
     {
         AlertWeaponChange(GetPercentage(), false);
         //SetVolume(1);
 
-        m_Owner = teamMember.Transform;
+        m_Owner = owner;
 
-        SetTeam(teamMember);
+        SetTeam(team);
 
         statLevelTracker.Clear();
 
@@ -273,53 +273,44 @@ public abstract class HandheldItem : MonoBehaviour, IIdentifier, ITeamMember
     {
         //Debug.Log("Playing Sound : " + _sound);
 
-        myAudio.volume = _sound.Volume;
-        myAudio.pitch = _sound.Pitch;
+        m_Audio.volume = _sound.Volume;
+        m_Audio.pitch = _sound.Pitch;
 
         if (_sound.IsLooping)
         {
-            myAudio.loop = true;
-            myAudio.clip = _sound.Sound;
-            myAudio.Play();
+            m_Audio.loop = true;
+            m_Audio.clip = _sound.Sound;
+            m_Audio.Play();
         }
         else
         {
-            myAudio.loop = false;
-            myAudio.PlayOneShot(_sound.Sound);
+            m_Audio.loop = false;
+            m_Audio.PlayOneShot(_sound.Sound);
         }
     }
 
     #region Team
 
-    public void SetTeam(ITeamMember teamMember)
+    public void SetTeam(Team team)
     {
-        m_Team.SetCurrentTeamTag(teamMember.GetCurrentTeam().Team);
-        m_Team.SetFriendlyTeams(teamMember.GetFriendlyTeams());
-        m_Team.SetEnemyTeams(teamMember.GetEnemyTeams());
+        if (team == null)
+        {
+            return;
+        }
+
+
+        m_Team.CurrentTeamTag = team.CurrentTeamTag;
+        m_Team.FriendlyTeams = team.FriendlyTeams;
+        m_Team.FriendlyTeams.Add(Team.GetTeam(m_Team.CurrentTeamTag));
+        m_Team.EnemyTeams = team.EnemyTeams;
     }
     public void ResetTeam()
     {
-        m_Team.SetCurrentTeamTag(TeamTag.All);
-        m_Team.SetFriendlyTeams(new TeamClassification[] { });
-        m_Team.SetEnemyTeams(new TeamClassification[] { });
+        m_Team.CurrentTeamTag = TeamTag.All;
+        m_Team.FriendlyTeams.Clear();
+        m_Team.EnemyTeams.Clear();
     }
 
-    public Team GetTeam()
-    {
-        return m_Team;
-    }
-    public SingleTeamClassification GetCurrentTeam()
-    {
-        return m_Team.CurrentTeam;
-    }
-    public TeamClassification[] GetFriendlyTeams()
-    {
-        return m_Team.FriendlyTeams;
-    }
-    public TeamClassification[] GetEnemyTeams()
-    {
-        return m_Team.EnemyTeams;
-    }
     #endregion
 
     #region Stats
@@ -337,17 +328,18 @@ public abstract class HandheldItem : MonoBehaviour, IIdentifier, ITeamMember
     void InitializeStats(IStat statOwner)
     {
         StatType[] statTypes = Enum.GetValues(typeof(StatType)) as StatType[];
-        for(int i = 0; i < statTypes.Length; i++)
+        for (int i = 0; i < statTypes.Length; i++)
         {
             UpdateStatEffect(statTypes[i], statOwner.GetCurrentStatLevel(statTypes[i]));
         }
     }
-    void UpdateStatEffect(StatType type, int level)
+    protected virtual void UpdateStatEffect(StatType type, int level)
     {
         if (statLevelTracker.ContainsKey(type))
         {
             statLevelTracker[type] = level;
-        }else
+        }
+        else
         {
             statLevelTracker.Add(type, level);
         }

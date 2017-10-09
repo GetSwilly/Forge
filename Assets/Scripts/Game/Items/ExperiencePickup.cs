@@ -59,7 +59,7 @@ public class ExperiencePickup : MonoBehaviour, IExperienceProvider, IAcquirableO
                 DynamicInfoScript _infoScript = _info.GetComponent<DynamicInfoScript>();
 
                 _info.SetActive(true);
-                _infoScript.Initialize(experienceValue, Color.green, true);
+                _infoScript.Initialize(experienceValue, Color.green);
             }
 
 

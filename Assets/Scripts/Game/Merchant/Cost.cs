@@ -6,7 +6,7 @@ using UnityEngine;
 public class Cost : PropertyAttribute {
 
     [SerializeField]
-    CurrencyType m_Currency;
+    CurrencyType m_Type;
 
     [SerializeField]
     int m_Value;
@@ -14,35 +14,25 @@ public class Cost : PropertyAttribute {
     [SerializeField]
     StatType m_StatType;
 
-    //[SerializeField]
-    //int m_LevelPointCost;
-
-    //[SerializeField]
-    //int m_HealthCost;
-
-    //[SerializeField] int m_ExperienceCost;
-
-    //[SerializeField]
-    //List<Tuple_StatTypeInt> m_StatLevelCost = new List<Tuple_StatTypeInt>();
-
 
     public Cost(CurrencyType _currencyType)
     {
-        Currency = _currencyType;
+        Type = _currencyType;
     }
     public Cost(CurrencyType _currencyType, StatType _statType)
     {
-        Currency = _currencyType;
+        Type = _currencyType;
         StatType = _statType;
     }
 
 
 
+    #region Accessors
 
-    public CurrencyType Currency
+    public CurrencyType Type
     {
-        get { return m_Currency; }
-        set { m_Currency = value; }
+        get { return m_Type; }
+        set { m_Type = value; }
     }
     public int Value
     {
@@ -55,47 +45,23 @@ public class Cost : PropertyAttribute {
         set { m_StatType = value; }
     }
 
+    #endregion
 
-    //public int LevelPointCost
-    //{
-    //    get { return m_LevelPointCost; }
-    //    set { m_LevelPointCost = value; }
-    //}
-    //public int HealthCost
-    //{
-    //    get { return m_HealthCost; }
-    //    set { m_HealthCost = value; }
-    //}
-    //public int ExperienceCost
-    //{
-    //    get { return m_ExperienceCost; }
-    //    set { m_ExperienceCost = value; }
-    //}
-    //public List<Tuple_StatTypeInt> StatLevelCost
-    //{
-    //    get { return m_StatLevelCost; }
-    //    set { m_StatLevelCost = value; }
-    //}
+    public override string ToString()
+    {
+        string str = "";
 
+        switch (Type)
+        {
+            case CurrencyType.StatLevel:
+                str = Type + " : " + StatType +  " : " + Value;
+                break;
+            default:
+                str = Type + " : " + Value;
+                break;
+        }
 
+        return str;
+    }
 
-
-
-    //public void Validate()
-    //{
-    //    HashSet<StatType> encounteredSet = new HashSet<StatType>();
-    //    for(int i = 0; i < m_StatLevelCost.Count; i++)
-    //    {
-    //        if (encounteredSet.Contains(m_StatLevelCost[i].Item1))
-    //        {
-    //            m_StatLevelCost.RemoveAt(i);
-    //            i--;
-    //            continue;
-    //        }
-    //        else
-    //        {
-    //            encounteredSet.Add(m_StatLevelCost[i].Item1);
-    //        }
-    //    }
-    //}
 }

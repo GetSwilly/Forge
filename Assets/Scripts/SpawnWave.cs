@@ -157,9 +157,6 @@ public class SpawnWave
     [SerializeField]
     CompletionCriteria finishCriteria;
 
-    [SerializeField]
-    GameObject emptyObj;
-
     TestRealm.LevelController m_Controller;
 
 

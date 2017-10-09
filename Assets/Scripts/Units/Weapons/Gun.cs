@@ -208,9 +208,9 @@ public class Gun : Weapon {
 
 
 
-    public override void Initialize(ITeamMember owner)
+    public override void Initialize(Transform owner, Team team)
     {
-        base.Initialize(owner);
+        base.Initialize(owner, team);
 
         DestroyBulletObjects();
         isReloading = false;
@@ -446,7 +446,7 @@ public class Gun : Weapon {
 
                 float _range = AttackRange * _shots[i].RangeModifier;
 
-                bScript.Initialize(m_Transform.parent, m_Team, fireDir, (int)-_power, isCrit, _speed, _range);
+                bScript.Initialize(m_Owner, m_Team, fireDir, (int)-_power, isCrit, _speed, _range);
                 bScript.SubscribeToOnImpact(AlertWeaponCasualty);
 
                 EnableEffects();

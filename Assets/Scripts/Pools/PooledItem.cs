@@ -15,6 +15,7 @@ public class PooledItem : MonoBehaviour {
     public float Weight
     {
         get { return m_Weight; }
+        private set { m_Weight = Mathf.Clamp(value, 0, value); }
     }
     public Rank Rank
     {
@@ -24,7 +25,6 @@ public class PooledItem : MonoBehaviour {
 
     void OnValidate()
     {
-        if (Weight < 0)
-            m_Weight = 0;
+        Weight = Weight;
     }
 }

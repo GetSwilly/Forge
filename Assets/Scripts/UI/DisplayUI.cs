@@ -71,9 +71,6 @@ public class DisplayUI : MonoBehaviour {
     //        gameObject.SetActive(false);
     //    }
     //}
-
-
-
-    public virtual void SetColor(Color _color) { }
+   
 
 }

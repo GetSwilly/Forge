@@ -30,7 +30,7 @@ public class ItemPoolEditor : Editor {
 
         poolType = serializedObject.FindProperty("m_PoolType");
         poolName = serializedObject.FindProperty("m_PoolName");
-        allowRepeats = serializedObject.FindProperty("allowRepeats");
+        allowRepeats = serializedObject.FindProperty("allowRepeatPulls");
         
         poolList = serializedObject.FindProperty("m_Pools");
         itemList = serializedObject.FindProperty("m_Items");

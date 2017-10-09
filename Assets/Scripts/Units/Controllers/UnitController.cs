@@ -6,7 +6,9 @@ using System;
 [RequireComponent(typeof(AudioSource))]
 [RequireComponent(typeof(Health))]
 [RequireComponent(typeof(AttributeHandler))]
-public abstract class UnitController : MonoBehaviour, IMemorable, ITeamMember, IStat{
+[RequireComponent(typeof(Team))]
+public abstract class UnitController : MonoBehaviour, IMemorable, IStat
+{
 
     protected static readonly float PICKUP_MOVE_SPEED = 0.15f;
     protected static readonly float PICKUP_ROTATE_SPEED = 0.2f;
@@ -16,9 +18,6 @@ public abstract class UnitController : MonoBehaviour, IMemorable, ITeamMember, I
     [Tooltip("Should show debug information?")]
     [SerializeField]
     protected bool showDebug = false;
-
-    [SerializeField]
-    Team m_Team;
     
     [SerializeField]
     protected LayerMask ignoreMask;
@@ -64,88 +63,100 @@ public abstract class UnitController : MonoBehaviour, IMemorable, ITeamMember, I
     private float hearingThreshold = 0f;
 
 
-   protected bool isOperational = true;
+    protected bool isOperational = true;
 
     protected AttributeHandler m_Handler;
-	protected Health m_Health;
-	protected Transform m_Transform;
-	protected AudioSource m_Audio;
+    protected Health m_Health;
+    protected Transform m_Transform;
+    protected AudioSource m_Audio;
+    protected Team m_Team;
     protected CharacterController m_Character;
     protected MovementController m_Movement;
 
     Dictionary<StatType, int> statLevelTracker = new Dictionary<StatType, int>();
     public event Delegates.StatChanged OnLevelChanged;
+    public event Delegates.UIUpdateEvent UIAttributeChangedEvent;
+
 
 
     public virtual void Awake()
     {
-		m_Transform = GetComponent<Transform>();
+        m_Transform = GetComponent<Transform>();
 
         m_Handler = GetComponent<AttributeHandler>();
-		m_Health = GetComponent<Health>();
-		m_Audio = GetComponent<AudioSource>();
+        m_Health = GetComponent<Health>();
+        m_Audio = GetComponent<AudioSource>();
+        m_Team = GetComponent<Team>();
         m_Character = GetComponent<CharacterController>();
         m_Movement = GetComponent<MovementController>();
-	}
+    }
 
-	public virtual void Start()
+    public virtual void Start()
     {
-		if(GameManager.Instance != null)
+        if (GameManager.Instance != null)
         {
-			//myHealth.OnDamaged += GameManager.Instance.UnitDamaged;
-			//myHealth.OnKilled += GameManager.Instance.UnitKilled;
-		}
+            //myHealth.OnDamaged += GameManager.Instance.UnitDamaged;
+            //myHealth.OnKilled += GameManager.Instance.UnitKilled;
+        }
 
+
+        SubscribeToStats();
+
+        AddSightCollider();
+
+        //Establish Health event listeners
+        m_Health.OnHealthChange += UpdateHealthUI;
+        m_Health.OnDamaged += OnDamaged;
+        m_Health.OnKilled += OnDeath;
+    }
+    void SubscribeToStats()
+    {
         StatType[] sTypes = Enum.GetValues(typeof(StatType)) as StatType[];
 
         for (int i = 0; i < sTypes.Length; i++)
         {
             Stat s = m_Stats.GetStat(sTypes[i]);
-            
+
             if (s == null)
                 continue;
 
-			s.OnValueChange += UpdateStatEffects;
-			UpdateStatEffects(sTypes[i], s.CurrentLevel);
-		}
-
-        //Sight Setup
-        if (headTransform != null)
-        {
-            SphereCollider sightCollider = this.gameObject.AddComponent<SphereCollider>();
-            sightCollider.isTrigger = true;
-
-            //Make Sight distance independent of scale
-            Vector3 _scale = m_Transform.lossyScale;
-            float maxVal = _scale.x;
-            maxVal = maxVal > _scale.y ? maxVal : _scale.y;
-            maxVal = maxVal > _scale.z ? maxVal : _scale.z;
-
-            sightCollider.radius = m_SightRange / maxVal;
+            s.OnValueChange += UpdateStatEffects;
+            UpdateStatEffects(sTypes[i], s.CurrentLevel);
         }
-
-        //Establish Health event listeners
-        m_Health.OnHealthChange += UpdateUI;
-        m_Health.OnDamaged += UnitDamaged;
-        m_Health.OnKilled += UnitKilled;
     }
+    void AddSightCollider()
+    {
+        if (headTransform == null)
+            return;
 
+        SphereCollider sightCollider = this.gameObject.AddComponent<SphereCollider>();
+        sightCollider.isTrigger = true;
+
+        //Make Sight distance independent of scale
+        Vector3 _scale = m_Transform.lossyScale;
+        float maxVal = _scale.x;
+        maxVal = maxVal > _scale.y ? maxVal : _scale.y;
+        maxVal = maxVal > _scale.z ? maxVal : _scale.z;
+
+        sightCollider.radius = m_SightRange / maxVal;
+
+    }
     public virtual void OnDisable()
     {
         m_Handler.RemoveAllActiveAttributes();
 
-        m_Handler.HideUI();
+        // m_Handler.HideUI();
     }
 
 
-    
+
 
     /// <summary>
     /// Handle input from user
     /// </summary>
     public virtual void HandleInput(Vector3 moveVector, Vector3 aimPoint)
     {
-        m_Movement.Move(m_Transform.position, moveVector,true);
+        m_Movement.Move(m_Transform.position, moveVector, true);
 
         //Vector3 aimDirection = aimPoint - m_Transform.position;
         //m_Movement.RotateTowards(aimDirection);
@@ -166,7 +177,7 @@ public abstract class UnitController : MonoBehaviour, IMemorable, ITeamMember, I
     {
         if (_rune == null)
             return;
-        
+
         _rune.Terminate();
 
 
@@ -177,7 +188,7 @@ public abstract class UnitController : MonoBehaviour, IMemorable, ITeamMember, I
         {
             _rune.transform.SetParent(g.transform);
         }
-        
+
 
         Rigidbody _rigidbody = _rune.GetComponent<Rigidbody>();
         _rigidbody.isKinematic = false;
@@ -235,25 +246,27 @@ public abstract class UnitController : MonoBehaviour, IMemorable, ITeamMember, I
     /// <returns></returns>
     public bool CanSee(Transform checkTransform, float maxAngle)
     {
-        Vector3 toVector = checkTransform.position - m_Transform.position;
+        Vector3 toVector = checkTransform.position - headTransform.position;
         toVector.y = 0;
 
         if (toVector.magnitude > m_SightRange)
             return false;
 
-        if (Vector3.Angle(toVector, m_Transform.forward) > maxAngle)
+        if (Vector3.Angle(toVector, headTransform.forward) > maxAngle)
             return false;
 
-        RaycastHit[] hits = Physics.RaycastAll(new Ray(m_Transform.position, toVector), toVector.magnitude + 0.1f);
+        RaycastHit[] hits = Physics.RaycastAll(new Ray(headTransform.position, toVector), toVector.magnitude + 0.1f);
 
-        for(int i = 0; i < hits.Length; i++)
+        for (int i = 0; i < hits.Length; i++)
         {
             if (!hits[i].collider.isTrigger && hits[i].transform != checkTransform)
+            {
                 return false;
+            }
         }
 
         return true;
-    }  
+    }
 
 
 
@@ -401,13 +414,21 @@ public abstract class UnitController : MonoBehaviour, IMemorable, ITeamMember, I
 
     protected virtual void UpdateUI()
     {
-        UpdateUI(m_Health);
+        UpdateHealthUI(m_Health);
     }
-    protected void UpdateUI(Health _health)
+    protected virtual void UpdateHealthUI(Health _health)
     {
-        m_Handler.UpdateUI(Attribute.Health, m_Health.HealthPercentage, false);
+        OnUIAttributeChanged(new UIEventArgs(UIManager.Component.Health, "",m_Health.HealthPercentage, false));
+        //m_Handler.UpdateUI(Attribute.Health, m_Health.HealthPercentage, false);
     }
 
+    protected virtual void OnUIAttributeChanged(UIEventArgs args)
+    {
+        if (UIAttributeChangedEvent != null)
+        {
+            UIAttributeChangedEvent(this, args);
+        }
+    }
 
     //public void UpdateAttributeUI()
     //{
@@ -476,21 +497,42 @@ public abstract class UnitController : MonoBehaviour, IMemorable, ITeamMember, I
     #endregion
 
 
+    #region Cost
 
+    public virtual bool CanAfford(List<Cost> costs)
+    {
+        return costs.TrueForAll(c => CanAfford(c));
+    }
     public virtual bool CanAfford(Cost _cost)
     {
-        switch (_cost.Currency)
+        if (ShowDebug)
         {
+            //Debug.Log("Checking if can afford: " + _cost);
+        }
+
+        switch (_cost.Type)
+        {
+            case CurrencyType.Credits:
+                return GameManager.Instance.CanChargeCredits(_cost.Value);
             case CurrencyType.Health:
                 return m_Health.CanBeDamaged(_cost.Value);
             case CurrencyType.StatLevel:
                 return m_Stats.CanChangeStatLevel(_cost.StatType, _cost.Value);
+
         }
 
-
-        return true;
+        return false;
     }
 
+    public bool AttemptCharge(List<Cost> costs)
+    {
+        throw new NotImplementedException();
+    }
+    public bool AttemptCharge(Cost cost)
+    {
+        throw new NotImplementedException();
+    }
+    #endregion
 
 
     public void DamageAchieved(Health _casualtyHealth)
@@ -501,35 +543,14 @@ public abstract class UnitController : MonoBehaviour, IMemorable, ITeamMember, I
     {
 
     }
-    public virtual void UnitDamaged(Health _casualtyHealth)
+    public virtual void OnDamaged(Health _casualtyHealth)
     {
 
     }
-    public virtual void UnitKilled(Health _casualtyHealth)
+    public virtual void OnDeath(Health _casualtyHealth)
     {
-        m_Handler.HideUI();
+        //m_Handler.HideUI();
     }
-
-
-    #region Team
-    public Team GetTeam()
-    {
-        return m_Team;
-    }
-    public SingleTeamClassification GetCurrentTeam()
-    {
-        return m_Team.CurrentTeam;
-    }
-    public TeamClassification[] GetFriendlyTeams()
-    {
-        return m_Team.FriendlyTeams;
-    }
-    public TeamClassification[] GetEnemyTeams()
-    {
-        return m_Team.EnemyTeams;
-    }
-    #endregion
-
 
     #region Accessors
     public GameObject GameObject
@@ -549,7 +570,7 @@ public abstract class UnitController : MonoBehaviour, IMemorable, ITeamMember, I
     public float SightRange
     {
         get { return m_SightRange; }
-        protected set { m_SightRange = Mathf.Clamp(value,0f,value); }
+        protected set { m_SightRange = Mathf.Clamp(value, 0f, value); }
     }
     public float SightThreshold
     {
@@ -559,7 +580,7 @@ public abstract class UnitController : MonoBehaviour, IMemorable, ITeamMember, I
     public float HearingThreshold
     {
         get { return hearingThreshold; }
-        protected set { hearingThreshold = Mathf.Clamp(value,0f,value); }
+        protected set { hearingThreshold = Mathf.Clamp(value, 0f, value); }
     }
 
     public LayerMask IgnoreMask
@@ -580,14 +601,14 @@ public abstract class UnitController : MonoBehaviour, IMemorable, ITeamMember, I
     {
         get { return showDebug; }
     }
-    
-    
+
+
     public bool IsOperational
     {
         get { return isOperational; }
         set { isOperational = value; }
     }
-   
+
     #endregion
 
 
@@ -605,7 +626,7 @@ public abstract class UnitController : MonoBehaviour, IMemorable, ITeamMember, I
         m_Transform.SetParent(other.transform.parent);
 
         CopyStatChanges(other);
-       
+
     }
     public void CopyStatChanges(UnitController other)
     {
@@ -615,12 +636,12 @@ public abstract class UnitController : MonoBehaviour, IMemorable, ITeamMember, I
         {
             Stat mStat = m_Stats.GetStat(sTypes[i]);
             Stat oStat = other.GetStat(sTypes[i]);
-            
-            if(mStat != null && oStat != null)
+
+            if (mStat != null && oStat != null)
             {
                 mStat.ModifyLevel(oStat.AddedLevels);
             }
-            
+
 
             //if (_stat != null)
             //{
@@ -634,8 +655,6 @@ public abstract class UnitController : MonoBehaviour, IMemorable, ITeamMember, I
             //}
         }
     }
-
-
 
 
 
@@ -653,11 +672,12 @@ public abstract class UnitController : MonoBehaviour, IMemorable, ITeamMember, I
 
     public virtual void OnDrawGizmos()
     {
-		if(showDebug && m_Transform != null) {
+        if (showDebug && m_Transform != null)
+        {
 
             DrawFOVGizmo();
-		}
-	}
+        }
+    }
 
     void DrawFOVGizmo()
     {
@@ -669,5 +689,5 @@ public abstract class UnitController : MonoBehaviour, IMemorable, ITeamMember, I
         Gizmos.DrawLine(m_Transform.position, m_Transform.position + (leftRayDirection * m_SightRange * SightThreshold));
         Gizmos.DrawLine(m_Transform.position, m_Transform.position + (rightRayDirection * m_SightRange * SightThreshold));
     }
-  
+
 }

@@ -249,7 +249,7 @@ public class UtilityActor : UnitController
 
         m_Pathfinder = GetComponent<IPathfinder>();
 
-        m_Health.OnDamaged += UnitDamaged;
+        m_Health.OnDamaged += OnDamaged;
     }
     public override void Start()
     {
@@ -721,9 +721,9 @@ public class UtilityActor : UnitController
     /// <summary>
     /// React to Damage
     /// </summary>
-    public override void UnitDamaged(Health _health)
+    public override void OnDamaged(Health _health)
     {
-        base.UnitDamaged(_health);
+        base.OnDamaged(_health);
 
         float pctg = Mathf.Clamp01(Mathf.Abs(_health.LastHealthChange / _health.MaxHealth));
 
@@ -771,13 +771,13 @@ public class UtilityActor : UnitController
     /// <summary>
     /// React to Death
     /// </summary>
-    public override void UnitKilled(Health _casualtyHealth)
+    public override void OnDeath(Health _casualtyHealth)
     {
-        base.UnitKilled(_casualtyHealth);
+        base.OnDeath(_casualtyHealth);
 
         if (GameManager.Instance != null)
         {
-            GameManager.Instance.EnemyKilled(gameObject);
+            GameManager.Instance.EnemyKilled(m_Health);
         }
     }
 
@@ -1121,22 +1121,20 @@ public class UtilityActor : UnitController
     }
 
 
-    public bool IsAlly(ITeamMember teamMember)
+    public bool IsAlly(Team teamMember)
     {
         if (teamMember == null)
             return false;
 
-        return TeamUtility.IsFriendly(this, teamMember.GetCurrentTeam());
+        return m_Team.IsFriendly(teamMember.CurrentTeam);
         //return Utilities.IsInLayerMask(obj.gameObject, friendlyTeam) && allyTags.Contains(obj.gameObject.tag);
     }
-    public bool IsEnemy(ITeamMember teamMember)
+    public bool IsEnemy(Team teamMember)
     {
         if (teamMember == null)
             return false;
 
-        bool val = TeamUtility.IsEnemy(this, teamMember.GetCurrentTeam());
-
-        Debug.Log("Is Enemy -- " + val);
+        bool val = m_Team.IsEnemy(teamMember.CurrentTeam);
 
         return val;
         //return Utilities.IsInLayerMask(obj.gameObject, enemyTeam) && !allyTags.Contains(obj.gameObject.tag);
@@ -1622,6 +1620,11 @@ public class UtilityActor : UnitController
 
     public void AlertObjects(List<GameObject> objects, bool areForgetable)
     {
+        if(objects == null)
+        {
+            return;
+        }
+
         objects.ForEach(o => AlertObject(o.GetComponent<IMemorable>(), areForgetable));
     }
     public void AlertObjects(List<IMemorable> objects, bool areForgetable)
@@ -1673,7 +1676,7 @@ public class UtilityActor : UnitController
         }
         
 
-        if (IsAlly(obj.GetComponent<ITeamMember>()))
+        if (IsAlly(obj.GetComponent<Team>()))
         {
             if (!hasSeenBefore)
             {
@@ -1683,7 +1686,7 @@ public class UtilityActor : UnitController
             shouldAddToSight = true;
         }
 
-        if (IsEnemy(obj.GetComponent<ITeamMember>()))
+        if (IsEnemy(obj.GetComponent<Team>()))
         {
             if (!hasSeenBefore)
             {

@@ -20,7 +20,7 @@ public class CustomAIPath : AIPath, IPathfinder
 
     public event OnPathDelegate OnPathFound;
     public event OnPathDelegate OnPathTraversalCompleted;
-   
+
 
 
 
@@ -114,6 +114,7 @@ public class CustomAIPath : AIPath, IPathfinder
     public float Speed
     {
         get { return speed; }
+        private set { speed = Mathf.Clamp(value, 0f, value); }
     }
     public Vector3 Velocity
     {
@@ -121,8 +122,12 @@ public class CustomAIPath : AIPath, IPathfinder
     }
     public Path Path
     {
-        get { return path;}
+        get { return path; }
     }
     #endregion
 
+    void OnValidate()
+    {
+        Speed = Speed;
+    }
 }

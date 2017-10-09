@@ -40,14 +40,14 @@ public class ItemMerchantInflater : MenuInflater {
     Dictionary<string, MenuButton> merchandiseToButtonDictionary = new Dictionary<string, MenuButton>();
 
 
-    List<Merchandise> m_Merchandise = new List<Merchandise>();
+    List<ItemPrice> m_Prices = new List<ItemPrice>();
     HashSet<string> encounteredItems = new HashSet<string>();
 
 
      void OnDisable()
     {
         hasStocked = false;
-        RemoveAllMerchandise();
+        RemoveAllPrices();
     }
 
 
@@ -76,24 +76,23 @@ public class ItemMerchantInflater : MenuInflater {
 
     protected override void AddButtons()
     {
-        for(int i = 0; i < m_Merchandise.Count; i++)
+        for(int i = 0; i < m_Prices.Count; i++)
         {
-           if (merchandiseToButtonDictionary.ContainsKey(m_Merchandise[i].Name))
+           if (merchandiseToButtonDictionary.ContainsKey(m_Prices[i].gameObject.name))
                continue;
 
-            IIdentifier _identifier = m_Merchandise[i].Object.GetComponent<IIdentifier>();
-            ItemPrice _price = m_Merchandise[i].Object.GetComponent<ItemPrice>();
+            IIdentifier _identifier = m_Prices[i].GetComponent<IIdentifier>();
 
 
             GameObject _buttonObject = Instantiate(buttonPrefab) as GameObject;
             MenuButton _button = _buttonObject.GetComponent<MenuButton>();
 
-            if (_button == null || _identifier == null || _price == null)
+            if (_button == null || _identifier == null)
             {
                 Destroy(_buttonObject);
-                Destroy(m_Merchandise[i].Object);
+                Destroy(m_Prices[i].gameObject);
 
-                m_Merchandise.RemoveAt(i);
+                m_Prices.RemoveAt(i);
                 i--;
                 continue;
             }
@@ -107,7 +106,7 @@ public class ItemMerchantInflater : MenuInflater {
             _button.Initialize(m_Menu, null, _identifier.Name);
             
 
-            merchandiseToButtonDictionary.Add(m_Merchandise[i].Name, _button);
+            merchandiseToButtonDictionary.Add(m_Prices[i].gameObject.name, _button);
         }
         
     }
@@ -124,7 +123,7 @@ public class ItemMerchantInflater : MenuInflater {
         if (currencyList.Count == 0)
             return;
 
-        for (int i = 0; i < MAX_MERCHANDISE_CHECKS && m_Merchandise.Count < merchandiseCount; i++)
+        for (int i = 0; i < MAX_MERCHANDISE_CHECKS && m_Prices.Count < merchandiseCount; i++)
         {
             GameObject _item = GameManager.Instance.GetItem(m_ListDefinition);
 
@@ -141,7 +140,7 @@ public class ItemMerchantInflater : MenuInflater {
             ItemPrice _price = _item.GetComponent<ItemPrice>();
 
 
-            if (_identifier == null || m_Merchandise.Any(m => m.Name == _identifier.Name) || _price == null || (!allowDuplicates && encounteredItems.Contains(_identifier.Name)))
+            if (_identifier == null || m_Prices.Any(m => m.gameObject.name == _identifier.Name) || _price == null || (!allowDuplicates && encounteredItems.Contains(_identifier.Name)))
             {
                 Destroy(_item);
                 continue;
@@ -162,8 +161,7 @@ public class ItemMerchantInflater : MenuInflater {
             }
 
 
-            Merchandise _merchandise = new Merchandise(_item, _price, chosenCurrency, chosenStat);
-            m_Merchandise.Add(_merchandise);
+            m_Prices.Add(_price);
 
             encounteredItems.Add(_identifier.Name);
         }
@@ -172,40 +170,34 @@ public class ItemMerchantInflater : MenuInflater {
 
     private void AttemptPurchase(MenuButton selectedButton)
     {
-        Merchandise selectedMerchandise = new Merchandise();
-        bool foundMerchandise = false;
+        ItemPrice selectedPrice = null;
 
        Dictionary<string, MenuButton>.Enumerator _enumerator = merchandiseToButtonDictionary.GetEnumerator();
         while (_enumerator.MoveNext())
         {
             if(_enumerator.Current.Value == selectedButton)
             {
-                selectedMerchandise = m_Merchandise.Find(m => m.Name == _enumerator.Current.Key);
-                foundMerchandise = true;
+                selectedPrice = m_Prices.Find(m => m.name == _enumerator.Current.Key);
             }
         }
 
-        if (!foundMerchandise)
+        if (selectedPrice == null)
             return;
 
-        
 
-
-        Cost purchaseCost = selectedMerchandise.ActiveCost;
-
-        if (!activatingPlayer.CanAfford(purchaseCost))
+        if (!activatingPlayer.AttemptCharge(selectedPrice.Costs))
         {
             return;
         }
 
         GameObject genObj = GameObject.Find("Generated Objects");
 
-        selectedMerchandise.Object.SetActive(true);
-        selectedMerchandise.Object.transform.position = m_Transform.TransformPoint(spawnOffset);
-        selectedMerchandise.Object.transform.SetParent(genObj == null ? null : genObj.transform);
+        selectedPrice.gameObject.SetActive(true);
+        selectedPrice.gameObject.transform.position = m_Transform.TransformPoint(spawnOffset);
+        selectedPrice.gameObject.transform.SetParent(genObj == null ? null : genObj.transform);
 
-        m_Merchandise.Remove(selectedMerchandise);
-        merchandiseToButtonDictionary.Remove(selectedMerchandise.Name);
+        m_Prices.Remove(selectedPrice);
+        merchandiseToButtonDictionary.Remove(selectedPrice.name);
 
         Destroy(selectedButton.gameObject);
 
@@ -216,16 +208,16 @@ public class ItemMerchantInflater : MenuInflater {
     }
 
 
-    private void RemoveAllMerchandise()
+    private void RemoveAllPrices()
     {
-        while (m_Merchandise.Count > 0)
+        while (m_Prices.Count > 0)
         {
-            RemoveMerchandise(m_Merchandise[0]);
+            RemovePrice(m_Prices[0]);
         }
     }
-    private void RemoveMerchandise(Merchandise _merchandise)
+    private void RemovePrice(ItemPrice _price)
     {
-        if (!m_Merchandise.Any(m => m.Name == _merchandise.Name))
+        if (!m_Prices.Any(m => m.name == _price.name))
             return;
 
 

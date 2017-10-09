@@ -219,9 +219,9 @@ public class StandardProjectile : MonoBehaviour, IProjectile {
         if (coll.collider.isTrigger)
             return;
 
-        ITeamMember teamMember = coll.gameObject.GetComponent<ITeamMember>();
+        Team teamMember = coll.gameObject.GetComponent<Team>();
 
-        if (!(teamMember != null && TeamUtility.IsFriendly(Team.FriendlyTeams, teamMember.GetCurrentTeam())))
+        if (!(teamMember != null && m_Team.IsFriendly(teamMember)))
         {
             Health otherHealth = coll.gameObject.GetComponent<Health>();
 

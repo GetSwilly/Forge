@@ -66,12 +66,12 @@ public class StatButtonController : MenuButton {
         if(CurrentLevel >= MaxLevel)
         {
             m_UpgradeButton.interactable = false;
-            m_Progress.SetColor(maxLevelColor);
+            m_Progress.Color = maxLevelColor;
         }
         else
         {
             m_UpgradeButton.interactable = true;
-            m_Progress.SetColor(prgOriginalColor);
+            m_Progress.Color = prgOriginalColor;
         }
 
         if (m_Progress == null)

@@ -19,12 +19,10 @@ public class ItemPool : MonoBehaviour {
 
     [SerializeField]
     List<PooledItem> m_Items = new List<PooledItem>();
-
-
-
+   
    
     [SerializeField]
-    bool allowRepeats = true;
+    bool allowRepeatPulls = true;
 
 
     [SerializeField]
@@ -41,6 +39,9 @@ public class ItemPool : MonoBehaviour {
 
     public void Awake()
     {
+        ValidateItems(false);
+        ValidatePools(false);
+
         if (Type == PoolType.Items && autoFill)
         {
             LoadItems();
@@ -74,7 +75,7 @@ public class ItemPool : MonoBehaviour {
     }
     public GameObject GetItem(float luckBonus)
     {
-        return GetItem(luckBonus, allowRepeats);
+        return GetItem(luckBonus, allowRepeatPulls);
     }
     public GameObject GetItem(float luckBonus, bool shouldRepeat)
     {
@@ -186,23 +187,32 @@ public class ItemPool : MonoBehaviour {
     {
         get { return autoFill; }
     }
-    //public double Weight
-    //{
-    //    get { return GameManager.Instance == null ? 1f : GameManager.Instance.GetPoolWeight(m_WeightIdentifier); }
-    //}
+ 
 
 
 
 
 
-    void RemoveDuplicates()
+    void ValidateItems(bool leaveFiller)
     {
         HashSet<GameObject> objectSet = new HashSet<GameObject>();
 
         for (int i = 0; i < m_Items.Count; i++)
         {
-            if (objectSet.Contains(m_Items[i].gameObject))
+            //Allow possibility of null Item return
+            if (m_Items[i] == null && i != m_Items.Count - 1)
             {
+                continue;
+            }
+
+            if (m_Items[i] == null || objectSet.Contains(m_Items[i].gameObject))
+            {
+                if(leaveFiller && i == m_Items.Count - 1)
+                {
+                    m_Items[i] = null;
+                    continue;
+                }
+
                 m_Items.RemoveAt(i);
                 i--;
             }
@@ -226,15 +236,39 @@ public class ItemPool : MonoBehaviour {
         //    }
         //}
     }
+    void ValidatePools(bool leaveFiller)
+    {
+        HashSet<ItemPool> objectSet = new HashSet<ItemPool>();
+
+        for (int i = 0; i < m_Pools.Count; i++)
+        {
+            if (m_Pools[i] == null || objectSet.Contains(m_Pools[i].Item1))
+            {
+                if (leaveFiller && i == m_Pools.Count - 1)
+                {
+                    m_Pools[i] = null;
+                    continue;
+                }
+
+                m_Pools.RemoveAt(i);
+                i--;
+            }
+            else
+            {
+                objectSet.Add(m_Pools[i].Item1);
+            }
+        }
+    }
     void SortItems()
     {
-        m_Items.Sort((i1, i2) => i2.Weight.CompareTo(i1.Weight));
+        m_Items.Sort((i1, i2) => i1 == null ? 1 : (i2 == null ? -1 : i2.Weight.CompareTo(i1.Weight)));
     }
 
 
     void OnValidate()
     {
-        RemoveDuplicates();
+        ValidateItems(true);
+        ValidatePools(true);
         SortItems();
     }
 

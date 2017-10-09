@@ -49,7 +49,7 @@ public class HealthPickup : MonoBehaviour,IHealthProvider,IAcquirableObject {
                 DynamicInfoScript _infoScript = _info.GetComponent<DynamicInfoScript>();
 
                 _info.SetActive(true);
-                _infoScript.Initialize((int)healthValue, Color.red, true);
+                _infoScript.Initialize((int)healthValue, Color.red);
             }
 
 

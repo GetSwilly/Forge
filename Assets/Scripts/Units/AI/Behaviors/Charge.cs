@@ -135,7 +135,7 @@ public class Charge : BaseUtilityBehavior
 
 
 
-        if (!m_Actor.IsEnemy(mem.GameObject.GetComponent<ITeamMember>()))
+        if (!m_Team.IsEnemy(mem.GameObject.GetComponent<Team>()))
         {
 
             Health collHealth = coll.gameObject.GetComponent<Health>();
