@@ -125,15 +125,6 @@ public class Tuple_NodeTypeFloat
 
 
 [System.Serializable]
-public class Tuple_CurrencyTypeFloat : CustomTuple2<CurrencyType, float>
-{
-    public Tuple_CurrencyTypeFloat(CurrencyType a, float b) : base(a, b) { }
-
-}
-
-
-
-[System.Serializable]
 public class Tuple_AttributeFloat : CustomTuple2<Attribute, float>
 {
 

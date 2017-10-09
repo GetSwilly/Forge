@@ -809,31 +809,6 @@ public class PlayerController : UnitController
 
 
 
-
-    public override bool CanAfford(Cost _cost)
-    {
-        if (!base.CanAfford(_cost))
-            return false;
-
-
-        switch (_cost.Type)
-        {
-            case CurrencyType.Experience:
-                return CanModifyExp(_cost.Value);
-
-            case CurrencyType.LevelPoints:
-                return GameManager.Instance != null && GameManager.Instance.CanModifyLevelPoints(_cost.Value);
-        }
-
-
-        return true;
-    }
-
-
-
-
-
-
     protected void PlayEffect(DisplayEffect _effect)
     {
         _effect.Play();

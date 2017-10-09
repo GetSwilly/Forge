@@ -89,11 +89,7 @@ public class GameManager : MonoBehaviour
 
     PlayerController pController;
     UserInput pInput;
-
-    [SerializeField]
-    int playerCredits;
-
-
+    
     [SerializeField]
     List<ItemPoolListDefinition> m_ItemPoolDefinitions = new List<ItemPoolListDefinition>();
 
@@ -520,23 +516,7 @@ public class GameManager : MonoBehaviour
             }
         }
     }
-
-
-    public bool CanChargeCredits(int delta)
-    {
-        return (Credits - delta) >= 0;
-    }
-    public bool ChargeCredits(int delta)
-    {
-        if (!CanChargeCredits(delta))
-        {
-            return false;
-        }
-
-        Credits -= delta;
-        
-        return true;
-    }
+    
     public bool CanModifyLevelPoints(int delta)
     {
         return LevelPoints + delta >= 0;
@@ -675,11 +655,6 @@ public class GameManager : MonoBehaviour
     public int CurrentLevel
     {
         get { return currentLevel; }
-    }
-    public int Credits
-    {
-        get { return playerCredits; }
-        private set { playerCredits = value; }
     }
     public int LevelPoints
     {

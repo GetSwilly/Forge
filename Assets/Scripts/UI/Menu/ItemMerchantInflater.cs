@@ -12,11 +12,6 @@ public class ItemMerchantInflater : MenuInflater {
     [SerializeField]
     ListDefinitionName m_ListDefinition;
 
-
-    [SerializeField]
-    [EnumFlags]
-    CurrencyType acceptedCurrencies;
-
     [SerializeField]
     [EnumFlags]
     StatType acceptedStatTypes;
@@ -117,12 +112,7 @@ public class ItemMerchantInflater : MenuInflater {
     {
         if (GameManager.Instance == null)
             return;
-
-        List<CurrencyType> currencyList = Utilities.AggregateFlags(acceptedCurrencies);
-
-        if (currencyList.Count == 0)
-            return;
-
+     
         for (int i = 0; i < MAX_MERCHANDISE_CHECKS && m_Prices.Count < merchandiseCount; i++)
         {
             GameObject _item = GameManager.Instance.GetItem(m_ListDefinition);
@@ -145,21 +135,6 @@ public class ItemMerchantInflater : MenuInflater {
                 Destroy(_item);
                 continue;
             }
-
-            CurrencyType chosenCurrency = currencyList[UnityEngine.Random.Range(0, currencyList.Count)];
-            StatType chosenStat = StatType.Health;
-
-
-            if (chosenCurrency == CurrencyType.StatLevel)
-            {
-                List<StatType> _stats = Utilities.AggregateFlags(acceptedStatTypes);
-
-                if (_stats.Count > 0)
-                {
-                    chosenStat = _stats[UnityEngine.Random.Range(0, _stats.Count)];
-                }
-            }
-
 
             m_Prices.Add(_price);
 
@@ -185,7 +160,7 @@ public class ItemMerchantInflater : MenuInflater {
             return;
 
 
-        if (!activatingPlayer.AttemptCharge(selectedPrice.Costs))
+        if (!activatingPlayer.AttemptCharge(selectedPrice.Cost))
         {
             return;
         }

@@ -342,10 +342,6 @@ public static class Utilities
     {
         return (a & b) == b;
     }
-    public static bool HasFlag(CurrencyType a, CurrencyType b)
-    {
-        return (a & b) == b;
-    }
     public static bool HasFlag(StatType a, StatType b)
     {
         return (a & b) == b;
@@ -372,31 +368,6 @@ public static class Utilities
     }
   
 
-
-    public static List<CurrencyType> AggregateFlags(CurrencyType c)
-    {
-        List<CurrencyType> _currencies = new List<CurrencyType>();
-
-        if (HasFlag(c, CurrencyType.Experience))
-        {
-            _currencies.Add(CurrencyType.Experience);
-        }
-        if (HasFlag(c, CurrencyType.Health))
-        {
-            _currencies.Add(CurrencyType.Health);
-        }
-        if (HasFlag(c, CurrencyType.LevelPoints))
-        {
-            _currencies.Add(CurrencyType.LevelPoints);
-        }
-        if (HasFlag(c, CurrencyType.StatLevel))
-        {
-            _currencies.Add(CurrencyType.StatLevel);
-        }
-
-
-        return _currencies;
-    }
     public static List<StatType> AggregateFlags(StatType s)
     {
         List<StatType> _stats = new List<StatType>();

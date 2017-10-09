@@ -12,20 +12,20 @@ public abstract class InteractableObject : MonoBehaviour, IAcquirableObject, IId
     string m_ObjectName = "Interactable Object";
 
     [SerializeField]
-    Vector3 m_UIOffset = new Vector3(0, 1,2);
+    Vector3 m_UIOffset = new Vector3(0, 1, 2);
 
     [SerializeField]
     protected bool shouldShowLines = true;
 
     [SerializeField]
-    protected List<Cost> m_ActivationCosts = new List<Cost>();
+    protected int activationCost;
 
 
 
     [Space(10)]
     [Header("Sounds")]
     [Space(5)]
-    
+
     [SerializeField]
     protected SoundClip activationSound;
 
@@ -42,7 +42,7 @@ public abstract class InteractableObject : MonoBehaviour, IAcquirableObject, IId
     public event EventHandler ObjectAcquired;
 
     protected List<GameObject> activatingObjects = new List<GameObject>();
-    
+
 
     GenericUI activeUI;
     protected Transform m_Transform;
@@ -82,7 +82,7 @@ public abstract class InteractableObject : MonoBehaviour, IAcquirableObject, IId
 
 
 
-      
+
 
         Health playerHealth = controller.GetComponent<Health>();
 
@@ -113,7 +113,7 @@ public abstract class InteractableObject : MonoBehaviour, IAcquirableObject, IId
         //int levelSum = 0;
         //Dictionary<StatType, int> statSum = new Dictionary<StatType, int>();
 
-       
+
         //for (int i = 0; i < ActivationCosts.Count; i++)
         //{
         //    switch (ActivationCosts[i].Currency)
@@ -157,7 +157,8 @@ public abstract class InteractableObject : MonoBehaviour, IAcquirableObject, IId
         //if (healthSum != 0)
         //    playerHealth.HealthArithmetic(healthSum, false, transform);
 
-        if (!controller.AttemptCharge(ActivationCosts)){
+        if (!controller.AttemptCharge(ActivationCost))
+        {
             return false;
         }
 
@@ -231,7 +232,7 @@ public abstract class InteractableObject : MonoBehaviour, IAcquirableObject, IId
 
             GameObject _text;// = activeUI.GetPrefab("ID");
 
-            if (!string.IsNullOrEmpty(Name) && (_text = activeUI.GetPrefab("ID") ) != null)
+            if (!string.IsNullOrEmpty(Name) && (_text = activeUI.GetPrefab("ID")) != null)
             {
                 DisplayUI _ui = _text.GetComponent<DisplayUI>();
                 _text.SetActive(!string.IsNullOrEmpty(Name));
@@ -243,92 +244,16 @@ public abstract class InteractableObject : MonoBehaviour, IAcquirableObject, IId
                 hasUIInflated = true;
             }
 
-            bool hasCost = false;
-            for(int i = 0; i < ActivationCosts.Count; i++)
-            {
-                if(ActivationCosts[i].Value != 0)
-                {
-                    hasCost = true;
-                    break;
-                }
-            }
-
-
             Transform _transform = activeUI.GetParentTransform("Charges");
 
             if (_transform != null)
             {
-                _transform.gameObject.SetActive(hasCost);
+                _transform.gameObject.SetActive(true);
             }
 
+            AddCostUI("Credits", ActivationCost);
 
-
-            if (hasCost)
-            {
-                //if (Utilities.HasFlag(m_ActivationCosts.Currency, CurrencyType.Experience))
-                //{
-                //    AddCostUI(CurrencyType.Experience, "Experience", m_ActivationCosts.ExperienceCost);
-                //}
-
-                //if (Utilities.HasFlag(m_ActivationCosts.Currency, CurrencyType.Health))
-                //{
-                //    AddCostUI(CurrencyType.Health, "Health", m_ActivationCosts.HealthCost);
-                //}
-
-                //if (Utilities.HasFlag(m_ActivationCosts.Currency, CurrencyType.LevelPoints))
-                //{
-                //    AddCostUI(CurrencyType.LevelPoints, "Level Points", m_ActivationCosts.LevelPointCost);
-                //}
-
-                //if (Utilities.HasFlag(m_ActivationCosts.Currency, CurrencyType.StatLevel))
-                //{
-                //    List<Tuple_StatTypeInt> statList = m_ActivationCosts.StatLevelCost;
-
-                //    for(int i = 0; i < statList.Count; i++)
-                //    {
-                //        AddCostUI(CurrencyType.StatLevel, statList[i].Item1.ToString(), statList[i].Item2);
-                //    }
-                //}
-
-
-                for (int i = 0; i < ActivationCosts.Count; i++)
-                {
-                    if (ActivationCosts[i].Type == CurrencyType.StatLevel)
-                    {
-                        AddCostUI(ActivationCosts[i].Type, ActivationCosts[i].StatType.ToString(), ActivationCosts[i].Value);
-                    }
-                    else
-                    {
-                        AddCostUI(ActivationCosts[i].Type, ActivationCosts[i].Type.ToString(), m_ActivationCosts[i].Value);
-                    }
-
-                    //    GameObject costUI = activeUI.GetPrefab("Cost");
-
-                    //    if (costUI == null)
-                    //        continue;
-
-
-
-                    //    ProgressBarController controller = costUI.GetComponent<ProgressBarController>();
-
-
-
-                    //    Color uiColor = Color.white;
-                    //    uiColor = ColorManager.GetColor(ActivationCosts[i].Currency);
-
-                    //    controller.Color = uiColor;
-                    //    controller.SetText(activationCosts[i].Item2.ToString());
-
-                    //    costUI.SetActive(true);
-
-
-                    //    activeUI.AddAttribute(new GenericUI.DisplayProperties(activationCosts[i].Item1.ToString(), new Orientation(Vector3.zero, Vector3.zero, Vector3.one), controller), activationCosts[i].Item2 < 0 ? "Cost" : "Reward");
-                    //}
-                }
-
-
-                hasUIInflated = true;
-            }
+            hasUIInflated = true;
 
 
             if (OnUI_Inflate != null)
@@ -355,7 +280,7 @@ public abstract class InteractableObject : MonoBehaviour, IAcquirableObject, IId
     {
         if (activeUI == null || !activeUI.gameObject.activeInHierarchy || activeUI.TargetTransform != m_Transform)
             return;
-        
+
         activeUI.Deflate();
 
         if (OnUI_Deflate != null)
@@ -364,30 +289,22 @@ public abstract class InteractableObject : MonoBehaviour, IAcquirableObject, IId
         }
     }
 
-   
-    private void AddCostUI(CurrencyType c, string name, int amount)
+
+    private void AddCostUI(string name, int amount)
     {
-            GameObject costUI = activeUI.GetPrefab("Cost");
+        GameObject costUI = activeUI.GetPrefab("Cost");
 
-            if (costUI == null)
-                return;
+        if (costUI == null)
+            return;
 
+        ProgressBarController controller = costUI.GetComponent<ProgressBarController>();
+        controller.SetText(amount.ToString());
 
-
-            ProgressBarController controller = costUI.GetComponent<ProgressBarController>();
-
-
-
-            Color uiColor = ColorManager.GetColor(c);
-
-            controller.Color = uiColor;
-            controller.SetText(amount.ToString());
-
-            costUI.SetActive(true);
+        costUI.SetActive(true);
 
 
-            activeUI.AddAttribute(new GenericUI.DisplayProperties(name, new Orientation(Vector3.zero, Vector3.zero, Vector3.one), controller), amount < 0 ? "Cost" : "Reward");
- 
+        activeUI.AddAttribute(new GenericUI.DisplayProperties(name, new Orientation(Vector3.zero, Vector3.zero, Vector3.one), controller), amount < 0 ? "Cost" : "Reward");
+
     }
 
 
@@ -480,10 +397,16 @@ public abstract class InteractableObject : MonoBehaviour, IAcquirableObject, IId
             return gameObject;
         }
     }
-    protected List<Cost> ActivationCosts
+    protected int ActivationCost
     {
-        get { return m_ActivationCosts; }
+        get { return activationCost; }
+        set { activationCost = Mathf.Clamp(value, 0, value); }
     }
 
     #endregion
+
+    protected virtual void OnValidate()
+    {
+        ActivationCost = ActivationCost;
+    }
 }

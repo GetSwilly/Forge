@@ -63,6 +63,7 @@ public abstract class UnitController : MonoBehaviour, IMemorable, IStat
     private float hearingThreshold = 0f;
 
 
+    private int m_Credits;
     protected bool isOperational = true;
 
     protected AttributeHandler m_Handler;
@@ -498,37 +499,13 @@ public abstract class UnitController : MonoBehaviour, IMemorable, IStat
 
 
     #region Cost
-
-    public virtual bool CanAfford(List<Cost> costs)
-    {
-        return costs.TrueForAll(c => CanAfford(c));
-    }
-    public virtual bool CanAfford(Cost _cost)
-    {
-        if (ShowDebug)
-        {
-            //Debug.Log("Checking if can afford: " + _cost);
-        }
-
-        switch (_cost.Type)
-        {
-            case CurrencyType.Credits:
-                return GameManager.Instance.CanChargeCredits(_cost.Value);
-            case CurrencyType.Health:
-                return m_Health.CanBeDamaged(_cost.Value);
-            case CurrencyType.StatLevel:
-                return m_Stats.CanChangeStatLevel(_cost.StatType, _cost.Value);
-
-        }
-
-        return false;
-    }
-
-    public bool AttemptCharge(List<Cost> costs)
+        
+    public virtual bool CanAfford(int _cost)
     {
         throw new NotImplementedException();
     }
-    public bool AttemptCharge(Cost cost)
+    
+    public bool AttemptCharge(int cost)
     {
         throw new NotImplementedException();
     }
@@ -602,13 +579,17 @@ public abstract class UnitController : MonoBehaviour, IMemorable, IStat
         get { return showDebug; }
     }
 
-
     public bool IsOperational
     {
         get { return isOperational; }
         set { isOperational = value; }
     }
 
+    protected int Credits
+    {
+        get { return m_Credits; }
+        set { m_Credits = Mathf.Clamp(value, 0, value); }
+    }
     #endregion
 
 

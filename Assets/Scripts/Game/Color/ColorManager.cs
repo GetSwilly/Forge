@@ -2,7 +2,8 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public static class ColorManager {
+public static class ColorManager
+{
 
     static Color ATTRIBUTE_FIRE_COLOR = new Color(0.8f, 0f, 0f, .6f);
     static Color ATTRIBUTE_ICE_COLOR = new Color(.05f, .85f, .88f, .6f);
@@ -38,26 +39,4 @@ public static class ColorManager {
         return Color.black;
     }
 
-    public static Color GetColor(CurrencyType currency)
-    {
-        if(currency == CurrencyType.Experience)
-        {
-            return CURRENCY_EXPERIENCE_COLOR;
-        }
-        else if(currency == CurrencyType.Health)
-        {
-            return CURRENCY_HEALTH_COLOR;
-        }
-        else if(currency == CurrencyType.LevelPoints)
-        {
-            return CURRENCY_LEVELPOINTS_COLOR;
-        }
-        else if (currency == CurrencyType.StatLevel)
-        {
-            return CURRENCY_STATLEVEL_COLOR;
-        }
-
-
-        return Color.black;
-    }
 }
