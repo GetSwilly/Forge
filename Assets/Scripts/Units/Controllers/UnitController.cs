@@ -2,23 +2,26 @@
 using System.Collections;
 using System.Collections.Generic;
 using System;
+using UnityEngine.Events;
 
 [RequireComponent(typeof(AudioSource))]
 [RequireComponent(typeof(Health))]
 [RequireComponent(typeof(AttributeHandler))]
 [RequireComponent(typeof(Team))]
-public abstract class UnitController : MonoBehaviour, IMemorable, IStat
+public abstract class UnitController : MonoBehaviour, IIdentifier, IMemorable, IStat
 {
 
     protected static readonly float PICKUP_MOVE_SPEED = 0.15f;
     protected static readonly float PICKUP_ROTATE_SPEED = 0.2f;
     protected static readonly float DROP_FORCE = 2f;
 
+    [SerializeField]
+    String unitName;
 
     [Tooltip("Should show debug information?")]
     [SerializeField]
     protected bool showDebug = false;
-    
+
     [SerializeField]
     protected LayerMask ignoreMask;
 
@@ -42,7 +45,7 @@ public abstract class UnitController : MonoBehaviour, IMemorable, IStat
     StatSubscriptions m_StatSubscriptions;
 
     [SerializeField]
-    private Transform headTransform;
+    private CustomRangeSensor m_Sight;
 
     [Tooltip("Range of sight")]
     [SerializeField]
@@ -52,18 +55,11 @@ public abstract class UnitController : MonoBehaviour, IMemorable, IStat
     [SerializeField]
     [Range(0, 360)]
     private int fieldOfView = 20;
-
-    [Tooltip("Percentage of SightRange upon which unit takes notice of object")]
+    
     [SerializeField]
-    [Range(0f, 1f)]
-    private float sightThreshold = .5f;
-
-    [Tooltip("Range of hearing")]
-    [SerializeField]
-    private float hearingThreshold = 0f;
-
-
     private int m_Credits;
+
+
     protected bool isOperational = true;
 
     protected AttributeHandler m_Handler;
@@ -78,7 +74,9 @@ public abstract class UnitController : MonoBehaviour, IMemorable, IStat
     public event Delegates.StatChanged OnLevelChanged;
     public event Delegates.UIUpdateEvent UIAttributeChangedEvent;
 
-
+    private UnityAction<GameObject> onSightAction;
+    private UnityAction<GameObject> onMaintainSightAction;
+    private UnityAction<GameObject> onLostSightAction;
 
     public virtual void Awake()
     {
@@ -100,6 +98,10 @@ public abstract class UnitController : MonoBehaviour, IMemorable, IStat
             //myHealth.OnKilled += GameManager.Instance.UnitKilled;
         }
 
+
+        onSightAction += SightGained;
+        onMaintainSightAction += SightMaintained;
+        onLostSightAction += SightLost;
 
         SubscribeToStats();
 
@@ -127,21 +129,43 @@ public abstract class UnitController : MonoBehaviour, IMemorable, IStat
     }
     void AddSightCollider()
     {
-        if (headTransform == null)
+        if (m_Sight == null)
             return;
 
-        SphereCollider sightCollider = this.gameObject.AddComponent<SphereCollider>();
-        sightCollider.isTrigger = true;
+        //SphereCollider sightCollider = m_Sight.GetComponent<SphereCollider>();
 
-        //Make Sight distance independent of scale
-        Vector3 _scale = m_Transform.lossyScale;
-        float maxVal = _scale.x;
-        maxVal = maxVal > _scale.y ? maxVal : _scale.y;
-        maxVal = maxVal > _scale.z ? maxVal : _scale.z;
+        //if (sightCollider == null)
+        //{
+        //    sightCollider = m_Sight.gameObject.AddComponent<SphereCollider>();
+        //}
+        //sightCollider.isTrigger = true;
 
-        sightCollider.radius = m_SightRange / maxVal;
+        ////Make Sight distance independent of scale
+        //Vector3 _scale = m_Transform.lossyScale;
+        //float maxVal = _scale.x;
+        //maxVal = maxVal > _scale.y ? maxVal : _scale.y;
+        //maxVal = maxVal > _scale.z ? maxVal : _scale.z;
 
+        //sightCollider.radius = m_SightRange / maxVal;
+
+
+       m_Sight.OnDetected.AddListener(onSightAction);
+        m_Sight.OnStayDetected.AddListener(onMaintainSightAction);
+        m_Sight.OnLostDetection.AddListener(onLostSightAction);
+        //CollisionNotifier sightNotifier = m_Sight.GetComponent<CollisionNotifier>();
+        //if(sightNotifier != null)
+        //{
+        //    sightNotifier.CollisionEnter += SightCollisionEntered;
+        //    sightNotifier.CollisionStay += SightCollisionStayed;
+        //    sightNotifier.CollisionExit += SightCollisionExited;
+
+        //    sightNotifier.TriggerEnter += SightTriggerEntered;
+        //    sightNotifier.TriggerStay += SightTriggerStayed;
+        //    sightNotifier.TriggerExit += SightTriggerExited;
+        //}
     }
+ 
+
     public virtual void OnDisable()
     {
         m_Handler.RemoveAllActiveAttributes();
@@ -163,42 +187,6 @@ public abstract class UnitController : MonoBehaviour, IMemorable, IStat
         //m_Movement.RotateTowards(aimDirection);
 
         m_Movement.RotateTowards(aimPoint);
-    }
-
-
-    protected void PickupRune(Rune _rune)
-    {
-        if (_rune == null)
-            return;
-
-        StartCoroutine(PickupObject(_rune.transform, Vector3.zero, Quaternion.identity));
-    }
-
-    protected virtual void DropRune(Rune _rune)
-    {
-        if (_rune == null)
-            return;
-
-        _rune.Terminate();
-
-
-        GameObject g = GameObject.Find("Generated Objects");
-        _rune.transform.SetParent(null);
-
-        if (g != null)
-        {
-            _rune.transform.SetParent(g.transform);
-        }
-
-
-        Rigidbody _rigidbody = _rune.GetComponent<Rigidbody>();
-        _rigidbody.isKinematic = false;
-        _rigidbody.velocity = Vector3.zero;
-        _rigidbody.AddForce(_rune.transform.forward * DROP_FORCE, ForceMode.Impulse);
-
-
-        Utilities.SetRenderersEnabled(_rune.gameObject, true);
-        Utilities.SetCollidersEnabled(_rune.gameObject, true);
     }
 
     protected IEnumerator PickupObject(Transform objTransform, Vector3 localPos, Quaternion localRotation)
@@ -230,6 +218,10 @@ public abstract class UnitController : MonoBehaviour, IMemorable, IStat
 
 
 
+    public bool CanSee(Vector3 checkPosition)
+    {
+        return CanSee(checkPosition, FOV / 2f, null);
+    }
 
     /// <summary>
     /// Check if unit can see the provided transform
@@ -239,41 +231,45 @@ public abstract class UnitController : MonoBehaviour, IMemorable, IStat
         return CanSee(checkTransform, FOV / 2f);
     }
 
+    public bool CanSee(Transform checkTransform, float maxAngle)
+    {
+        if (checkTransform == null)
+            return false;
+
+       return CanSee(checkTransform.position, FOV / 2f, new List<Transform>() { checkTransform });
+    }
+
     /// <summary>
     /// Check if unit can see the provided transform with the provided max sight angle
     /// </summary>
     /// <param name="checkTransform"></param>
     /// <param name="maxAngle"></param>
     /// <returns></returns>
-    public bool CanSee(Transform checkTransform, float maxAngle)
+    public bool CanSee(Vector3 checkPosition, float maxAngle, List<Transform> validTransforms)
     {
-        Vector3 toVector = checkTransform.position - headTransform.position;
-        toVector.y = 0;
+        return false;
 
-        if (toVector.magnitude > m_SightRange)
-            return false;
+        //Vector3 toVector = checkPosition - headTransform.position;
+        //toVector.y = 0;
 
-        if (Vector3.Angle(toVector, headTransform.forward) > maxAngle)
-            return false;
+        //if (toVector.magnitude > m_SightRange)
+        //    return false;
 
-        RaycastHit[] hits = Physics.RaycastAll(new Ray(headTransform.position, toVector), toVector.magnitude + 0.1f);
+        //if (Vector3.Angle(toVector, headTransform.forward) > maxAngle)
+        //    return false;
 
-        for (int i = 0; i < hits.Length; i++)
-        {
-            if (!hits[i].collider.isTrigger && hits[i].transform != checkTransform)
-            {
-                return false;
-            }
-        }
+        //RaycastHit[] hits = Physics.RaycastAll(new Ray(headTransform.position, toVector), toVector.magnitude + 0.1f);
 
-        return true;
+        //for (int i = 0; i < hits.Length; i++)
+        //{
+        //    if (!hits[i].collider.isTrigger && (validTransforms != null && !validTransforms.Contains(hits[i].transform)))
+        //    {
+        //        return false;
+        //    }
+        //}
+
+        //return true;
     }
-
-
-
-
-    public abstract void NoiseHeard(AudioClip noise, Transform noiseOwner, Vector3 noisePosition, float noiseVolume);
-
 
 
     #region Stat Stuff
@@ -413,102 +409,45 @@ public abstract class UnitController : MonoBehaviour, IMemorable, IStat
     #region UI Stuff
 
 
-    protected virtual void UpdateUI()
+    public virtual void UpdateUI()
     {
         UpdateHealthUI(m_Health);
     }
     protected virtual void UpdateHealthUI(Health _health)
     {
-        OnUIAttributeChanged(new UIEventArgs(UIManager.Component.Health, "",m_Health.HealthPercentage, false));
+        OnUIAttributeChanged(new UIEventArgs(UIManager.Component.Health, "", m_Health.HealthPercentage, false));
         //m_Handler.UpdateUI(Attribute.Health, m_Health.HealthPercentage, false);
     }
 
-    protected virtual void OnUIAttributeChanged(UIEventArgs args)
+    protected void OnUIAttributeChanged(UIEventArgs args)
     {
         if (UIAttributeChangedEvent != null)
         {
             UIAttributeChangedEvent(this, args);
         }
     }
-
-    //public void UpdateAttributeUI()
-    //{
-    //    throw new NotImplementedException();
-    //}
-
-    //  protected void UpdateHealthProgressBar()
-    //  {
-    //      UpdateHealthProgressBar(m_Health);
-    //  }
-    //  protected void UpdateHealthProgressBar(Health healthScript)
-    //  {
-    //      if (m_UI == null || healthScript == null)
-    //          return;
-
-    //      m_UI.UpdateAttribute("Health", healthScript.HealthPercentage);
-    //  }
-
-
-    //  protected void UpdateHandheldProgressBar(float _percent, bool setImmediate)
-    //  {
-    //      if (m_UI == null)
-    //          return;
-
-
-    //      if (setImmediate)
-    //      {
-    //          m_UI.SetAttribute("Handheld", _percent);
-    //      }
-    //      else
-    //      {
-    //          m_UI.UpdateAttribute("Handheld", _percent);
-    //      }
-    //  }
-
-    //  protected void UpdateAbilityProgressBar(float _percent, bool setImmediate)
-    //  {
-    //      if (m_UI == null)
-    //          return;
-
-    //      /*
-    //if(setImmediate){
-    //	UIManager.Instance.SetWeaponProgressBar(_percent);
-    //}
-
-    //UIManager.Instance.UpdateWeaponProgressBar(_percent);*/
-    //  }
-
-    //  protected void UpdateExpBar(float _percent)
-    //  {
-    //      if (m_UI == null)
-    //          return;
-
-    //      m_UI.UpdateAttribute("Experience", _percent);
-    //  }
-
-
-
-    //  public void UpdateAttributeUI(AttributeEffect _effect, float _percentage)
-    //  {
-    //      GetUI();
-
-    //      m_UI.UpdateAttributeUI(_effect, _percentage);
-    //  }
-
     #endregion
 
 
     #region Cost
-        
-    public virtual bool CanAfford(int _cost)
+
+    public virtual bool CanAfford(int creditsDelta)
     {
-        throw new NotImplementedException();
+        return (Credits + creditsDelta) > 0;
     }
-    
-    public bool AttemptCharge(int cost)
+
+    public bool Charge(int creditsDelta)
     {
-        throw new NotImplementedException();
+        if (!CanAfford(creditsDelta))
+        {
+            return false;
+        }
+
+        Credits += creditsDelta;
+
+        return true;
     }
+
     #endregion
 
 
@@ -529,7 +468,25 @@ public abstract class UnitController : MonoBehaviour, IMemorable, IStat
         //m_Handler.HideUI();
     }
 
+
+    protected virtual void SightCollisionEntered(Collision coll) { }
+    protected virtual void SightCollisionStayed(Collision coll) { }
+    protected virtual void SightCollisionExited(Collision coll) { }
+
+    protected virtual void SightTriggerEntered(Collider coll) { }
+    protected virtual void SightTriggerStayed(Collider coll) { }
+    protected virtual void SightTriggerExited(Collider coll) { }
+
+
+    protected virtual void SightGained(GameObject obj) { }
+    protected virtual void SightMaintained(GameObject obj) { }
+    protected virtual void SightLost(GameObject obj) { }
+
     #region Accessors
+    public String Name
+    {
+        get { return unitName; }
+    }
     public GameObject GameObject
     {
         get { return this.gameObject; }
@@ -547,17 +504,15 @@ public abstract class UnitController : MonoBehaviour, IMemorable, IStat
     public float SightRange
     {
         get { return m_SightRange; }
-        protected set { m_SightRange = Mathf.Clamp(value, 0f, value); }
-    }
-    public float SightThreshold
-    {
-        get { return sightThreshold; }
-        protected set { sightThreshold = Mathf.Clamp(value, 0f, value); }
-    }
-    public float HearingThreshold
-    {
-        get { return hearingThreshold; }
-        protected set { hearingThreshold = Mathf.Clamp(value, 0f, value); }
+        protected set
+        {
+            m_SightRange = Mathf.Clamp(value, 0f, value);
+
+            if (m_Sight != null)
+            {
+                m_Sight.SensorRange = SightRange;
+            }
+        }
     }
 
     public LayerMask IgnoreMask
@@ -645,8 +600,8 @@ public abstract class UnitController : MonoBehaviour, IMemorable, IStat
         m_StatSubscriptions.Validate();
 
         SightRange = SightRange;
-        SightThreshold = SightThreshold;
-        HearingThreshold = HearingThreshold;
+
+        Credits = Credits;
     }
 
 
@@ -667,8 +622,8 @@ public abstract class UnitController : MonoBehaviour, IMemorable, IStat
         Quaternion rightRayRotation = Quaternion.AngleAxis(fieldOfView / 2f, m_Transform.up);
         Vector3 leftRayDirection = leftRayRotation * m_Transform.forward;
         Vector3 rightRayDirection = rightRayRotation * m_Transform.forward;
-        Gizmos.DrawLine(m_Transform.position, m_Transform.position + (leftRayDirection * m_SightRange * SightThreshold));
-        Gizmos.DrawLine(m_Transform.position, m_Transform.position + (rightRayDirection * m_SightRange * SightThreshold));
+        Gizmos.DrawLine(m_Transform.position, m_Transform.position + (leftRayDirection * m_SightRange));
+        Gizmos.DrawLine(m_Transform.position, m_Transform.position + (rightRayDirection * m_SightRange));
     }
 
 }

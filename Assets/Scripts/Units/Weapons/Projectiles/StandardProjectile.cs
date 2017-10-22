@@ -213,10 +213,9 @@ public class StandardProjectile : MonoBehaviour, IProjectile {
 
 
 
-    void OnCollisionEnter(Collision coll)
+    void OnTriggerEnter(Collider coll)
     {
-
-        if (coll.collider.isTrigger)
+        if (coll.isTrigger)
             return;
 
         Team teamMember = coll.gameObject.GetComponent<Team>();

@@ -6,22 +6,22 @@ using UnityEngine;
 public class ItemPrice : MonoBehaviour {
 
     [SerializeField]
-    int m_Cost;
+    int m_Value;
     
     public void Charge()
     {
         throw new System.NotImplementedException();
     }
 
-    public int Cost
+    public int Value
     {
-        get { return m_Cost; }
-        set { m_Cost = Mathf.Clamp(value, 0, value); }
+        get { return m_Value; }
+        set { m_Value = Mathf.Clamp(value, 0, value); }
     }
 
 
     void OnValidate()
     {
-        Cost = Cost;
+        Value = Value;
     }
 }

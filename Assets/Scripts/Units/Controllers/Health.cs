@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System;
 
 [RequireComponent(typeof(AudioSource))]
-public class Health : MonoBehaviour
+public class Health : MonoBehaviour, IMemorable
 {
 
 	static readonly float LOW_HEALTH_PERCENT = 0.2f;
@@ -274,7 +274,14 @@ public class Health : MonoBehaviour
 
 
     #region Accessors
-
+    public GameObject GameObject
+    {
+        get { return this.gameObject; }
+    }
+    public Transform Transform
+    {
+        get { return this.transform; }
+    }
     public float CurHealth
     {
 		get { return currentHealth; }

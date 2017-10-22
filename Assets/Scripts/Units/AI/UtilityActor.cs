@@ -6,15 +6,11 @@ using System.Linq;
 
 public class UtilityActor : UnitController
 {
-
     static readonly float MINIMUM_UPDATE_TIME = 0.02f;
 
 
-    //Percentage of UpdateTime to be used as sigma
-    static readonly float UPDATE_PERCENTAGE_SIGMA = 0.5f;
 
-
-    List<BaseUtilityBehavior> myBehaviors = new List<BaseUtilityBehavior>();
+    List<BaseUtilityBehavior> m_Behaviors = new List<BaseUtilityBehavior>();
 
     BaseUtilityBehavior currentActiveBehavior;
 
@@ -105,7 +101,7 @@ public class UtilityActor : UnitController
     Transform targetTransform;
     Transform followTransform;
 
-    
+
 
     [Tooltip("Base Attack Power")]
     [SerializeField]
@@ -274,7 +270,7 @@ public class UtilityActor : UnitController
         StartCoroutine(UpdateBehavior());
         StartCoroutine(UpdateInfluencers());
 
-        StartCoroutine(CheckNearbyRoutine());
+       // StartCoroutine(CheckNearbyRoutine());
     }
     public override void OnDisable()
     {
@@ -321,20 +317,14 @@ public class UtilityActor : UnitController
     /// <param name="percentToConsider"> Percentage of all possible behaviors to consider</param>
     public void ChooseNewBehavior(float percentToConsider)
     {
-        if (ShowDebug)
-        {
-            Debug.Log(Time.time + " #### " + m_Transform.name + " -- ChooseNewBehavior(). Behavior count: " + myBehaviors.Count);
-        }
-
-
-        if (myBehaviors.Count == 0)
+        if (m_Behaviors.Count == 0)
             return;
 
         if (currentActiveBehavior != null && !currentActiveBehavior.CanEndBehavior)
         {
             if (ShowDebug)
             {
-                Debug.Log(Time.time + " #### " + m_Transform.name + " -- Can't end current behavior. Current Behavior: " + CurrentBehavior.ToString());
+                Debug.Log(m_Transform.name + " -- Can't end current behavior. Current Behavior: " + CurrentBehavior.ToString());
             }
 
 
@@ -344,39 +334,21 @@ public class UtilityActor : UnitController
         List<WeightedObjectOfUtilityBehavior> weightedBehaviors = new List<WeightedObjectOfUtilityBehavior>();
 
 
-        for (int i = 0; i < myBehaviors.Count; i++)
+        for (int i = 0; i < m_Behaviors.Count; i++)
         {
-            //if (myBehaviors[i].IsActive)
-            //{
-            //    Debug.Log(Time.time + " #### " + m_Transform.name + ". Behavior is active so it will not be added to potential list. Behavior: " + myBehaviors[i].ToString());
-            //    continue;
-            //}
-
-            if (!myBehaviors[i].IsActive && !myBehaviors[i].CanStartBehavior)
+            if (!m_Behaviors[i].IsActive && !m_Behaviors[i].CanStartBehavior)
             {
-                if (ShowDebug)
-                {
-                    Debug.Log(Time.time + " #### " + m_Transform.name + ". Behavior cannot be started so it will not be added to potential list. Behavior: " + myBehaviors[i].ToString());
-                }
-
-
                 continue;
             }
 
-            float _weight = myBehaviors[i].GetBehaviorScore();
+            float _weight = m_Behaviors[i].GetBehaviorScore();
 
-            if (_weight <= 0)
+            if (_weight <= 0f)
             {
-                if (ShowDebug)
-                {
-                    Debug.Log(Time.time + " #### " + m_Transform.name + ". Behavior's weight is not greater than 0 so it will not be added to potential list. Behavior: " + myBehaviors[i].ToString());
-                }
-
                 continue;
             }
-
-
-            weightedBehaviors.Add(new WeightedObjectOfUtilityBehavior(myBehaviors[i], _weight));
+            
+            weightedBehaviors.Add(new WeightedObjectOfUtilityBehavior(m_Behaviors[i], _weight));
 
         }
 
@@ -385,10 +357,9 @@ public class UtilityActor : UnitController
         {
             if (ShowDebug)
             {
-                Debug.Log(Time.time + " #### " + m_Transform.name + " -- No weighted behaviors available.");
+                Debug.Log(m_Transform.name + " -- No weighted behaviors available.");
             }
-
-
+            
             return;
         }
 
@@ -414,12 +385,6 @@ public class UtilityActor : UnitController
             if (weightedBehaviors[i].Item2 <= 0)
                 continue;
 
-            if (ShowDebug)
-            {
-                Debug.Log(Time.time + " #### " + m_Transform.name + " Adding potential behavior. Behavior: " + weightedBehaviors[i].Item1 + ". Score: " + weightedBehaviors[i].Item2);
-            }
-
-
             considerationBehaviors.Add(weightedBehaviors[i]);
         }
 
@@ -434,7 +399,7 @@ public class UtilityActor : UnitController
         {
             if (ShowDebug)
             {
-                Debug.Log(Time.time + " #### " + m_Transform.name + " Chosen behavior is already current active behavior: " + currentActiveBehavior.ToString());
+                Debug.Log(m_Transform.name + " Chosen behavior is already current active behavior: " + currentActiveBehavior.ToString());
             }
 
             return;
@@ -444,7 +409,7 @@ public class UtilityActor : UnitController
         {
             if (currentActiveBehavior != null)
             {
-                Debug.Log(Time.time + " #### " + m_Transform.name + " -- Ending Behavior -- " + currentActiveBehavior.ToString());
+                Debug.Log(m_Transform.name + " -- Ending Behavior -- " + currentActiveBehavior.ToString());
             }
 
 
@@ -456,13 +421,9 @@ public class UtilityActor : UnitController
                 {
                     _score = considerationBehaviors[i].Item2;
                 }
-                else
-                {
-                    Debug.Log(Time.time + " #### " + m_Transform.name + " -- Potential Behavior -- " + considerationBehaviors[i].ToString() + " ## Score: " + considerationBehaviors[i].Item2);
-                }
             }
 
-            Debug.Log(Time.time + " #### " + m_Transform.name + " -- New Behavior -- " + chosenBehavior.ToString() + " ## Score: " + _score);
+            Debug.Log(m_Transform.name + " -- New Behavior -- " + chosenBehavior.ToString() + " ## Score: " + _score);
         }
 
 
@@ -496,7 +457,7 @@ public class UtilityActor : UnitController
     /// </summary>
     public void AddBehavior(BaseUtilityBehavior _behavior)
     {
-        myBehaviors.Add(_behavior);
+        m_Behaviors.Add(_behavior);
     }
 
     /// <summary>
@@ -506,9 +467,9 @@ public class UtilityActor : UnitController
     {
         int index = -1;
 
-        for (int i = 0; i < myBehaviors.Count; i++)
+        for (int i = 0; i < m_Behaviors.Count; i++)
         {
-            if (myBehaviors[i] == _behavior)
+            if (m_Behaviors[i] == _behavior)
             {
                 index = i;
                 break;
@@ -520,7 +481,7 @@ public class UtilityActor : UnitController
             return false;
 
 
-        myBehaviors.RemoveAt(index);
+        m_Behaviors.RemoveAt(index);
         return true;
     }
 
@@ -529,7 +490,7 @@ public class UtilityActor : UnitController
     /// </summary>
     public void GatherAllBehaviors()
     {
-        myBehaviors.Clear();
+        m_Behaviors.Clear();
 
         BaseUtilityBehavior[] _behaviors = GetComponents<BaseUtilityBehavior>();
 
@@ -554,7 +515,7 @@ public class UtilityActor : UnitController
 
         if (showDebug)
         {
-            Debug.Log(Time.time + " #### " + m_Transform.name + " -- Behavior Ended -- " + _behavior.ToString());
+            Debug.Log(m_Transform.name + " -- Behavior Ended -- " + _behavior.ToString());
         }
 
         currentActiveBehavior = null;
@@ -570,7 +531,7 @@ public class UtilityActor : UnitController
     {
         while (true)
         {
-            yield return new WaitForSeconds(UpdateBehaviorTime);
+            yield return new WaitForSeconds(updateBehaviorTime);
 
 
             if (!recentlyUpdatedBehaviorFlag)
@@ -582,10 +543,7 @@ public class UtilityActor : UnitController
     }
 
     #endregion
-
-
-
-
+    
 
     #region Stupidity Stuff
 
@@ -1078,14 +1036,17 @@ public class UtilityActor : UnitController
     {
         Dictionary<IMemorable, float> newMemoryTracker = new Dictionary<IMemorable, float>();
 
-        Dictionary<IMemorable,float>.Enumerator memoryEnumerator = memoryTracker.GetEnumerator();
+        Dictionary<IMemorable, float>.Enumerator memoryEnumerator = memoryTracker.GetEnumerator();
         while (memoryEnumerator.MoveNext())
         {
             GameObject g;
-            if(memoryEnumerator.Current.Key != null && (g = memoryEnumerator.Current.Key.GameObject).activeInHierarchy)
+
+            //Ignore deleted or inactive objects
+            if (memoryEnumerator.Current.Key != null && (g = memoryEnumerator.Current.Key.GameObject).activeInHierarchy)
             {
                 float t = memoryEnumerator.Current.Value - deltaTime;
 
+                //Keep memory of object if memory time remains OR object is unforgettable
                 if (t > 0 || unforgetableObjects.Contains(memoryEnumerator.Current.Key))
                 {
                     newMemoryTracker.Add(memoryEnumerator.Current.Key, t);
@@ -1161,7 +1122,7 @@ public class UtilityActor : UnitController
     {
         return obj.GetComponent<IProjectile>() != null;
     }
-    
+
     #endregion
 
 
@@ -1268,82 +1229,7 @@ public class UtilityActor : UnitController
         get { return currentBehaviorString; }
     }
 
-    public int AttackPower
-    {
-        get { return (int)(baseAttackPower * (BonusAttackPower + 1)); }
-    }
-    public float AttackRange
-    {
-        get { return baseAttackRange * (BonusAttackPower + 1); }
-    }
-    public float AttackRate
-    {
-        get { return baseAttackRate * (BonusAttackRate + 1); }
-    }
-    public float AttackSpeed
-    {
-        get { return baseAttackSpeed * (BonusAttackSpeed + 1); }
-    }
 
-    public float CriticalAttackPower
-    {
-        get { return AttackPower * CriticalHitMultiplier; }
-    }
-    public float CriticalHitMultiplier
-    {
-        get { return baseCriticalHitMultiplier + BonusCriticalHitMultiplier; }
-    }
-    public float CriticalHitChance
-    {
-        get { return baseCriticalHitChance + BonusCriticalHitChance; }
-    }
-
-
-
-    public float BonusAttackPower
-    {
-        get { return bonusAttackPower; }
-        set { bonusAttackPower = value; }
-    }
-    public float BonusAttackRange
-    {
-        get { return bonusAttackRange; }
-        set { bonusAttackRange = value; }
-    }
-    public float BonusAttackRate
-    {
-        get { return bonusAttackRate; }
-        set { bonusAttackRate = value; }
-    }
-    public float BonusAttackSpeed
-    {
-        get { return bonusAttackSpeed; }
-        set { bonusAttackSpeed = value; }
-    }
-    public float BonusCriticalHitMultiplier
-    {
-        get { return bonusCriticalHitMultiplier; }
-        set { bonusCriticalHitMultiplier = value; }
-    }
-    public float BonusCriticalHitChance
-    {
-        get { return bonusCriticalHitChance; }
-        set { bonusCriticalHitChance = value; }
-    }
-
-    public float UpdateBehaviorTime
-    {
-        get
-        {
-            float val = (float)Utilities.GetRandomGaussian(updateBehaviorTime, updateBehaviorTime * UPDATE_PERCENTAGE_SIGMA);
-
-            val = val <= 0 ? MINIMUM_UPDATE_TIME : val;
-
-            return val;
-        }
-    }
-
-    
     public float MemoryTime
     {
         get { return memoryTime; }
@@ -1403,6 +1289,7 @@ public class UtilityActor : UnitController
         get { return targetTransform; }
         set
         {
+            //Debug.Log("Setting TargetTransform");
             targetTransform = value;
         }
     }
@@ -1560,7 +1447,7 @@ public class UtilityActor : UnitController
             for (int i = 0; i < nearbyAllies.Count; i++)
             {
 
-                float distPercentage = Vector3.Distance(m_Transform.position, objectsInSight[nearbyAllies[i].Transform].LastKnownPosition) / SightRange;
+                float distPercentage = Vector3.Distance(m_Transform.position, objectsInSight[nearbyAllies[i].Transform].LastKnownBasePosition) / SightRange;
 
                 if (distPercentage > 1f)
                     continue;
@@ -1576,7 +1463,7 @@ public class UtilityActor : UnitController
             //Enemies
             for (int i = 0; i < nearbyEnemies.Count; i++)
             {
-                float distPercentage = Vector3.Distance(m_Transform.position, objectsInSight[nearbyEnemies[i].Transform].LastKnownPosition) / SightRange;
+                float distPercentage = Vector3.Distance(m_Transform.position, objectsInSight[nearbyEnemies[i].Transform].LastKnownBasePosition) / SightRange;
 
                 if (distPercentage > 1f)
                     continue;
@@ -1620,7 +1507,7 @@ public class UtilityActor : UnitController
 
     public void AlertObjects(List<GameObject> objects, bool areForgetable)
     {
-        if(objects == null)
+        if (objects == null)
         {
             return;
         }
@@ -1642,8 +1529,7 @@ public class UtilityActor : UnitController
 
         GameObject obj = memObj.GameObject;
         SightedObject sightedObj = null;// new SightedObject(obj.transform, obj.transform.position, Vector3.zero, false);
-
-
+        
         bool hasSeenBefore = objectsInSight.ContainsKey(obj.transform);
         bool shouldAddToSight = false;
 
@@ -1671,10 +1557,11 @@ public class UtilityActor : UnitController
                 nearbyTags.Add(obj.tag, new List<Transform>() { obj.transform });
             }
 
-
-            sightedObj = new SightedObject(obj.transform, obj.transform.position, Vector3.zero, false);
+            sightedObj = new SightedObject(obj.transform);
+            sightedObj.UpdatePositions();
+            sightedObj.InSight = false;
         }
-        
+
 
         if (IsAlly(obj.GetComponent<Team>()))
         {
@@ -1769,7 +1656,7 @@ public class UtilityActor : UnitController
             memoryTracker.Add(memObj, MemoryTime);
         }
 
-        if(!isForgetable && unforgetableObjects.Contains(memObj))
+        if (!isForgetable && unforgetableObjects.Contains(memObj))
         {
             unforgetableObjects.Add(memObj);
         }
@@ -1787,212 +1674,157 @@ public class UtilityActor : UnitController
 
 
 
+    ///// <summary>
+    ///// Check for nearby objects consistently
+    ///// </summary>
+    //IEnumerator CheckNearbyRoutine()
+    //{
+    //    while (true)
+    //    {
+    //        yield return new WaitForSeconds(checkNearbyTime);
+
+    //        CheckNearby();
+    //    }
+    //}
+    ///// <summary>
+    ///// Perform actual check for nearby objects
+    ///// </summary>
+    //void CheckNearby()
+    //{
+    //    Collider[] nearbyColliders = Physics.OverlapSphere(m_Transform.position, SightRange);
+
+    //    //Get set of objects within sight
+    //    HashSet<GameObject> noticedSet = new HashSet<GameObject>();
+
+    //    List<Transform> sightList = new List<Transform>(objectsInSight.Keys);
+    //    sightList.ForEach(o =>
+    //    {
+    //        if (o != null && o.gameObject.activeInHierarchy)
+    //        {
+    //            noticedSet.Add(o.gameObject);
+    //        }
+    //    });
 
 
-    public override void NoiseHeard(AudioClip noise, Transform noiseOwner, Vector3 noisePosition, float noiseVolume)
+
+    //    for (int i = 0; i < nearbyColliders.Length; i++)
+    //    {
+    //        IMemorable memObj = nearbyColliders[i].GetComponent<IMemorable>();
+
+    //        if (memObj == null)
+    //            continue;
+
+    //        //Have we seen this object before?
+    //        if (noticedSet.Contains(nearbyColliders[i].gameObject))
+    //            noticedSet.Remove(nearbyColliders[i].gameObject);
+
+    //        CheckNearbyObject(memObj);
+    //    }
+    //}
+    ///// <summary>
+    ///// Check an object to see if it's in sight and/or needs to be forgotten
+    ///// </summary>
+    //void CheckNearbyObject(IMemorable mem)
+    //{
+    //    GameObject memObj = mem.GameObject;
+
+    //    Vector3 toVector = memObj.transform.position - m_Transform.position;
+
+    //    bool isInSight = true;
+
+    //    //Is transform within FOV?
+    //    isInSight = Vector3.Angle(m_Transform.forward, toVector) < (FOV / 2f);
+
+    //    if (!canSeeThroughObjects)
+    //    {
+    //        //Check if a non-trigger collider is blocking vision
+    //        RaycastHit[] _hits = Physics.RaycastAll(m_Transform.position, toVector, toVector.magnitude);
+    //        for (int i = 0; i < _hits.Length; i++)
+    //        {
+    //            if (_hits[i].collider.isTrigger)
+    //                continue;
+
+    //            if (Vector3.Distance(_hits[i].point, m_Transform.position) < toVector.magnitude && _hits[i].collider.gameObject != memObj)
+    //                isInSight = false;
+    //        }
+    //    }
+
+    //    //React if can see the object
+    //    if (isInSight)
+    //    {
+    //        StartCoroutine(ReactionDelay(mem));
+    //    }
+
+    //    //Update last known info for object
+    //    if (objectsInSight.ContainsKey(mem.Transform))
+    //    {
+    //        SightedObject _sightedObj = objectsInSight[memObj.transform];
+    //        // _sightedObj.SightedTransform = coll.transform;
+    //        _sightedObj.InSight = isInSight;
+
+    //        if (isInSight)
+    //        {
+    //            _sightedObj.LastKnownBasePosition = memObj.transform.position;
+
+    //            List<LOS_Target> losTargets = new List<LOS_Target>(memObj.GetComponentsInChildren<LOS_Target>());
+    //            List<Vector3> losPositions = new List<Vector3>();
+    //            losTargets.ForEach(t => losPositions.Add(t.transform.position));
+
+    //            _sightedObj.LastKnownPositions = losPositions;
+
+    //            _sightedObj.LastTimeSeen = Time.time;
+
+    //            Rigidbody _rigid = memObj.GetComponent<Rigidbody>();
+    //            if (_rigid != null)
+    //                _sightedObj.LastKnownDirection = _rigid.velocity;
+    //        }
+    //    }
+
+    //}
+
+    protected override void SightGained(GameObject obj)
     {
-        if (noiseVolume < HearingThreshold)
+        if (obj == null)
             return;
+
+        IMemorable memObj = obj.GetComponent<IMemorable>();
+
+        if (memObj == null)
+            return;
+
+        StartCoroutine(ReactionDelay(memObj));
     }
-
-
-
-
-
-
-
-
-
-
-    /*
-    void OnTriggerStay(Collider coll)
+    protected override void SightMaintained(GameObject obj)
     {
-        GameObject obj = coll.gameObject;
-        Vector3 toVector = obj.transform.position - myTransform.position;
+        if (obj == null)
+            return;
 
-        bool isInSight = true;
+        IMemorable memObj = obj.GetComponent<IMemorable>();
 
-        //Can see transform?
-        isInSight = Vector3.Angle(myTransform.forward, toVector) < (FOV / 2f);
-        //isInSight = isInSight && !Physics.Raycast(new Ray(myTransform.position, toVector), toVector.magnitude + 0.1f, environmentMask);
+        if (memObj == null)
+            return;
 
-        if (!canSeeThroughObjects)
-        {
-            RaycastHit[] _hits = Physics.RaycastAll(myTransform.position, toVector, toVector.magnitude);
-            for (int i = 0; i < _hits.Length; i++)
-            {
-                if (_hits[i].collider.isTrigger)
-                    continue;
+        if (!objectsInSight.ContainsKey(memObj.Transform))
+            return;
 
-                if (Vector3.Distance(_hits[i].point, myTransform.position) < toVector.magnitude && _hits[i].collider.gameObject != obj)
-                    isInSight = false;
-            }
-        }
-
-        //React if can see
-        if (isInSight)
-            StartCoroutine(ReactionDelay(coll));
-
-
-        //Update last known info for object
-        if (objectsInSight.ContainsKey(coll.transform))
-        {
-            SightedObject _sightedObj = objectsInSight[coll.transform];
-            _sightedObj.sightedTransform = coll.transform;
-            _sightedObj.inSight = isInSight;
-
-            if (isInSight)
-            {
-                _sightedObj.lastKnownPosition = coll.transform.position;
-                _sightedObj.lastTimeSeen = Time.time;
-
-                Rigidbody _rigid = coll.transform.GetComponent<Rigidbody>();
-                if (_rigid != null)
-                    _sightedObj.lastKnownDirection = _rigid.velocity;
-            }
-        }
-
-    }*/
-    /*
-    void OnTriggerExit(Collider coll)
-    {
-        GameObject obj = coll.gameObject;
-
-
-        if (forgetSet.Contains(obj))
-        {
-            StopCoroutine(ForgetObject(obj));
-            forgetSet.Remove(obj);
-        }
-
-        StartCoroutine(ForgetObject(obj));
-
-        //if (sightDictionary.ContainsKey(obj))
-        //    sightDictionary.Remove(obj);
+        objectsInSight[memObj.Transform].UpdatePositions();
     }
-    */
-
-
-
-
-    /// <summary>
-    /// Check for nearby objects consistently
-    /// </summary>
-    IEnumerator CheckNearbyRoutine()
+    protected override void SightLost(GameObject obj)
     {
-        while (true)
-        {
-            yield return new WaitForSeconds(checkNearbyTime);
+        if (obj == null)
+            return;
 
-            CheckNearby();
-        }
+        IMemorable memObj = obj.GetComponent<IMemorable>();
+
+        if (memObj == null)
+            return;
+
+        if (!objectsInSight.ContainsKey(memObj.Transform))
+            return;
+
+        SightedObject _sightedObj = objectsInSight[memObj.Transform];
+        _sightedObj.InSight = false;
     }
-    /// <summary>
-    /// Perform actual check for nearby objects
-    /// </summary>
-    void CheckNearby()
-    {
-        Collider[] nearbyColliders = Physics.OverlapSphere(m_Transform.position, SightRange);
-
-        //Get set of objects within sight
-        HashSet<GameObject> noticedSet = new HashSet<GameObject>();
-
-        List<Transform> sightList = new List<Transform>(objectsInSight.Keys);
-        sightList.ForEach(o =>
-        {
-            if (o != null && o.gameObject.activeInHierarchy)
-            {
-                noticedSet.Add(o.gameObject);
-            }
-        });
-
-
-
-        for (int i = 0; i < nearbyColliders.Length; i++)
-        {
-            IMemorable memObj = nearbyColliders[i].GetComponent<IMemorable>();
-
-            if (memObj == null)
-                continue;
-
-            //Have we seen this object before?
-            if (noticedSet.Contains(nearbyColliders[i].gameObject))
-                noticedSet.Remove(nearbyColliders[i].gameObject);
-
-            CheckNearbyObject(memObj);
-        }
-
-     
-        ////Start to forget objects that weren't encountered during OverlapSphere
-        //IEnumerator _enumerator = noticedSet.GetEnumerator();
-        //while (_enumerator.MoveNext())
-        //{
-        //    GameObject g = _enumerator.Current as GameObject;
-
-        //    if (g == null)
-        //        continue;
-
-        //    if (!objectsToForget.ContainsKey(g))
-        //    {
-        //        StartCoroutine(ForgetObject(g));
-        //    }
-        //}
-    }
-    /// <summary>
-    /// Check an object to see if it's in sight and/or needs to be forgotten
-    /// </summary>
-    void CheckNearbyObject(IMemorable mem)
-    {
-        GameObject memObj = mem.GameObject;
-
-        Vector3 toVector = memObj.transform.position - m_Transform.position;
-
-        bool isInSight = true;
-
-        //Is transform within FOV?
-        isInSight = Vector3.Angle(m_Transform.forward, toVector) < (FOV / 2f);
-
-        if (!canSeeThroughObjects)
-        {
-            //Check if a non-trigger collider is blocking vision
-            RaycastHit[] _hits = Physics.RaycastAll(m_Transform.position, toVector, toVector.magnitude);
-            for (int i = 0; i < _hits.Length; i++)
-            {
-                if (_hits[i].collider.isTrigger)
-                    continue;
-
-                if (Vector3.Distance(_hits[i].point, m_Transform.position) < toVector.magnitude && _hits[i].collider.gameObject != memObj)
-                    isInSight = false;
-            }
-        }
-
-        //React if can see the object
-        if (isInSight)
-        {
-            StartCoroutine(ReactionDelay(mem));
-        }
-
-        //Update last known info for object
-        if (objectsInSight.ContainsKey(mem.Transform))
-        {
-            SightedObject _sightedObj = objectsInSight[memObj.transform];
-            // _sightedObj.SightedTransform = coll.transform;
-            _sightedObj.InSight = isInSight;
-
-            if (isInSight)
-            {
-                _sightedObj.LastKnownPosition = memObj.transform.position;
-                _sightedObj.LastTimeSeen = Time.time;
-
-                Rigidbody _rigid = memObj.GetComponent<Rigidbody>();
-                if (_rigid != null)
-                    _sightedObj.LastKnownDirection = _rigid.velocity;
-            }
-        }
-
-    }
-
-
 
 
 
@@ -2008,7 +1840,7 @@ public class UtilityActor : UnitController
         }
 
     }
-    
+
     void DrawAllyGizmo()
     {
         Gizmos.color = Color.cyan;
@@ -2042,64 +1874,5 @@ public class UtilityActor : UnitController
         allyTraitReactions.ForEach(r => r.Validate());
         enemyTraitReactions.ForEach(r => r.Validate());
         projectileTraitReactions.ForEach(r => r.Validate());
-    }
-}
-
-
-
-[System.Serializable]
-public class SightedObject
-{
-    private Transform sightedTransform;
-    private Vector3 lastKnownPosition;
-    private Vector3 lastKnownDirection;
-    private float lastTimeSeen;
-    private bool inSight;
-
-    public SightedObject()
-    {
-
-    }
-    public SightedObject(Transform _transform, Vector3 _pos, Vector3 _dir, bool _sight)
-    {
-        sightedTransform = _transform;
-        lastKnownPosition = _pos;
-        lastKnownDirection = _dir;
-        lastTimeSeen = Time.time;
-        inSight = _sight;
-
-    }
-
-
-    public Transform SightedTransform
-    {
-        get { return sightedTransform; }
-    }
-    public Vector3 LastKnownPosition
-    {
-        get { return lastKnownPosition; }
-        set { lastKnownPosition = value; }
-    }
-    public Vector3 LastKnownDirection
-    {
-        get { return lastKnownDirection; }
-        set { lastKnownDirection = value; }
-    }
-    public float LastTimeSeen
-    {
-        get { return lastTimeSeen; }
-        set { lastTimeSeen = value; }
-    }
-    public bool InSight
-    {
-        get { return inSight; }
-        set { inSight = value; }
-    }
-
-
-
-    public override string ToString()
-    {
-        return string.Format("Sighted Transform: {0}. Last Known Position: {1}. Last Known Direction: {2}. Last Time Seen: {3}. In Sight: {4}", SightedTransform, LastKnownPosition, LastKnownDirection, LastTimeSeen, InSight);
     }
 }

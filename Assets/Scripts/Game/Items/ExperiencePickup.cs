@@ -2,14 +2,13 @@
 using System.Collections;
 using System;
 
-public class ExperiencePickup : MonoBehaviour, IExperienceProvider, IAcquirableObject, IIdentifier{
+public class ExperiencePickup : MonoBehaviour, IExperienceProvider, IIdentifier, ICollectible{
 
     [SerializeField]
     int experienceValue;
 
     [SerializeField]
     string m_PickupName;
-
 
     public event EventHandler ObjectAcquired;
 
@@ -43,7 +42,22 @@ public class ExperiencePickup : MonoBehaviour, IExperienceProvider, IAcquirableO
 
     void OnCollisionEnter(Collision coll)
     {
-        PlayerController _player = coll.gameObject.GetComponent<PlayerController>();
+        if (coll.collider.isTrigger)
+            return;
+
+        AttemptAddExperience(coll.gameObject);
+    }
+    void OnTriggerEnter(Collider other)
+    {
+        if (other.isTrigger)
+            return;
+
+        AttemptAddExperience(other.gameObject);
+    }
+
+    void AttemptAddExperience(GameObject obj)
+    {
+        PlayerController _player = obj.GetComponent<PlayerController>();
 
         if (_player != null && _player.CanModifyExp(experienceValue))
         {

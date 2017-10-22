@@ -38,10 +38,7 @@ public class Chest : InteractableObject
 
     [SerializeField]
     float rechargeTime = .5f;
-
-    [SerializeField]
-    float favorOnUse = 0f;
-
+    
     bool isUsable = true;
 
 
@@ -55,8 +52,6 @@ public class Chest : InteractableObject
         StartCoroutine(DropRewards(player.GetCurrentStatLevel(StatType.Luck)));
         StartCoroutine(RechargeChest());
         
-
-        GameManager.Instance.ChangeGodFavor(favorOnUse);
         OnUseTrigger();
 
         return true;

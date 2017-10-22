@@ -82,11 +82,11 @@ public class MeleeBehavior : BaseUtilityBehavior
     public override float GetBehaviorScore()
     {
 
-        if (m_Actor.TargetObject == null || Vector3.Distance(m_Actor.TargetObject.LastKnownPosition, m_Transform.position) > attackRange)
+        if (m_Actor.TargetObject == null || Vector3.Distance(m_Actor.TargetObject.LastKnownBasePosition, m_Transform.position) > attackRange)
             return 0f;
 
 
-        float angle = Vector3.Angle(m_Transform.forward, m_Actor.TargetObject.LastKnownPosition);
+        float angle = Vector3.Angle(m_Transform.forward, m_Actor.TargetObject.LastKnownBasePosition);
         float percentage = Mathf.Clamp01(angle / attackAngle);
 
         return utilityCurve.Evaluate(percentage);

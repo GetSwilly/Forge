@@ -60,10 +60,20 @@ public abstract class BaseUtilityBehavior : MonoBehaviour
 
         m_Pathfinder = GetComponent<IPathfinder>();
     }
+    void OnDisable()
+    {
+        if (gameObject.activeInHierarchy)
+        {
+            EndBehavior(true, true);
+        }
+    }
     
 
 
-    public abstract void StartBehavior();
+    public virtual void StartBehavior()
+    {
+        IsActive = true;
+    }
     public virtual void StartBehavior(BaseUtilityBehavior _newSuperBehavior)
     {
         superBehavior = _newSuperBehavior;

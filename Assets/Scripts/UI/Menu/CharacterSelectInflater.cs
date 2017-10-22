@@ -52,7 +52,7 @@ public class CharacterSelectInflater : MenuInflater
 
 
 
-            _button.Initialize(m_Menu, null, characterPrefabs[i].GetComponent<PlayerController>().CharacterName);
+            _button.Initialize(m_Menu, null, characterPrefabs[i].GetComponent<PlayerController>().Name);
 
 
 

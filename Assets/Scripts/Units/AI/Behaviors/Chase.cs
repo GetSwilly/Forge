@@ -60,7 +60,7 @@ public class Chase : BaseUtilityBehavior
 
             if (m_Type == Chase.Type.LastKnownPosition)
             {
-                m_Pathfinder.SetTarget(targetObject.LastKnownPosition);
+                m_Pathfinder.SetTarget(targetObject.LastKnownBasePosition);
             }
         }
         else if (MaximumTimeOutOfSight != -1 && sightTimer >= MaximumTimeOutOfSight)
@@ -72,6 +72,16 @@ public class Chase : BaseUtilityBehavior
 
             EndBehavior(true, true);
         }
+
+        //if(m_Pathfinder.GetDistanceRemaining() < m_Actor.SightRange)
+        //{
+        //    m_Pathfinder.ShouldRotateTowardsPath = false;
+        //    m_Pathfinder.RotateTowards(targetObject.LastKnownBasePosition);
+        //}
+        //else
+        //{
+        //    m_Pathfinder.ShouldRotateTowardsPath = true;
+        //}
 
     }
 
@@ -92,7 +102,7 @@ public class Chase : BaseUtilityBehavior
             switch (m_Type)
             {
                 case Type.LastKnownPosition:
-                    m_Pathfinder.SetAndSearch(targetObject.LastKnownPosition);
+                    m_Pathfinder.SetAndSearch(targetObject.LastKnownBasePosition);
                     break;
                 case Type.Transform:
                     m_Pathfinder.SetAndSearch(targetObject.SightedTransform);
@@ -108,6 +118,9 @@ public class Chase : BaseUtilityBehavior
         //m_Movement.RemoveSpeedMultiplier(chaseMovementSpeedup);
         //m_Movement.RemoveRotationMultiplier(chaseRotationSpeedup);
 
+        // m_Pathfinder.ShouldRotateTowardsPath = true;
+
+        m_Pathfinder.StopPathTraversal();
 
         base.EndBehavior(shouldNotifySuper, shouldNotifyActor);
     }
@@ -163,7 +176,7 @@ public class Chase : BaseUtilityBehavior
 
 
 
-        float dist = Vector3.Distance(m_Actor.TargetObject.LastKnownPosition, m_Transform.position);
+        float dist = Vector3.Distance(m_Actor.TargetObject.LastKnownBasePosition, m_Transform.position);
 
         if (dist <= StopDistance)
         {

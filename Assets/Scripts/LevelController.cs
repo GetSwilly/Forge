@@ -17,21 +17,6 @@ namespace TestRealm
 
         void Start()
         {
-            //for (int i = 0; i < m_Bases.Count; i++)
-            //{
-            //    if (m_Bases[i] == null || !m_Bases[i].gameObject.activeInHierarchy)
-            //    {
-            //        m_Bases.RemoveAt(i);
-            //        i--;
-            //    }
-            //}
-
-
-            //if (m_Bases.Count == 0)
-            //{
-            //    throw new System.Exception("No Bases found. At least 1 active base required.");
-            //}
-
             StartWaves();
         }
         

@@ -5,12 +5,8 @@ using System.Collections.Generic;
 
 public class PlayerController : UnitController
 {
-
-
-    static readonly float EXP_COLLECT_SPEED = 1f;
+    static readonly float EXP_COLLECT_SPEED = 6f;
     static readonly float DROP_UTILITY_DELAY = 0.5f;
-
-
 
 
     [Space(15)]
@@ -128,11 +124,6 @@ public class PlayerController : UnitController
     public event Delegates.Alert OnExpChange;
 
 
-    [SerializeField]
-    string characterName = "";
-
-
-
 
     public override void Start()
     {
@@ -211,7 +202,7 @@ public class PlayerController : UnitController
 
 
         //Pickup(auxiliaryAbility);
-        
+
         UpdateUI();
     }
     void OnEnable()
@@ -401,15 +392,6 @@ public class PlayerController : UnitController
     #endregion
 
 
-
-
-    public override void NoiseHeard(AudioClip noise, Transform noiseOwner, Vector3 noisePosition, float noiseVolume)
-    {
-        if (noiseVolume < HearingThreshold)
-            return;
-    }
-
-
     #region Offensive Stuff
 
     public void ActivateNativeAbility()
@@ -510,8 +492,10 @@ public class PlayerController : UnitController
         Rigidbody _rigidbody = NativeAbility.GetComponent<Rigidbody>();
         _rigidbody.isKinematic = true;
 
-        Collider _collider = NativeAbility.GetComponent<Collider>();
-        _collider.enabled = false;
+        Collider[] _colliders = NativeAbility.GetComponentsInChildren<Collider>();
+        for (int i = 0; i < _colliders.Length; i++) { _colliders[i].enabled = false; }
+
+        NativeAbility.OnAbilityChanged += UpdateNativeAbilityUI;
     }
     public void Pickup(Ability newAbility)
     {
@@ -522,17 +506,19 @@ public class PlayerController : UnitController
 
         auxiliaryAbility = newAbility;
         auxiliaryAbility.transform.parent = m_Transform;
-        abilityPickupRoutine = StartCoroutine(PickupObject(auxiliaryAbility.transform, Vector3.zero, Quaternion.identity));
+        abilityPickupRoutine = StartCoroutine(PickupObject(AuxiliaryAbility.transform, Vector3.zero, Quaternion.identity));
         auxiliaryAbility.Initialize(m_Transform);
 
-        ItemPickup _pickup = auxiliaryAbility.GetComponent<ItemPickup>();
+        ItemPickup _pickup = AuxiliaryAbility.GetComponent<ItemPickup>();
         _pickup.enabled = false;
 
-        Rigidbody _rigidbody = auxiliaryAbility.GetComponent<Rigidbody>();
+        Rigidbody _rigidbody = AuxiliaryAbility.GetComponent<Rigidbody>();
         _rigidbody.isKinematic = true;
 
-        Collider _collider = auxiliaryAbility.GetComponent<Collider>();
-        _collider.enabled = false;
+        Collider[] _colliders = AuxiliaryAbility.GetComponentsInChildren<Collider>();
+        for (int i = 0; i < _colliders.Length; i++) { _colliders[i].enabled = false; }
+
+        AuxiliaryAbility.OnAbilityChanged += UpdateAuxiliaryAbilityUI;
     }
 
     public virtual void DropAbility(Ability _ability)
@@ -550,7 +536,7 @@ public class PlayerController : UnitController
             auxiliaryAbility.Terminate();
 
 
-            GameObject g = GameObject.Find("Generated Objects");
+            GameObject g = GameManager.Instance.generatedObjectHolder;
             auxiliaryAbility.transform.parent = null;
 
             if (g != null)
@@ -575,8 +561,8 @@ public class PlayerController : UnitController
             _rigidbody.AddForce(auxiliaryAbility.transform.forward * DROP_FORCE, ForceMode.Impulse);
 
 
-            Collider _collider = auxiliaryAbility.GetComponent<Collider>();
-            _collider.enabled = true;
+            Collider[] _colliders = AuxiliaryAbility.GetComponentsInChildren<Collider>();
+            for (int i = 0; i < _colliders.Length; i++) { _colliders[i].enabled = true; }
 
 
             if (abilityPickupRoutine != null)
@@ -606,10 +592,8 @@ public class PlayerController : UnitController
         Rigidbody _rigidbody = m_HandheldItem.GetComponent<Rigidbody>();
         _rigidbody.isKinematic = true;
 
-        Collider _collider = m_HandheldItem.GetComponent<Collider>();
-        _collider.enabled = false;
-
-
+        Collider[] _colliders = m_HandheldItem.GetComponentsInChildren<Collider>();
+        for (int i = 0; i < _colliders.Length; i++) { _colliders[i].enabled = false; }
 
 
         //m_HandheldItem.OnActivatePrimary += HandheldActivationPrimary;
@@ -663,9 +647,8 @@ public class PlayerController : UnitController
         _rigidbody.velocity = Vector3.zero;
         _rigidbody.AddForce(auxiliaryAbility.transform.forward * DROP_FORCE, ForceMode.Impulse);
 
-
-        Collider _collider = m_HandheldItem.GetComponent<Collider>();
-        _collider.enabled = true;
+        Collider[] _colliders = m_HandheldItem.GetComponentsInChildren<Collider>();
+        for (int i = 0; i < _colliders.Length; i++) { _colliders[i].enabled = true; }
 
         m_HandheldItem = null;
 
@@ -807,8 +790,6 @@ public class PlayerController : UnitController
 
     #endregion
 
-
-
     protected void PlayEffect(DisplayEffect _effect)
     {
         _effect.Play();
@@ -816,7 +797,7 @@ public class PlayerController : UnitController
 
 
 
-    protected override void UpdateUI()
+    public override void UpdateUI()
     {
         base.UpdateUI();
 
@@ -827,40 +808,34 @@ public class PlayerController : UnitController
 
     protected void UpdateHandheldUI(float percentage, bool setImmediate)
     {
-        OnUIAttributeChanged(new UIEventArgs(UIManager.Component.Handheld, "",percentage, setImmediate));
+        OnUIAttributeChanged(new UIEventArgs(UIManager.Component.Handheld, "", percentage, setImmediate));
 
         // m_Handler.UpdateUI("Handheld", m_HandheldItem == null ? 0f : m_HandheldItem.GetPercentage(), setImmediate);
     }
 
+    private void UpdateNativeAbilityUI(float percentage)
+    {
+        OnUIAttributeChanged(new UIEventArgs(UIManager.Component.NativeAbility, "", percentage, false));
+    }
+    private void UpdateAuxiliaryAbilityUI(float percentage)
+    {
+        OnUIAttributeChanged(new UIEventArgs(UIManager.Component.AuxiliaryAbility, "", percentage, false));
+    }
     protected void UpdateAbilityUI(bool setImmediate)
     {
-        if (NativeAbility != null)
-        {
-            OnUIAttributeChanged(new UIEventArgs(UIManager.Component.NativeAbility,"", NativeAbility.GetChargePercentage(), setImmediate));
-        }
+        OnUIAttributeChanged(new UIEventArgs(UIManager.Component.NativeAbility, "", NativeAbility == null ? 0f : NativeAbility.GetChargePercentage(), setImmediate));
 
-        if (AuxiliaryAbility != null)
-        {
-            OnUIAttributeChanged(new UIEventArgs(UIManager.Component.AuxiliaryAbility, "",AuxiliaryAbility.GetChargePercentage(), setImmediate));
-        }
-
-        //base.UpdateAbilityProgressBar(NativeAbility, setImmediate);
-        //base.UpdateAbilityProgressBar(AuxiliaryAbility, setImmediate);
+        OnUIAttributeChanged(new UIEventArgs(UIManager.Component.AuxiliaryAbility, "", AuxiliaryAbility == null ? 0f : AuxiliaryAbility.GetChargePercentage(), setImmediate));
     }
 
     protected void UpdateExperienceUI()
     {
-        OnUIAttributeChanged(new UIEventArgs(UIManager.Component.Experience, "",CurrentExperienceLevelProgress, false));
+        OnUIAttributeChanged(new UIEventArgs(UIManager.Component.Experience, "", CurrentExperienceLevelProgress, false));
 
         //Debug.Log(string.Format("Current Exp: {0}. Exp Required for next level: {1}. Percentage: {2} %", CurrentExperience, GetExpRequiredForLevel(CurrentLevel + 1), CurrentExperienceLevelProgress * 100f));
         //UpdateExpBar(CurrentExperienceLevelProgress);
         //m_Handler.UpdateUI(Attribute.Experience, CurrentExperienceLevelProgress, false);
     }
-
-
-
-
-
 
 
 
@@ -904,11 +879,6 @@ public class PlayerController : UnitController
 
 
     #region Accessors
-
-    public string CharacterName
-    {
-        get { return characterName; }
-    }
 
     public List<Stat> CurrentStats
     {
@@ -1029,71 +999,68 @@ public class PlayerController : UnitController
     }
 
     #endregion
-
-
-    #region OnCollision / OnTrigger
-
-    public virtual void OnTriggerEnter(Collider coll)
+    
+    protected override void SightGained(GameObject obj)
     {
-        if (coll.transform == m_Transform || Utilities.IsInLayerMask(coll.gameObject, ignoreCollisionLayer))
-            return;
-        /*
-		IInteractable _interactable = coll.GetComponent<IInteractable>();
+  //      if (obj.transform == m_Transform)
+  //          return;
+  //      /*
+		//IInteractable _interactable = coll.GetComponent<IInteractable>();
 		
-		if(_interactable != null && _interactable.IsEnabled() && _interactable.IsUsableOutsideFOV()){
-			AddInteractable(coll.gameObject);
-		}*/
+		//if(_interactable != null && _interactable.IsEnabled() && _interactable.IsUsableOutsideFOV()){
+		//	AddInteractable(coll.gameObject);
+		//}*/
 
-        if (!coll.isTrigger)
-        {
-            AttributeHandler _handler = coll.GetComponent<AttributeHandler>();
-            if (_handler != null)
-            {
-                //_handler.ShowUI(false);
-            }
-        }
+  //      if (!coll.isTrigger)
+  //      {
+  //          AttributeHandler _handler = coll.GetComponent<AttributeHandler>();
+  //          if (_handler != null)
+  //          {
+  //              //_handler.ShowUI(false);
+  //          }
+  //      }
     }
 
-    public virtual void OnTriggerStay(Collider coll)
+    protected override void SightMaintained(GameObject obj)
     {
-        if (coll.transform == m_Transform || Utilities.IsInLayerMask(coll.gameObject, ignoreCollisionLayer))
+        if (obj.transform == m_Transform )
             return;
 
-        Vector3 toVector = coll.transform.position - m_Transform.position;
+        Vector3 directionVector = obj.transform.position - m_Transform.position;
 
         if (ShowDebug)
         {
-            Debug.DrawLine(m_Transform.position, coll.transform.position, Color.yellow);
-            //Debug.DrawLine(myTransform.position, myTransform.position + (myTransform.forward * 5f), Color.cyan);
+            //Debug.DrawLine(m_Transform.position, obj.transform.position, Color.yellow);
         }
 
-        ICollectible _collectible = coll.GetComponent<ICollectible>();
+        ICollectible _collectible = obj.GetComponent<ICollectible>();
 
-        if (shouldCollect && _collectible != null)
+        if (shouldCollect && _collectible != null && directionVector.magnitude <= CollectRange)
         {
-            Rigidbody _rigidbody = coll.GetComponent<Rigidbody>();
+            //obj.transform.position = Vector3.MoveTowards(obj.transform.position, m_Transform.position, EXP_COLLECT_SPEED * Time.deltaTime);
+            Rigidbody _rigidbody = obj.GetComponent<Rigidbody>();
 
-            if (toVector.magnitude <= CollectRange && _rigidbody != null)
+            if (directionVector.magnitude <= CollectRange && _rigidbody != null)
             {
-                Vector3 forceVector = -toVector * EXP_COLLECT_SPEED;
-                _rigidbody.AddForce(forceVector);
+                Vector3 forceVector = -directionVector.normalized * EXP_COLLECT_SPEED * Time.deltaTime;
+                _rigidbody.MovePosition(_rigidbody.position + forceVector);
             }
         }
 
 
 
 
-        InteractableObject _interactable = coll.GetComponent<InteractableObject>();
+        InteractableObject _interactable = obj.GetComponent<InteractableObject>();
 
         if (_interactable != null && _interactable.IsUsable)
         {
-            if (toVector.magnitude <= InteractDistance && (_interactable.IsUsableOutsideFOV || Vector3.Angle(toVector, m_Transform.forward) <= FOV / 2f))
+            if (directionVector.magnitude <= InteractDistance && (_interactable.IsUsableOutsideFOV || Vector3.Angle(directionVector, m_Transform.forward) <= FOV / 2f))
             {
-                AddInteractable(coll.gameObject);
+                AddInteractable(obj.gameObject);
             }
             else
             {
-                RemoveInteractable(coll.gameObject);
+                RemoveInteractable(obj.gameObject);
             }
         }
 
@@ -1101,26 +1068,106 @@ public class PlayerController : UnitController
 
     }
 
-    public virtual void OnTriggerExit(Collider coll)
+    protected override void SightLost(GameObject obj)
     {
-        if (coll.transform == m_Transform || Utilities.IsInLayerMask(coll.gameObject, ignoreCollisionLayer))
+        if (obj == null || obj.transform == m_Transform)
             return;
 
-        InteractableObject _interactable = coll.GetComponent<InteractableObject>();
-
+        InteractableObject _interactable = obj.GetComponent<InteractableObject>();
         if (_interactable != null)
-            RemoveInteractable(coll.gameObject);
-
-
-        if (!coll.isTrigger)
-        {
-            AttributeHandler _handler = coll.GetComponent<AttributeHandler>();
-            if (_handler != null)
-            {
-                //_handler.HideUI();
-            }
-        }
+            RemoveInteractable(obj);
     }
+
+    #region OnCollision / OnTrigger
+
+  //  public virtual void OnTriggerEnter(Collider coll)
+  //  {
+  //      if (coll.transform == m_Transform || Utilities.IsInLayerMask(coll.gameObject, ignoreCollisionLayer))
+  //          return;
+  //      /*
+		//IInteractable _interactable = coll.GetComponent<IInteractable>();
+		
+		//if(_interactable != null && _interactable.IsEnabled() && _interactable.IsUsableOutsideFOV()){
+		//	AddInteractable(coll.gameObject);
+		//}*/
+
+  //      if (!coll.isTrigger)
+  //      {
+  //          AttributeHandler _handler = coll.GetComponent<AttributeHandler>();
+  //          if (_handler != null)
+  //          {
+  //              //_handler.ShowUI(false);
+  //          }
+  //      }
+  //  }
+
+  //  public virtual void OnTriggerStay(Collider coll)
+  //  {
+  //      if (coll.transform == m_Transform || Utilities.IsInLayerMask(coll.gameObject, ignoreCollisionLayer))
+  //          return;
+
+  //      Vector3 toVector = coll.transform.position - m_Transform.position;
+
+  //      if (ShowDebug)
+  //      {
+  //          Debug.DrawLine(m_Transform.position, coll.transform.position, Color.yellow);
+  //          //Debug.DrawLine(myTransform.position, myTransform.position + (myTransform.forward * 5f), Color.cyan);
+  //      }
+
+  //      ICollectible _collectible = coll.GetComponent<ICollectible>();
+
+  //      if (shouldCollect && _collectible != null)
+  //      {
+  //          Rigidbody _rigidbody = coll.GetComponent<Rigidbody>();
+
+  //          if (toVector.magnitude <= CollectRange && _rigidbody != null)
+  //          {
+  //              Vector3 forceVector = -toVector * EXP_COLLECT_SPEED;
+  //              _rigidbody.AddForce(forceVector);
+  //          }
+  //      }
+
+
+
+
+  //      InteractableObject _interactable = coll.GetComponent<InteractableObject>();
+
+  //      if (_interactable != null && _interactable.IsUsable)
+  //      {
+  //          if (toVector.magnitude <= InteractDistance && (_interactable.IsUsableOutsideFOV || Vector3.Angle(toVector, m_Transform.forward) <= FOV / 2f))
+  //          {
+  //              AddInteractable(coll.gameObject);
+  //          }
+  //          else
+  //          {
+  //              RemoveInteractable(coll.gameObject);
+  //          }
+  //      }
+
+
+
+  //  }
+
+  //  public virtual void OnTriggerExit(Collider coll)
+  //  {
+  //      if (coll.transform == m_Transform || Utilities.IsInLayerMask(coll.gameObject, ignoreCollisionLayer))
+  //          return;
+
+  //      InteractableObject _interactable = coll.GetComponent<InteractableObject>();
+
+  //      if (_interactable != null)
+  //          RemoveInteractable(coll.gameObject);
+
+
+  //      if (!coll.isTrigger)
+  //      {
+  //          AttributeHandler _handler = coll.GetComponent<AttributeHandler>();
+  //          if (_handler != null)
+  //          {
+  //              //_handler.HideUI();
+  //          }
+  //      }
+  //  }
 
     #endregion
 
@@ -1128,7 +1175,7 @@ public class PlayerController : UnitController
 
     public bool Equals(PlayerController other)
     {
-        return CharacterName.Equals(other.CharacterName);
+        return Name.Equals(other.Name);
     }
     public void Copy(PlayerController other)
     {
@@ -1189,6 +1236,7 @@ public class PlayerController : UnitController
 
         InteractDistance = InteractDistance;
         ThrowPower = ThrowPower;
+        
     }
 }
 

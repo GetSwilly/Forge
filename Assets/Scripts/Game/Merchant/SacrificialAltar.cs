@@ -72,10 +72,7 @@ public class SacrificialAltar : InteractableObject
 
     [SerializeField]
     float rechargeTime = .5f;
-
-    [SerializeField]
-    float favorOnUse = 0f;
-
+    
     [Tooltip("Wait for Audio Clip to finish playing before allowing use?")]
     [SerializeField]
     bool waitForAudio = false;
@@ -102,11 +99,6 @@ public class SacrificialAltar : InteractableObject
 
         if (summonChance > 0 && Random.value <= summonChance)
             StartCoroutine(SummonObjects());
-
-
-        GameManager.Instance.ChangeGodFavor(favorOnUse);
-
-
 
         OnUseTrigger();
 

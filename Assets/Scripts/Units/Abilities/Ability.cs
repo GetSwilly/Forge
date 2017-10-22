@@ -45,6 +45,11 @@ public abstract class Ability : MonoBehaviour, IIdentifier {
     float chargeMultiplier = 1f;
     protected bool isAbilityActive = false;
 
+    public delegate void AbilityChange(float _percent);
+    public event AbilityChange OnAbilityChanged;
+
+
+
     protected virtual void Update()
     {
         ChargeArithmetic(chargeDeltaTime * Time.deltaTime);
@@ -134,16 +139,11 @@ public abstract class Ability : MonoBehaviour, IIdentifier {
         get { return currentCharge; }
         private set
         {
-            currentCharge = value;
+            currentCharge = Mathf.Clamp(value,0f,MaxCharge);
 
-            if(currentCharge < 0)
+           if(OnAbilityChanged != null)
             {
-                currentCharge = 0;
-            }
-
-            if(currentCharge > MaxCharge)
-            {
-                currentCharge = MaxCharge;
+                OnAbilityChanged(GetChargePercentage());
             }
         }
     }

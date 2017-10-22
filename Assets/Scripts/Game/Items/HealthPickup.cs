@@ -2,7 +2,8 @@
 using System.Collections;
 using System;
 
-public class HealthPickup : MonoBehaviour,IHealthProvider,IAcquirableObject {
+public class HealthPickup : MonoBehaviour,IHealthProvider, ICollectible
+{
     
 
     [SerializeField]
@@ -19,20 +20,13 @@ public class HealthPickup : MonoBehaviour,IHealthProvider,IAcquirableObject {
     public float HealthValue
     {
         get { return healthValue; }
+        set { healthValue = Mathf.Clamp(value, 0f, value); }
     }
     public ProviderActivationType ActivationType
     {
         get { return ProviderActivationType.Touch; }
     }
-
-    public GameObject Object
-    {
-        get
-        {
-            return this.gameObject;
-        }
-    }
-
+    
     void OnCollisionEnter(Collision coll)
     {
         Health _health = coll.gameObject.GetComponent<Health>();
@@ -53,15 +47,18 @@ public class HealthPickup : MonoBehaviour,IHealthProvider,IAcquirableObject {
             }
 
 
-            ObjectAcquired(this, EventArgs.Empty);
+            if (ObjectAcquired != null)
+            {
+                ObjectAcquired(this, EventArgs.Empty);
+            }
 
             //gameObject.SetActive(false);
             Destroy(gameObject);
         }
     }
 
-    public void Drop()
+    void OnValidate()
     {
-        throw new NotImplementedException();
+        HealthValue = HealthValue;
     }
 }

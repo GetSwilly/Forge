@@ -11,32 +11,15 @@ public class GameManager : MonoBehaviour
 {
 
     #region Static Variables
-
-    //  static readonly string LOOT_DATABASE_PATH = "Load/LootDatabase";
-    // static readonly string IN_GAME_OBJECT_FOLDER_PATH = "In-Game Objects";
-
-
+    
     static readonly int START_LIVES_PLAYER = 1;
-    static readonly int START_LIVES_WARD = 1;
-
-    /*
-    static readonly int SCORE_ONKILL = 100;
-    static readonly int SCORE_ONPLAYERDAMAGED = -250;
-    static readonly int SCORE_ONPLAYERKILLED = -750;
-    static readonly int SCORE_ONWARDDAMAGED = -500;
-    static readonly int SCORE_ONWARDKILLED = -1500;
-    */
-    static readonly float DEITY_FAVOR_MAX = 100f;
-
+    
     static readonly float ENEMY_DEATH_WEIGHT = 1f;
-
-    //static readonly float OBJECT_SPAWN_DIST = 3f;
-
-    static readonly int DIV_HEALTH_VALUE = 25;
-    static readonly float LAUNCH_POWER = 30f;
-    static readonly float DROP_DELAY = 0.25f;
-
-
+    
+    static readonly float ITEM_DROP_LAUNCH_POWER = .8f;
+    static readonly Vector3 ITEM_DROP_OFFSET = new Vector3(0f,0.2f,0f);
+    static readonly float ITEM_DROP_DELAY = 0.05f;
+    
     static readonly Vector3 HUB_WORLD_PLAYER_SPAWN = new Vector3(0f, .5f, 0f);
     static readonly float KILL_DEPTH = -150f;
     static readonly float KILL_PLANE_SCALE = 150;
@@ -57,31 +40,18 @@ public class GameManager : MonoBehaviour
     int currentLevel = 0;
 
     [SerializeField]
-    int lives_Player = 0;
+    int m_Lives = 0;
 
 
     [SerializeField]
     int currentLevelPoints = 0;
-
-
-    float currentDeityFavor = 0;
-
-
-
-    [SerializeField]
-    AnimationCurve disasterWaitCurve = AnimationCurve.Linear(0f, 0f, 1f, 1f);
-
-    [SerializeField]
-    AnimationCurve disasterFavorCurve = AnimationCurve.Linear(-1f, 0f, 1f, 1f);
-
-    [SerializeField]
-    AnimationCurve disasterLevelCurve = AnimationCurve.Linear(0f, 0f, 1f, 1f);
-
-
+    
 
     int numKilled = 0;
-    bool canStartDisaster = false;
 
+
+    [SerializeField]
+    public GameObject generatedObjectHolder;
 
 
     //Active objects on screen	
@@ -157,7 +127,7 @@ public class GameManager : MonoBehaviour
     {
         currentLevel = 1;
 
-        lives_Player = START_LIVES_PLAYER;
+        m_Lives = START_LIVES_PLAYER;
        
         CameraFollow camFollow = Camera.main.GetComponent<CameraFollow>();
         if (camFollow != null && player != null)
@@ -188,7 +158,7 @@ public class GameManager : MonoBehaviour
     void EndGame()
     {
 
-        pInput.CanAttack = false;
+        pInput.CanEngage = false;
         pController.enabled = false;
 
         if (CurrentGameState == GameState.WON)
@@ -207,7 +177,7 @@ public class GameManager : MonoBehaviour
         player.transform.position = Vector3.zero;
         pController.enabled = true;
         pInput.enabled = true;
-        pInput.CanAttack = false;
+        pInput.CanEngage = false;
     }
 
     public void NextLevel()
@@ -229,15 +199,9 @@ public class GameManager : MonoBehaviour
         player.SetActive(false);
 
         numKilled = 0;
-
-        StopCoroutine(DisasterTimerRoutine());
-        canStartDisaster = false;
-
+        
         yield return StartCoroutine(LevelController.Instance.GenerateLevel());
-
-        SpawnPlayer();
-        StartCoroutine(DisasterTimerRoutine());
-
+        
         currentGameState = GameState.PLAYING;
 
         UIManager.Instance.DeflateAll();
@@ -278,22 +242,6 @@ public class GameManager : MonoBehaviour
     }
 
     
-    IEnumerator DisasterTimerRoutine()
-    {
-        canStartDisaster = false;
-        yield return new WaitForSeconds(disasterWaitCurve.Evaluate(UnityEngine.Random.value) + disasterFavorCurve.Evaluate(DeityFavor) + disasterLevelCurve.Evaluate(CurrentLevel));
-        canStartDisaster = true;
-    }
-    public void StartDisaster(Disaster _disaster)
-    {
-        if (!CanStartDisaster)
-            return;
-
-
-        StartCoroutine(DisasterTimerRoutine());
-    }
-
-
     void ShowUpgradeScreen(bool isEndOfLevel)
     {
 
@@ -362,7 +310,7 @@ public class GameManager : MonoBehaviour
         player.transform.rotation = Quaternion.identity;
 
         player.SetActive(true);
-        pInput.CanAttack = true;
+        pInput.CanEngage = true;
 
         Rigidbody rigid = player.GetComponent<Rigidbody>();
 
@@ -372,7 +320,7 @@ public class GameManager : MonoBehaviour
         }
 
         pController.enabled = true;
-        pInput.CanAttack = true;
+        pInput.CanEngage = true;
 
         
         //Health pHealth = player.GetComponent<Health>();
@@ -456,8 +404,7 @@ public class GameManager : MonoBehaviour
     }
     public void PlayerDamaged(GameObject playerObj)
     {
-        //  ChangeScore(SCORE_ONPLAYERDAMAGED);
-        CameraShake.Instance.ShakeMinor();
+        //CameraShake.Instance.ShakeMinor();
     }
 
 
@@ -467,10 +414,10 @@ public class GameManager : MonoBehaviour
     }
     public void PlayerKilled(GameObject playerObj)
     {
-        lives_Player--;
+        m_Lives--;
         // ChangeScore(SCORE_ONPLAYERKILLED);
 
-        if (lives_Player <= 0)
+        if (m_Lives <= 0)
         {
             GameOver();
         }
@@ -511,7 +458,7 @@ public class GameManager : MonoBehaviour
                 {
                     DropLoot(_health.gameObject);
 
-                    yield return new WaitForSeconds(DROP_DELAY);
+                    yield return new WaitForSeconds(ITEM_DROP_DELAY);
                 }
             }
         }
@@ -568,23 +515,27 @@ public class GameManager : MonoBehaviour
     {
         if (droppingObject == null)
             return;
-
-        Health _health = droppingObject.GetComponent<Health>();
-
-
+        
         GameObject newItem = GetItem(ListDefinitionName.GeneralItems);
 
         if (newItem == null)
             return;
 
-        Vector3 launchVector = UnityEngine.Random.insideUnitSphere * LAUNCH_POWER;
+        Vector3 launchVector = UnityEngine.Random.insideUnitSphere * ITEM_DROP_LAUNCH_POWER;
 
         if (launchVector.y < 0)
             launchVector.y *= -1;
 
+        Rigidbody _rigidbody = newItem.GetComponent<Rigidbody>();
 
-        newItem.transform.position = droppingObject.transform.position;
+        newItem.transform.position = droppingObject.transform.position + ITEM_DROP_OFFSET;
         newItem.SetActive(true);
+
+        if(_rigidbody != null)
+        {
+            _rigidbody.velocity = Vector3.zero;
+            _rigidbody.AddForce(launchVector, ForceMode.Impulse);
+        }
     }
 
     public double GetPoolWeight(PoolWeightIdentifier _weightIdentifier)
@@ -625,17 +576,8 @@ public class GameManager : MonoBehaviour
                 throw new NotImplementedException();
         }
     }
-
-    public void ChangeGodFavor(float delta)
-    {
-        if (OnFavorChange != null)
-            OnFavorChange();
-
-
-        DeityFavor += delta;
-    }
     
-
+    
     #region Accessors
 
     public GameObject Player
@@ -651,7 +593,11 @@ public class GameManager : MonoBehaviour
     {
         get { return currentGameState; }
     }
-
+    public int Lives
+    {
+        get { return m_Lives; }
+        private set { m_Lives = Mathf.Clamp(value,0,value); }
+    }
     public int CurrentLevel
     {
         get { return currentLevel; }
@@ -660,27 +606,13 @@ public class GameManager : MonoBehaviour
     {
         get { return currentLevelPoints; }
     }
-    public float DeityFavor
-    {
-        get { return currentDeityFavor; }
-        private set { currentDeityFavor = Mathf.Clamp(value, -DEITY_FAVOR_MAX, DEITY_FAVOR_MAX); }
-    }
-
-
-    public bool CanStartDisaster
-    {
-        get { return canStartDisaster; }
-    }
-    /*
-    public float DisasterChance
-    {
-        get { return disasterChanceBase + (-godFavor * disasterChanceFavorBonus); }
-    }*/
     #endregion
         
 
     void OnValidate()
     {
+        Lives = Lives;
+
         ValidateItemPoolDefinitions();
     }
     void ValidateItemPoolDefinitions()

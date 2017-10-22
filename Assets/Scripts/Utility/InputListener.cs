@@ -155,8 +155,7 @@ public class InputListener : MonoBehaviour
         if(startDelay)
             StartCoroutine(InputDelayRoutine());
     }
-
-
+    
 
     IEnumerator InputDelayRoutine()
     {
@@ -165,5 +164,14 @@ public class InputListener : MonoBehaviour
         yield return new WaitForSeconds(inputDelay);
 
         canAcceptInput = true;
+    }
+    
+
+    void OnValidate()
+    {
+        if(inputDelay < 0f)
+        {
+            inputDelay = 0f;
+        }
     }
 }

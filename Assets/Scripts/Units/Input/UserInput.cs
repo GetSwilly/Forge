@@ -2,13 +2,19 @@
 using System.Collections;
 
 
-public class UserInput : MonoBehaviour {
-
+public class UserInput : MonoBehaviour
+{
     static readonly float MAX_DISTANCE = 100f;
-
+    static readonly string _NativeAbilityInputString = "Native Ability";
+    static readonly string _AuxiliaryAbilityInputString = "Auxiliary Ability";
+    static readonly string _HandheldPrimaryInputString = "Primary";
+    static readonly string _HandheldSecondaryInputString = "Secondary";
+    static readonly string _HandheldTertiaryInputString = "Tertiary";
+    static readonly string _InteractionInputString = "Interact";
+    static readonly string _ThrowInputString = "Throw";
 
     public enum WorldSpace { TwoD, ThreeD }
-    public enum MovementRelativityType { Global, Camera, User};
+    public enum MovementRelativityType { Global, Camera, User };
 
 
     [SerializeField]
@@ -18,28 +24,31 @@ public class UserInput : MonoBehaviour {
     MovementRelativityType inputRelativity = MovementRelativityType.User;
 
     [SerializeField]
-    bool canAttack;
+    bool canMove = true;
+
+    [SerializeField]
+    bool canEngage = true;
 
     bool isThrowing;
 
     [SerializeField]
-    LayerMask hitMask;
+    LayerMask pointerHitMask;
 
 
     PlayerController player;
-	Transform m_Transform;
+    Transform m_Transform;
     Camera mainCam;
 
-	void Awake()
+    void Awake()
     {
 
-		m_Transform = GetComponent<Transform>();
+        m_Transform = GetComponent<Transform>();
 
-		player = GetComponent<PlayerController>();
+        player = GetComponent<PlayerController>();
 
 
-		mainCam = Camera.main;
-	}
+        mainCam = Camera.main;
+    }
     void Start()
     {
         isThrowing = false;
@@ -51,19 +60,25 @@ public class UserInput : MonoBehaviour {
         if (isThrowing)
             return;
 
+        if (CanEngage)
+        {
+            CheckEngagementInput();
+        }
+    }
 
-
-        if (Input.GetButtonDown("Interact"))
+    void CheckEngagementInput()
+    {
+        if (Input.GetButtonDown(_InteractionInputString))
         {
             player.Interact();
         }
-        else if (canAttack)
+        else if (canEngage)
         {
             bool isBusy = false;
 
 
             //Utility item interaction
-            if (player.HasUtilityItem && ((Utilities.HasFlag(player.UtilityItem.InputType, InputType.Hold) && Input.GetButton("Throw")) || (Utilities.HasFlag(player.UtilityItem.InputType, InputType.Press) && Input.GetButtonDown("Throw"))))
+            if (player.HasUtilityItem && ((Utilities.HasFlag(player.UtilityItem.InputType, InputType.Hold) && Input.GetButton(_ThrowInputString)) || (Utilities.HasFlag(player.UtilityItem.InputType, InputType.Press) && Input.GetButtonDown(_ThrowInputString))))
             {
                 player.ActivateUtilityItem();
                 isBusy = true;
@@ -75,7 +90,7 @@ public class UserInput : MonoBehaviour {
             }
 
             //Native ability interaction
-            if (!isBusy && player.HasNativeAbility && player.NativeAbility.CanUseAbility() && ((Utilities.HasFlag(player.NativeAbility.InputType, InputType.Hold) && Input.GetButton("Native Ability")) || (Utilities.HasFlag(player.NativeAbility.InputType , InputType.Press) && Input.GetButtonDown("Native Ability"))))
+            if (!isBusy && player.HasNativeAbility && player.NativeAbility.CanUseAbility() && ((Utilities.HasFlag(player.NativeAbility.InputType, InputType.Hold) && Input.GetButton(_NativeAbilityInputString)) || (Utilities.HasFlag(player.NativeAbility.InputType, InputType.Press) && Input.GetButtonDown(_NativeAbilityInputString))))
             {
                 player.ActivateNativeAbility();
                 isBusy = true;
@@ -86,52 +101,52 @@ public class UserInput : MonoBehaviour {
             }
 
             //Auxiliary ability interaction
-            if (!isBusy && player.HasAuxiliaryAbility && player.AuxiliaryAbility.CanUseAbility() && ((Utilities.HasFlag(player.AuxiliaryAbility.InputType,InputType.Hold) && Input.GetButton("Auxiliary Ability")) || (Utilities.HasFlag(player.AuxiliaryAbility.InputType, InputType.Press) && Input.GetButtonDown("Auxiliary Ability"))))
+            if (!isBusy && player.HasAuxiliaryAbility && player.AuxiliaryAbility.CanUseAbility() && ((Utilities.HasFlag(player.AuxiliaryAbility.InputType, InputType.Hold) && Input.GetButton(_AuxiliaryAbilityInputString)) || (Utilities.HasFlag(player.AuxiliaryAbility.InputType, InputType.Press) && Input.GetButtonDown(_AuxiliaryAbilityInputString))))
             {
                 player.ActivateAuxiliaryAbility();
                 isBusy = true;
             }
             else if (player.HasAuxiliaryAbility)
             {
-               player.DeactivateAuxiliaryAbility();
+                player.DeactivateAuxiliaryAbility();
             }
 
             //Handheld Primary interaction
-            if (!isBusy && player.HasHandheld && player.HandheldItem.CanActivatePrimary() && ((Utilities.HasFlag(player.HandheldItem.PrimaryInputType,InputType.Hold) && Input.GetButton("Primary")) || (Utilities.HasFlag(player.HandheldItem.PrimaryInputType, InputType.Press) && Input.GetButtonDown("Primary"))))
+            if (!isBusy && player.HasHandheld && player.HandheldItem.CanActivatePrimary() && ((Utilities.HasFlag(player.HandheldItem.PrimaryInputType, InputType.Hold) && Input.GetButton(_HandheldPrimaryInputString)) || (Utilities.HasFlag(player.HandheldItem.PrimaryInputType, InputType.Press) && Input.GetButtonDown(_HandheldPrimaryInputString))))
             {
                 player.ActivateHandheldPrimary();
                 isBusy = true;
             }
-            else if(!isBusy && player.HasHandheld)
+            else if (!isBusy && player.HasHandheld)
             {
                 player.DeactivateHandheldPrimary();
             }
 
             //Handheld Secondary interaction
-            if (!isBusy & player.HasHandheld  && player.HandheldItem.CanActivateSecondary() && ((Utilities.HasFlag(player.HandheldItem.SecondaryInputType,InputType.Hold) && Input.GetButton("Secondary")) || (Utilities.HasFlag(player.HandheldItem.SecondaryInputType,InputType.Press) && Input.GetButtonDown("Secondary"))))
+            if (!isBusy & player.HasHandheld && player.HandheldItem.CanActivateSecondary() && ((Utilities.HasFlag(player.HandheldItem.SecondaryInputType, InputType.Hold) && Input.GetButton(_HandheldSecondaryInputString)) || (Utilities.HasFlag(player.HandheldItem.SecondaryInputType, InputType.Press) && Input.GetButtonDown(_HandheldSecondaryInputString))))
             {
                 player.ActivateHandheldSecondary();
                 isBusy = true;
             }
-            else if(!isBusy && player.HasHandheld)
+            else if (!isBusy && player.HasHandheld)
             {
                 player.DeactivateHandheldSecondary();
             }
 
             //Handheld Tertiary interaction
-            if (!isBusy & player.HasHandheld && player.HandheldItem.CanActivateTertiary() && ((Utilities.HasFlag(player.HandheldItem.TertiaryInputType, InputType.Hold) && Input.GetButton("Tertiary")) || (Utilities.HasFlag(player.HandheldItem.TertiaryInputType,InputType.Press) && Input.GetButtonDown("Tertiary"))))
+            if (!isBusy & player.HasHandheld && player.HandheldItem.CanActivateTertiary() && ((Utilities.HasFlag(player.HandheldItem.TertiaryInputType, InputType.Hold) && Input.GetButton(_HandheldTertiaryInputString)) || (Utilities.HasFlag(player.HandheldItem.TertiaryInputType, InputType.Press) && Input.GetButtonDown(_HandheldTertiaryInputString))))
             {
                 player.ActivateHandheldTertiary();
                 isBusy = true;
             }
-            else if(!isBusy && player.HasHandheld)
+            else if (!isBusy && player.HasHandheld)
             {
                 player.DeactivateHandheldUtility();
             }
-            
 
 
-           
+
+
             /*else if(Input.GetButtonDown("Throw") && numConsumables > 0){
 				StartCoroutine(IncreaseThrowPower());
 			}*/
@@ -139,8 +154,17 @@ public class UserInput : MonoBehaviour {
 
 
     }
-    
+
     void FixedUpdate()
+    {
+
+        if (canMove)
+        {
+            CheckMovementInput();
+        }
+    }
+
+    void CheckMovementInput()
     {
         float h = Input.GetAxis("Horizontal");
         float v = Input.GetAxis("Vertical");
@@ -153,18 +177,14 @@ public class UserInput : MonoBehaviour {
         Ray camRay = mainCam.ScreenPointToRay(Input.mousePosition);
 
 
-        if (Physics.Raycast(camRay, out hit, MAX_DISTANCE, hitMask))
+        if (Physics.Raycast(camRay, out hit, MAX_DISTANCE, pointerHitMask))
         {
             aimPoint = hit.point;
         }
         else
         {
-
             Plane plane = new Plane(Vector3.up, Vector3.zero);
-
-            //Debug.DrawRay (camRay.origin, camRay.direction * 100f, Color.green);
-
-
+            
             float distance;
             if (plane.Raycast(camRay, out distance))
             {
@@ -186,24 +206,24 @@ public class UserInput : MonoBehaviour {
                 moveDir = (player.transform.right * h) + (player.transform.forward * v);
                 break;
         }
-        //new Vector3(Camera.main.transform.right * h, 0, Camera.main.transform.up * v);  //new Vector3(h, 0, v); 
-
         aimPoint.y = m_Transform.position.y;
 
         player.HandleInput(moveDir, aimPoint);
-
-
     }
 
 
 
 
-
-    public bool CanAttack
+    public bool CanMove
     {
-		get { return canAttack; }
-		set { canAttack = value; }
-	}
+        get { return canMove; }
+        set { canMove = value; }
+    }
+    public bool CanEngage
+    {
+        get { return canEngage; }
+        set { canEngage = value; }
+    }
 
 
     public void OnValidate()

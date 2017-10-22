@@ -53,11 +53,13 @@ public class Wander : BaseUtilityBehavior
     [Range(0f, 2f)]
     protected float wanderRotateSpeedup = 1f;
 
+    [SerializeField]
+    bool ignoreIfTargetExists = true;
 
     Transform patrolTarget;
     Vector3 patrolPosition;
 
- 
+
 
     //void Update()
     //{
@@ -242,13 +244,15 @@ public class Wander : BaseUtilityBehavior
 
         //m_Movement.AddSpeedMultiplier(wanderMoveSpeedup);
         //m_Movement.AddRotationMultiplier(wanderRotateSpeedup);
-        
+
         PatrolTarget = GetTarget();
 
         //StartCoroutine(WanderAround());
 
         m_Pathfinder.OnPathFound += PathFound;
         m_Pathfinder.OnPathTraversalCompleted += WaitAfterPathCompletion;
+
+        StartCoroutine(WaitDelay());
     }
 
 
@@ -275,6 +279,9 @@ public class Wander : BaseUtilityBehavior
 
     public override float GetBehaviorScore()
     {
+        if (ignoreIfTargetExists && m_Actor.TargetObject != null)
+            return 0f;
+
         return utilityCurve.Evaluate(UnityEngine.Random.value);
     }
 
@@ -282,7 +289,13 @@ public class Wander : BaseUtilityBehavior
 
 
 
-
+    public override bool CanStartBehavior
+    {
+        get
+        {
+            return base.CanStartBehavior && !(ignoreIfTargetExists && m_Actor.TargetObject != null);
+        }
+    }
     public override bool CanEndBehavior
     {
         get { return true; }
@@ -292,6 +305,7 @@ public class Wander : BaseUtilityBehavior
     {
         get { return false; }
     }
+
 
 
 

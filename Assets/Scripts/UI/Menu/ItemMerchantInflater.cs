@@ -160,7 +160,7 @@ public class ItemMerchantInflater : MenuInflater {
             return;
 
 
-        if (!activatingPlayer.AttemptCharge(selectedPrice.Cost))
+        if (!activatingPlayer.Charge(-selectedPrice.Value))
         {
             return;
         }

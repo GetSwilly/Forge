@@ -123,8 +123,8 @@ public class MovementController : MonoBehaviour
             return;
 
 
-        Vector3 dispVector = lookAtPosition - m_Transform.position;
-
+        Vector3 direction = lookAtPosition - m_Transform.position;
+        direction.y = 0;
         /*
         if (showDebug)
         {
@@ -133,14 +133,14 @@ public class MovementController : MonoBehaviour
         }
         */
 
-        if (dispVector.magnitude <= maxBoundsValue)
+        if (direction.magnitude <= maxBoundsValue)
             return;
 
         //Quaternion desiredQ = Quaternion.LookRotation(Vector3.forward, lookAtPosition - myTransform.position);
 
         //myTransform.rotation =  Quaternion.Slerp(myTransform.rotation, desiredQ, rotationSmoothing);
 
-        Quaternion desiredQ = Quaternion.LookRotation(lookAtPosition - m_Transform.position);
+        Quaternion desiredQ = Quaternion.LookRotation(direction);
 
         m_Transform.rotation = Quaternion.RotateTowards(m_Transform.rotation, desiredQ, RotationSpeed * _multiplier);// * Time.deltaTime);
     }

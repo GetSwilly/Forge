@@ -6,7 +6,7 @@ using UnityEngine;
 
 
 [RequireComponent(typeof(AudioSource))]
-public abstract class InteractableObject : MonoBehaviour, IAcquirableObject, IIdentifier
+public abstract class InteractableObject : MonoBehaviour, IIdentifier
 {
     [SerializeField]
     string m_ObjectName = "Interactable Object";
@@ -157,7 +157,7 @@ public abstract class InteractableObject : MonoBehaviour, IAcquirableObject, IId
         //if (healthSum != 0)
         //    playerHealth.HealthArithmetic(healthSum, false, transform);
 
-        if (!controller.AttemptCharge(ActivationCost))
+        if (!controller.Charge(ActivationCost))
         {
             return false;
         }
@@ -230,28 +230,33 @@ public abstract class InteractableObject : MonoBehaviour, IAcquirableObject, IId
 
 
 
-            GameObject _text;// = activeUI.GetPrefab("ID");
+            GameObject textUI;// = activeUI.GetPrefab("ID");
 
-            if (!string.IsNullOrEmpty(Name) && (_text = activeUI.GetPrefab("ID")) != null)
+            if (!string.IsNullOrEmpty(Name) && (textUI = activeUI.GetPrefab("ID")) != null)
             {
-                DisplayUI _ui = _text.GetComponent<DisplayUI>();
-                _text.SetActive(!string.IsNullOrEmpty(Name));
+                DisplayUI uiDisplay = textUI.GetComponent<DisplayUI>();
+                textUI.SetActive(!string.IsNullOrEmpty(Name));
 
 
-                activeUI.AddAttribute(new GenericUI.DisplayProperties("ID", new Orientation(m_UIOffset, Vector3.zero, Vector3.one), _ui));
+                activeUI.AddAttribute(new GenericUI.DisplayProperties("ID", new Orientation(m_UIOffset, Vector3.zero, Vector3.one), uiDisplay));
                 activeUI.UpdateAttribute("ID", Name);
 
                 hasUIInflated = true;
             }
 
-            Transform _transform = activeUI.GetParentTransform("Charges");
 
-            if (_transform != null)
+            Transform tr = activeUI.GetParentTransform("Charges");
+
+            if (tr != null)
             {
-                _transform.gameObject.SetActive(true);
+                tr.gameObject.SetActive(ActivationCost != 0);
             }
 
-            AddCostUI("Credits", ActivationCost);
+            if (ActivationCost != 0)
+            {
+                AddCostUI("Credits", ActivationCost);
+            }
+
 
             hasUIInflated = true;
 
@@ -264,14 +269,14 @@ public abstract class InteractableObject : MonoBehaviour, IAcquirableObject, IId
 
             if (hasUIInflated)
             {
-                SoundClip _uiSound = SoundManager.Instance.UI_Sound;
-                if (m_Audio != null && _uiSound.Sound != null)
+                SoundClip uiSound = SoundManager.Instance.UI_Sound;
+                if (m_Audio != null && uiSound.Sound != null)
                 {
                     m_Audio.Stop();
 
-                    m_Audio.volume = _uiSound.Volume;
-                    m_Audio.pitch = _uiSound.Pitch;
-                    m_Audio.PlayOneShot(_uiSound.Sound);
+                    m_Audio.volume = uiSound.Volume;
+                    m_Audio.pitch = uiSound.Pitch;
+                    m_Audio.PlayOneShot(uiSound.Sound);
                 }
             }
         }
@@ -325,31 +330,31 @@ public abstract class InteractableObject : MonoBehaviour, IAcquirableObject, IId
         }
     }
 
-    protected virtual void PlaySound(SoundClip _sound)
+    protected virtual void PlaySound(SoundClip sound)
     {
-        if (_sound.UseRemnant)
+        if (sound.UseRemnant)
         {
             GameObject remnantObj = ObjectPoolerManager.Instance.AudioRemnantPooler.GetPooledObject();
             AudioRemnant remnantAudio = remnantObj.GetComponent<AudioRemnant>();
 
             remnantObj.SetActive(true);
-            remnantAudio.PlaySound(_sound);
+            remnantAudio.PlaySound(sound);
         }
         else
         {
-            m_Audio.volume = _sound.Volume;
-            m_Audio.pitch = _sound.Pitch;
+            m_Audio.volume = sound.Volume;
+            m_Audio.pitch = sound.Pitch;
 
-            if (_sound.IsLooping)
+            if (sound.IsLooping)
             {
                 m_Audio.loop = true;
-                m_Audio.clip = _sound.Sound;
+                m_Audio.clip = sound.Sound;
                 m_Audio.Play();
             }
             else
             {
                 m_Audio.loop = false;
-                m_Audio.PlayOneShot(_sound.Sound);
+                m_Audio.PlayOneShot(sound.Sound);
             }
         }
     }

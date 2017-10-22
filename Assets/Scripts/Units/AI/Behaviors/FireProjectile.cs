@@ -13,6 +13,9 @@ public class FireProjectile : BaseUtilityBehavior {
     [Tooltip("Base damage of attack")]
     [SerializeField]
     float baseAttackPower;
+    
+    [SerializeField]
+    float baseCriticalHitChance;
 
     [Tooltip("Base critical hit multiplier of the attack")]
     [SerializeField]
@@ -38,8 +41,6 @@ public class FireProjectile : BaseUtilityBehavior {
     
     [SerializeField]
     AudioClip shotSound;
-
-
     
     ObjectPooler projectilePool;
 
@@ -95,7 +96,7 @@ public class FireProjectile : BaseUtilityBehavior {
             {
                 _projectile.SetActive(true);
 
-                bool isCrit = UnityEngine.Random.value <= m_Actor.CriticalHitChance;
+                bool isCrit = UnityEngine.Random.value <= CriticalHitChance;
 
                 float _power = AttackPower;
                 _power *= isCrit ? CriticalHitMultiplier : 1f;
@@ -142,23 +143,73 @@ public class FireProjectile : BaseUtilityBehavior {
 
     public override float GetBehaviorScore()
     {
+        //Null Target?
         if (m_Actor.TargetObject == null)
-            return 0f;
+        {
+            if (ShowDebug)
+            {
+                Debug.Log("FireProjectile --- Null Target");
+            }
 
-        float totalAngle = 0f;
+            return 0f;
+        }
+        
+        //Target in range?
+        if (Vector3.Distance(m_Transform.position, m_Actor.TargetObject.LastKnownBasePosition) > AttackRange) //|| !m_Actor.CanSee(m_Actor.TargetObject.LastKnownPosition))
+        {
+            if (ShowDebug)
+            {
+                Debug.Log("FireProjectile --- Target not within range");
+            }
+
+            return 0f;
+        }
+
+        //Find best sub-target score
+        float maxScore = 0f;
+        m_Actor.TargetObject.LastKnownPositions.ForEach(t =>
+        {
+            float score = GetTargetScore(t);
+            maxScore = Mathf.Max(score, maxScore);
+        });
+        
+
+        if (ShowDebug)
+        {
+            Debug.Log("FireProjectile -- Score: " + maxScore);
+        }
+
+        return maxScore;
+    }
+
+    /// <summary>
+    /// Calculate the score for aiming at a position;
+    /// </summary>
+    float GetTargetScore(Vector3 position)
+    {
+        Vector3 exactDirection = position - m_Transform.TransformPoint(gunBarrelOffset);
+        exactDirection.y = 0f;
+
+
+        float averageAnglePercentage = 0f;
         for (int i = 0; i < shots.Count; i++)
         {
-            totalAngle += Vector3.Angle(m_Transform.TransformDirection(shots[i].LocalDirection), m_Actor.TargetObject.LastKnownPosition - m_Transform.position) / maxAttackAngle;
+            averageAnglePercentage += Vector3.Angle(m_Transform.TransformDirection(shots[i].LocalDirection), exactDirection) / maxAttackAngle;
         }
-        totalAngle /= shots.Count;
+        averageAnglePercentage /= shots.Count;
 
-        //float angle = Vector3.Angle(myTransform.forward, myActor.TargetTransform.position - myTransform.position);
-        float percentage = Mathf.Clamp01(totalAngle);  //Mathf.Clamp01(angle/maxAttackAngle);
+        float percentage = Mathf.Clamp01(averageAnglePercentage);  //Mathf.Clamp01(angle/maxAttackAngle);
 
 
-        return utilityCurve.Evaluate(percentage);
+        float score = utilityCurve.Evaluate(percentage);
+
+        if (ShowDebug)
+        {
+            Debug.Log("FireProjectile -- Score: " + score);
+        }
+
+        return score;
     }
-    
 
 
     public override bool CanEndBehavior
@@ -176,15 +227,23 @@ public class FireProjectile : BaseUtilityBehavior {
 
     public float AttackPower
     {
-        get { return baseAttackPower * (1f + m_Actor.BonusAttackPower); }
+        get { return baseAttackPower; }
+        set { baseAttackPower = Mathf.Clamp(value, 0f, value); }
+    }
+    public float CriticalHitChance
+    {
+        get { return baseCriticalHitChance; }
+        set { baseCriticalHitChance = Mathf.Clamp(value, 0f, value); }
     }
     public float CriticalHitMultiplier
     {
-        get { return baseCriticalHitMultiplier * (1f + m_Actor.BonusCriticalHitMultiplier); }
+        get { return baseCriticalHitMultiplier; }
+        set { baseCriticalHitMultiplier = Mathf.Clamp(value, 0f, value); }
     }
     public float AttackRange
     {
-        get { return baseAttackRange * (1f + m_Actor.BonusAttackRange); }
+        get { return baseAttackRange; }
+        set { baseAttackRange = Mathf.Clamp(value, 0f, value); }
     }
 
 
@@ -192,9 +251,10 @@ public class FireProjectile : BaseUtilityBehavior {
     {
         base.OnValidate();
 
-        baseAttackPower = Mathf.Clamp(baseAttackPower, 0f, baseAttackPower);
-        baseCriticalHitMultiplier = Mathf.Clamp(baseCriticalHitMultiplier, 0f, baseCriticalHitMultiplier);
-        baseAttackRange = Mathf.Clamp(baseAttackRange, 0f, baseAttackRange);
+        AttackPower = AttackPower;
+        AttackRange = AttackRange;
+        CriticalHitChance = CriticalHitChance;
+        CriticalHitMultiplier = CriticalHitMultiplier;
 
         Utilities.ValidateCurve_Times(utilityCurve, 0f, 1f);
 

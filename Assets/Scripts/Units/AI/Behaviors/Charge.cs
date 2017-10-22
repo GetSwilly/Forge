@@ -93,7 +93,7 @@ public class Charge : BaseUtilityBehavior
             return utilityCurve.Evaluate(1f);
 
 
-        float angle = Vector3.Angle(m_Transform.forward, m_Actor.TargetObject.LastKnownPosition);
+        float angle = Vector3.Angle(m_Transform.forward, m_Actor.TargetObject.LastKnownBasePosition);
         float percentage = Mathf.Clamp01(angle / attackAngle);
 
         return utilityCurve.Evaluate(percentage);

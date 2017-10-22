@@ -104,7 +104,7 @@ public class Chase_Teleport : BaseUtilityBehavior {
 
 
 
-        Vector3 toTarget = target.LastKnownPosition - m_Transform.position;
+        Vector3 toTarget = target.LastKnownBasePosition - m_Transform.position;
 
 
         Vector3 teleportPos = UnityEngine.Random.insideUnitSphere;
@@ -124,7 +124,7 @@ public class Chase_Teleport : BaseUtilityBehavior {
             teleportPos *= dist;
             teleportPos += m_Transform.position;
 
-        if(Vector3.Distance(teleportPos, target.LastKnownPosition) < minDistanceFromTarget)
+        if(Vector3.Distance(teleportPos, target.LastKnownBasePosition) < minDistanceFromTarget)
         {
             EndBehavior(true, true);
             return;

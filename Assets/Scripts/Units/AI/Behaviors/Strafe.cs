@@ -67,7 +67,7 @@ public class Strafe : BaseUtilityBehavior {
 
 
             m_Movement.MoveInLocalDirection(circleDir);
-            m_Movement.RotateTowards(targetObject.LastKnownPosition);
+            m_Movement.RotateTowards(targetObject.LastKnownBasePosition);
 
 
 

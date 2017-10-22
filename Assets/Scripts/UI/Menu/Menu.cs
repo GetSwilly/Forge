@@ -34,7 +34,7 @@ public class Menu : MonoBehaviour {
 
     protected List<MenuButton> buttons = new List<MenuButton>();
     //Transform myTransform;
-    protected MenuInflater myInflater;
+    protected MenuInflater m_Inflater;
 
 
     MenuButton selectedButton;
@@ -62,7 +62,7 @@ public class Menu : MonoBehaviour {
  
     public virtual void Inflate(MenuInflater _inflator)
     {
-        myInflater = _inflator;
+        m_Inflater = _inflator;
 
         pivotTransform.rotation = Quaternion.identity;
         
@@ -196,7 +196,7 @@ public class Menu : MonoBehaviour {
 
     public MenuInflater Inflater
     {
-        get { return myInflater; }
+        get { return m_Inflater; }
     }
     public MenuButton SelectedButton
     {

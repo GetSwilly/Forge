@@ -218,12 +218,8 @@ public class LevelController : MonoBehaviour {
             currentMoisture = (float)(pseudoRandom.NextDouble() * 100);
             m_Weather.SetTimeOfDay((float)(pseudoRandom.NextDouble() * 100), true);
         }
-
-
-        ApplyGodFavor();
-
         
-
+        
         //ProceduralColorManager.Instance.SaturateGeneratedColors(1f, lightIntensity);
 
 
@@ -522,18 +518,7 @@ public class LevelController : MonoBehaviour {
         yield return StartCoroutine(A_Star_Pathfinding.Instance.EnvironmentCheck());
     }
 
-
-
-
-    void ApplyGodFavor()
-    {
-        CurrentTemperature = Temperature_Favored;
-        CurrentMoisture = Moisture_Favored;
-        m_Weather.SetTimeOfDay(Time_Favored, false);
-    }
-
-
-
+    
     /*
     void ApplyGodFavor()
     {
@@ -2041,23 +2026,7 @@ public class LevelController : MonoBehaviour {
             UIManager.Instance.InflateLoadingScreen((i+1) / (float)_objects.Length);
         }
     }
-
-
-
-    void PlaceGodFavors()
-    {
-        if (GameManager.Instance == null)
-            return;
-
-
-        float _favor = GameManager.Instance.DeityFavor;
-
-        if (ShowDebug)
-            UnityEngine.Debug.Log("God Favor: " + _favor);
-
-
-    }
-
+    
     #endregion
 
 
@@ -2420,111 +2389,7 @@ public class LevelController : MonoBehaviour {
     {
         get { return m_Weather.CurrentTime; }
     }
-
-    public float Temperature_Favored
-    {
-        get
-        {
-            float _favor = GameManager.Instance.DeityFavor;
-            float temperatureFavor = _favor * DEITY_FAVOR_TEMPERATURE_MULTIPLIER;
-
-
-            //In Good Favor?
-            if (_favor > 0)
-            {
-
-                //Move temperature closer towards 50
-                float tempDiff = 50f - currentTemperature;
-
-                if (Mathf.Abs(tempDiff) < Mathf.Abs(temperatureFavor))
-                {
-                    return 50f;
-                }
-                else if (tempDiff != 0)
-                {
-                    return currentTemperature + (temperatureFavor * (tempDiff / tempDiff));
-                }
-            }
-            //In bad favor?
-            else
-            {
-                //Move temperature closer to extremes
-                return currentTemperature + temperatureFavor * (currentTemperature < 50 ? -1f : 1f);
-            }
-
-            return CurrentTemperature;
-        }
-    }
-    public float Moisture_Favored
-    {
-        get
-        {
-            float _favor = GameManager.Instance.DeityFavor;
-            float moistureFavor = _favor * DEITY_FAVOR__MOISTURE_MULTIPLIER;
-
-
-            //In Good Favor?
-            if (_favor > 0)
-            {
-
-                //Move moisture closer towards 50
-                float moistureDiff = 50f - CurrentMoisture;
-
-                if (Mathf.Abs(moistureDiff) < Mathf.Abs(moistureFavor))
-                {
-                    return 50f;
-                }
-                else if (moistureDiff != 0)
-                {
-                    return CurrentMoisture + (moistureFavor * (moistureDiff / moistureDiff));
-                }
-            }
-            //In bad favor?
-            else
-            {
-                //Move moisture closer to extremes
-                return CurrentMoisture + moistureFavor * (CurrentMoisture < 50 ? -1f : 1f);
-            }
-
-            return CurrentMoisture;
-        }
-    }
-    public float Time_Favored
-    {
-        get
-        {
-            float _favor = GameManager.Instance.DeityFavor;
-            float timeFavor = _favor * DEITY_FAVOR_TIME_MULTIPLIER;
-
-
-            //In Good Favor?
-            if (_favor > 0)
-            {
-
-                //Move time closer towards 50
-                float timeDiff = 50f - CurrentTime;
-
-                if (Mathf.Abs(timeDiff) < Mathf.Abs(timeFavor))
-                {
-                    return 50f;
-                }
-                else if (timeDiff != 0)
-                {
-                    return CurrentTime + (timeFavor * (timeDiff / timeDiff));
-                }
-            }
-            //In bad favor?
-            else
-            {
-                //Move time closer to extremes
-                return CurrentTime + timeFavor * (CurrentTime < 50 ? -1f : 1f);
-            }
-
-            return CurrentTime;
-        }
-    }
-
-
+    
     public Vector3 Wind
     {
         get { return m_Weather.Wind; }

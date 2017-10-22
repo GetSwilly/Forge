@@ -107,9 +107,17 @@ public class UIManager : MonoBehaviour
 
     public void Subscribe(UnitController unit)
     {
+        if (unit == null)
+            return;
+
         Unsubscribe();
 
         unit.UIAttributeChangedEvent += UIUpdate;
+
+        if (unit.gameObject.activeInHierarchy)
+        {
+            unit.UpdateUI();
+        }
     }
     public void Unsubscribe()
     {
