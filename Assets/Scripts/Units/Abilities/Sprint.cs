@@ -5,7 +5,7 @@ using System;
 [RequireComponent(typeof(TrailRenderer))]
 public class Sprint : Ability, IMovementAffector {
 
-    static readonly float MINIMUM_ACTIVATION_DELAY = 1f;
+    static readonly float MINIMUM_ACTIVATION_DELAY = .1f;
 
 
     [Tooltip("Amount of charge to be used for each second the ability is active")]
@@ -30,9 +30,9 @@ public class Sprint : Ability, IMovementAffector {
 
     bool canSprint = true;
     
-    MovementController m_Movement;
+    MovementController unitMovement;
     TrailRenderer m_TrailRenderer;
-
+     
     protected void Awake()
     {
         m_TrailRenderer = GetComponent<TrailRenderer>();
@@ -58,16 +58,16 @@ public class Sprint : Ability, IMovementAffector {
 
     public override void Initialize(Transform _transform)
     {
-        m_Movement = _transform.GetComponent<MovementController>();
+        unitMovement = _transform.GetComponent<MovementController>();
 
-        if (m_Movement == null)
+        if (unitMovement == null)
             this.enabled = false;
 
     }
     public override void Terminate()
     {
         DeactivateAbility();
-        m_Movement = null;
+        unitMovement = null;
     }
 
 
@@ -91,7 +91,9 @@ public class Sprint : Ability, IMovementAffector {
     }
     public override bool CanUseAbility()
     {
-        return base.CanUseAbility() && CanSprint;
+        bool baseTest = IsAbilityActive || (!IsAbilityActive && CurrentCharge - (ActivationCost* Time.deltaTime) >= 0);
+  
+        return baseTest && CanSprint;
     }
 
 
@@ -110,15 +112,15 @@ public class Sprint : Ability, IMovementAffector {
         m_TrailRenderer.enabled = true;
         StartCoroutine(ResetTrail());
 
-        m_Movement.AddSpeedMultiplier(speedMultiplier);
-        m_Movement.AddRotationMultiplier(rotationMultiplier);
+        unitMovement.AddSpeedMultiplier(this, speedMultiplier);
+        unitMovement.AddRotationMultiplier(this, rotationMultiplier);
     }
 
     public void DisableMovementEffects()
     {
         m_TrailRenderer.enabled = false;
-        m_Movement.RemoveSpeedMultiplier(speedMultiplier);
-        m_Movement.RemoveRotationMultiplier(rotationMultiplier);
+        unitMovement.RemoveSpeedMultiplier(this);
+        unitMovement.RemoveRotationMultiplier(this);
     }
     IEnumerator ResetTrail()
     {

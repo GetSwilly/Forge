@@ -1,19 +1,16 @@
-﻿using System.Collections;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 
 [RequireComponent(typeof(Gun))]
 public class Turret : ForgeableObject
 {
-    [SerializeField]
-    float sightRange = 10f;
-    
+
     [SerializeField]
     float minimumFireAngle = 1f;
 
     [SerializeField]
     float rotationSmoothing = 1f;
-    
+
     List<GameObject> nearbyTargets = new List<GameObject>();
 
     GameObject target;
@@ -24,37 +21,8 @@ public class Turret : ForgeableObject
         base.Awake();
 
         m_Gun = GetComponent<Gun>();
-
-        AddSightCollider();
-    }
-    void AddSightCollider()
-    {
-        SphereCollider sightCollider = m_Transform.gameObject.AddComponent<SphereCollider>();
-        sightCollider.isTrigger = true;
-
-        //Make Sight distance independent of scale
-        Vector3 _scale = m_Transform.lossyScale;
-        float maxVal = _scale.x;
-        maxVal = maxVal > _scale.y ? maxVal : _scale.y;
-        maxVal = maxVal > _scale.z ? maxVal : _scale.z;
-
-        sightCollider.radius = SightRange / maxVal;
-    }
-    void OnEnable()
-    {
-        m_Pivot.localRotation = Quaternion.identity;
     }
 
-
-    public override void Initialize(ForgeSite forgeActivator, Team team)
-    {
-        if (team != null)
-        {
-            m_Team.CurrentTeamTag = team.CurrentTeamTag;
-            m_Team.EnemyTeams = team.EnemyTeams;
-        }
-    }
-    
 
     void Update()
     {
@@ -130,12 +98,7 @@ public class Turret : ForgeableObject
     }
 
     #region Accessors
-
-    public float SightRange
-    {
-        get { return sightRange; }
-        private set { sightRange = Mathf.Clamp(value, 0f, value); }
-    }
+    
     public float MinimumFireAngle
     {
         get { return minimumFireAngle; }
@@ -150,40 +113,29 @@ public class Turret : ForgeableObject
     #endregion
 
 
-    void OnTriggerStay(Collider coll)
+    protected override void SightMaintained(GameObject obj)
     {
-        if (coll.isTrigger)
-            return;
+        Team teamMember = obj.GetComponent<Team>();
 
-
-        Team teamMember = coll.gameObject.GetComponent<Team>();
-
-        if (teamMember != null && m_Team.IsEnemy(teamMember.CurrentTeam))
+        if (teamMember != null && m_Team.IsEnemy(teamMember))
         {
-            AddTarget(coll.gameObject);
+            AddTarget(obj);
         }
-
     }
-    void OnTriggerExit(Collider coll)
+    protected override void SightLost(GameObject obj)
     {
-        if (coll.isTrigger)
-            return;
+        Team teamMember = obj.GetComponent<Team>();
 
-        Team teamMember = coll.gameObject.GetComponent<Team>();
-
-        if (teamMember != null && m_Team.IsEnemy(teamMember.CurrentTeam))
+        if (teamMember != null && m_Team.IsEnemy(teamMember))
         {
-            RemoveTarget(coll.gameObject);
+            RemoveTarget(obj);
         }
-
     }
-
 
     protected override void OnValidate()
     {
         base.OnValidate();
-
-        SightRange = SightRange;
+       
         MinimumFireAngle = MinimumFireAngle;
         RotationSmoothing = RotationSmoothing;
     }

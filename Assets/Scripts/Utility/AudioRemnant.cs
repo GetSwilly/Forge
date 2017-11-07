@@ -69,5 +69,4 @@ public class AudioRemnant : MonoBehaviour {
 
         gameObject.SetActive(false);
     }
-
 }

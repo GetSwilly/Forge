@@ -20,8 +20,8 @@ public class MovementAffector : MonoBehaviour {
 
         MovementController _movement = coll.collider.GetComponent<MovementController>();
 
-        _movement.AddSpeedMultiplier(speedMultipler);
-        _movement.AddRotationMultiplier(rotationMultipler);
+        _movement.AddSpeedMultiplier(this, speedMultipler);
+        _movement.AddRotationMultiplier(this,rotationMultipler);
     }
     void OnCollisionExit(Collision coll)
     {
@@ -31,7 +31,7 @@ public class MovementAffector : MonoBehaviour {
 
         MovementController _movement = coll.collider.GetComponent<MovementController>();
 
-        _movement.RemoveSpeedMultiplier(speedMultipler);
-        _movement.RemoveRotationMultiplier(rotationMultipler);
+        _movement.RemoveSpeedMultiplier(this);
+        _movement.RemoveRotationMultiplier(this);
     }
 }

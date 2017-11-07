@@ -30,10 +30,7 @@ public class ItemPickup : InteractableObject
 
         Name = myType == PickupType.Handheld ? m_Handheld.ToString() : m_Ability.ToString();
     }
-    void OnDisable()
-    {
-        Debug.Log("DISABLING");
-    }
+
     public override bool Interact(PlayerController player)
     {
         pController = player;

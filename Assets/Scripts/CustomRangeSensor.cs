@@ -3,7 +3,8 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class CustomRangeSensor : RangeSensor {
+public class CustomRangeSensor : RangeSensor
+{
 
     [SerializeField]
     public SensorEventHandler OnStayDetected;
@@ -15,5 +16,10 @@ public class CustomRangeSensor : RangeSensor {
         {
             OnStayDetected.Invoke(detectedEnumerator.Current);
         }
+    }
+
+    public void OnValidate()
+    {
+        this.transform.localScale = Vector3.one * SensorRange * 2;
     }
 }

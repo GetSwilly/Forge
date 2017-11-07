@@ -4,9 +4,9 @@ using System.Collections;
 
 public class UserInput : MonoBehaviour
 {
-    static readonly float MAX_DISTANCE = 100f;
-    static readonly string _NativeAbilityInputString = "Native Ability";
-    static readonly string _AuxiliaryAbilityInputString = "Auxiliary Ability";
+    static readonly float _MaxRayDistance = 100f;
+    static readonly string _NativeAbilityInputString = "Ability1";
+    static readonly string _AuxiliaryAbilityInputString = "Ability2";
     static readonly string _HandheldPrimaryInputString = "Primary";
     static readonly string _HandheldSecondaryInputString = "Secondary";
     static readonly string _HandheldTertiaryInputString = "Tertiary";
@@ -177,7 +177,7 @@ public class UserInput : MonoBehaviour
         Ray camRay = mainCam.ScreenPointToRay(Input.mousePosition);
 
 
-        if (Physics.Raycast(camRay, out hit, MAX_DISTANCE, pointerHitMask))
+        if (Physics.Raycast(camRay, out hit, _MaxRayDistance, pointerHitMask))
         {
             aimPoint = hit.point;
         }

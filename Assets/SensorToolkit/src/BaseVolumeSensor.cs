@@ -333,8 +333,15 @@ namespace SensorToolkit
                 if (TestLOSTargetsOnly && !targets.IsTransforms()) return null;
                 objectVisibility[newDetection] = testObjectVisibility(newDetection, targets);
 
-                if (!prevDetected && objectVisibility[newDetection] >= MinimumVisibility) return newDetection;
-                else return null;
+                //if (!prevDetected && objectVisibility[newDetection] >= MinimumVisibility)
+                if (objectVisibility[newDetection] >= MinimumVisibility)
+                {
+                    return newDetection;
+                }
+                else
+                {
+                    return null;
+                }
             }
             else
             {
@@ -491,6 +498,7 @@ namespace SensorToolkit
                 }
                 else
                 {
+                    Debug.DrawLine(transform.position, testPoint, Color.red);
                     result.isObstructed = true;
                     result.obstructionPoint = obstructionPoint;
 					rayCastTargets.SetIsTargetVisible(i, false);

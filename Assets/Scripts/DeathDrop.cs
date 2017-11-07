@@ -6,6 +6,9 @@ using UnityEngine;
 public class DeathDrop : MonoBehaviour {
 
     [SerializeField]
+    ListDefinitionName itemPool = ListDefinitionName.GeneralItems;
+
+    [SerializeField]
     int numberOfDrops = 10;
 
     Health m_Health;
@@ -15,10 +18,18 @@ public class DeathDrop : MonoBehaviour {
         m_Health = GetComponent<Health>();
     }
 	void Start () {
-        //m_Health.OnKilled += Drop;	
+        m_Health.OnKilled += Drop;	
 	}
 
-    public int NumberOfDrops
+    void Drop(Health h)
+    {
+        if (!this.enabled || GameManager.Instance == null)
+            return;
+
+        GameManager.Instance.DropItems(this.transform, itemPool, NumberOfDrops);
+    }
+
+    protected int NumberOfDrops
     {
         get { return numberOfDrops; }
         private set { numberOfDrops = Mathf.Clamp(value, 0, value); }

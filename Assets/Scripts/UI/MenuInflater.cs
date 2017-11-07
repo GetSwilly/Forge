@@ -11,11 +11,7 @@ public abstract class MenuInflater : InteractableObject
 
     [SerializeField]
     protected GameObject buttonPrefab;
-
-    [SerializeField]
-    string menuText = "";
-
-
+    
     bool isInflated = false;
     protected PlayerController activatingPlayer = null;
     InputListener m_Listener;
@@ -55,7 +51,6 @@ public abstract class MenuInflater : InteractableObject
 
         m_Menu.gameObject.SetActive(true);
         m_Menu.Inflate(this);
-        m_Menu.SetText(menuText);
 
         UserInput _input = activatingPlayer.GetComponent<UserInput>();
 

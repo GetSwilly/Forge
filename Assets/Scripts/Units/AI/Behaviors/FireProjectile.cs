@@ -15,6 +15,7 @@ public class FireProjectile : BaseUtilityBehavior {
     float baseAttackPower;
     
     [SerializeField]
+    [Range(0f,1f)]
     float baseCriticalHitChance;
 
     [Tooltip("Base critical hit multiplier of the attack")]

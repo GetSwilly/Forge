@@ -147,11 +147,10 @@ public class GenericUI : MonoBehaviour {
 
 
 
-    public void Initialize(Transform target, bool shouldShowLines, params DisplayProperties[] initialUIs)
+    public void Initialize(Transform target, params DisplayProperties[] initialUIs)
     {
         targetTransform = target;
         m_Follow.TargetTransform = TargetTransform;
-        m_Line.enabled = shouldShowLines;
         Alpha = 0f;
         Inflate();
 

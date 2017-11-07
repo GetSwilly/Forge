@@ -11,19 +11,16 @@ public class Strafe : BaseUtilityBehavior {
     [SerializeField]
     float strafeValueDelta = 1f;
 
-    float strafeValue = 0f;
-    
-    MovementController m_Movement;
+    float currentStrafeValue = 0f;
+
+    IMovement m_Movement;
 
     public override void Awake()
     {
         base.Awake();
 
-        m_Movement = GetComponent<MovementController>();
+        m_Movement = GetComponent<IMovement>();
     }
-
-
-
 
 
     IEnumerator StrafeBehavior()
@@ -47,16 +44,16 @@ public class Strafe : BaseUtilityBehavior {
             float _delta = StrafeValueDelta * Time.deltaTime;
             _delta *= UnityEngine.Random.value < 0.5f ? -1f : 1f;
 
-            strafeValue += _delta;
+            currentStrafeValue += _delta;
 
 
-            Vector3 circleDir = m_Transform.right;
-            circleDir.y = 0;
-            circleDir.Normalize();
+            Vector3 localStrafeDirection = m_Transform.right;
+            localStrafeDirection.y = 0;
+            localStrafeDirection.Normalize();
 
-            if (strafeValue < 0)
+            if (currentStrafeValue < 0)
             {
-                circleDir *= -1;
+                localStrafeDirection *= -1;
             }
 
 
@@ -66,7 +63,7 @@ public class Strafe : BaseUtilityBehavior {
             //}
 
 
-            m_Movement.MoveInLocalDirection(circleDir);
+            m_Movement.Move(m_Transform.TransformDirection(localStrafeDirection));
             m_Movement.RotateTowards(targetObject.LastKnownBasePosition);
 
 
@@ -83,7 +80,7 @@ public class Strafe : BaseUtilityBehavior {
     {
         IsActive = true;
 
-        strafeValue = 0f;
+        currentStrafeValue = 0f;
         StartCoroutine(StrafeBehavior());
     }
     public override void EndBehavior(bool shouldNotifySuper, bool shouldNotifyActor)

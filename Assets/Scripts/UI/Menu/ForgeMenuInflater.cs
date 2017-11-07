@@ -71,13 +71,13 @@ public class ForgeMenuInflater : MenuInflater
         ForgeableObject forgeable = buttonToForgeDictionary[selectedButton];
 
         ItemPrice price =  forgeable.gameObject.GetComponent<ItemPrice>();
-        if (!activatingPlayer.Charge(-price.Value))
+        if (!activatingPlayer.CreditArithmetic(-price.Value))
         {
             return;
         }
 
         GameObject g = Instantiate(forgeable.gameObject) as GameObject;
-        m_Site.Forge(g.GetComponent<ForgeableObject>(), activatingPlayer.GetComponent<Team>());
+        m_Site.Forge(activatingPlayer, g.GetComponent<ForgeableObject>(), activatingPlayer.GetComponent<Team>());
 
         DeflateMenu();
     }

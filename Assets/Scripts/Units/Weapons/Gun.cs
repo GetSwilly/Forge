@@ -10,10 +10,7 @@ public class Gun : Weapon {
 	static readonly float MUZZLE_FLASH_TIME = 0.1f;
     
    
-
-    [Space(15)]
     [Header("Shots")]
-    [Space(5)]
 
     [SerializeField]
     ShotContainer primaryShot;
@@ -28,10 +25,10 @@ public class Gun : Weapon {
 
     bool lastUsedIsPrimary = true;
 
-
-    [Space(15)]
+    /*
+    *******************************************************************************************************************************
+    */
     [Header("Misc.")]
-    [Space(5)]
 
     [SerializeField]
     Transform gunBarrelTransform;
@@ -56,12 +53,10 @@ public class Gun : Weapon {
 
     List<GameObject> bulletParents = new List<GameObject>();
 
-
-    
-
-    [Space(15)]
+    /*
+    *******************************************************************************************************************************
+    */
     [Header("Attack Deterioration")]
-    [Space(5)]
 
 
     //[SerializeField]
@@ -393,8 +388,8 @@ public class Gun : Weapon {
 
         if (m_Movement != null)
         {
-            m_Movement.AddSpeedMultiplier(isPrimary ? primarySpeedSpeedup : secondarySpeedSpeedup);
-            m_Movement.AddRotationMultiplier(isPrimary ? primaryRotationSpeedup : secondaryRotationSpeedup);
+            m_Movement.AddSpeedMultiplier(this, isPrimary ? primarySpeedSpeedup : secondarySpeedSpeedup);
+            m_Movement.AddRotationMultiplier(this, isPrimary ? primaryRotationSpeedup : secondaryRotationSpeedup);
         }
 
 
@@ -468,8 +463,8 @@ public class Gun : Weapon {
 
         if (m_Movement != null)
         {
-            m_Movement.RemoveSpeedMultiplier(isPrimary ? primarySpeedSpeedup : secondarySpeedSpeedup);
-            m_Movement.RemoveRotationMultiplier(isPrimary ? primaryRotationSpeedup : secondaryRotationSpeedup);
+            m_Movement.RemoveSpeedMultiplier(this);
+            m_Movement.RemoveRotationMultiplier(this);
         }
 
 

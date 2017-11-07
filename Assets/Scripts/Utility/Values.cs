@@ -4,6 +4,8 @@ using UnityEngine;
 
 public static class Values {
 
+    public static readonly float _SightOffset = 0.1f;
+
     public static readonly double WEIGHT_RANK_WHITE = 10;
     // public static readonly double WEIGHT_RANK_GREEN = 10;
     public static readonly double WEIGHT_RANK_BLUE = 10;

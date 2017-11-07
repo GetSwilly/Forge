@@ -47,6 +47,7 @@ public abstract class BaseUtilityBehavior : MonoBehaviour
     protected UtilityActor m_Actor;
     protected Team m_Team;
     protected IPathfinder m_Pathfinder;
+    protected IMovement m_Movement;
     protected UtilityMind m_Mind;
     protected Transform m_Transform;
 
@@ -59,6 +60,7 @@ public abstract class BaseUtilityBehavior : MonoBehaviour
         m_Mind = GetComponent<UtilityMind>();
 
         m_Pathfinder = GetComponent<IPathfinder>();
+        m_Movement = GetComponent<IMovement>();
     }
     void OnDisable()
     {

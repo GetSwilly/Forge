@@ -86,6 +86,6 @@ public class SightedObject
 
     public override string ToString()
     {
-        return string.Format("Sighted Transform: {0}. Last Known Position: {1}. Last Known Direction: {2}. Last Time Seen: {3}. In Sight: {4}", SightedTransform, LastKnownPositions, LastKnownDirection, LastTimeSeen, InSight);
+        return string.Format("Sighted Transform: {0}. Last Known Base Position: {1}. Last Known Direction: {2}. Last Time Seen: {3}. In Sight: {4}", SightedTransform, LastKnownBasePosition, LastKnownDirection, LastTimeSeen, InSight);
     }
 }

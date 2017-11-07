@@ -70,13 +70,13 @@ public class Charge : BaseUtilityBehavior
     {
         IsActive = true;
 
-        m_Movement.AddSpeedMultiplier(chargeSpeedup);
+        m_Movement.AddSpeedMultiplier(this, chargeSpeedup);
         StartCoroutine(ChargeAttack());
     }
     public override void EndBehavior(bool shouldNotifySuper, bool shouldNotifyActor)
     {
         StopCoroutine(ChargeAttack());
-        m_Movement.RemoveSpeedMultiplier(chargeSpeedup);
+        m_Movement.RemoveSpeedMultiplier(this);
 
         base.EndBehavior(shouldNotifySuper, shouldNotifyActor);
     }

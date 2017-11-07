@@ -47,10 +47,6 @@ public class UtilityActor : UnitController
     [SerializeField]
     float reactionTime = 0f;
 
-    [Tooltip("Amount of time between checks for nearby objects")]
-    [SerializeField]
-    float checkNearbyTime = 0.01f;
-
     [Flags]
     public enum TargetingMethod { Random, MostHealth, LeastHealth, ShortestDistance, Custom, OnSight, OnSound, OnDamage }
 
@@ -68,13 +64,6 @@ public class UtilityActor : UnitController
     [SerializeField]
     [Range(0f, 1f)]
     float retargetChance = 0.5f;
-
-
-    [Tooltip("Need to check if objects are obstacles are blocking it's vision?")]
-    [SerializeField]
-    bool canSeeThroughObjects = false;
-
-
 
     List<IMemorable> nearbyAllies = new List<IMemorable>();
     List<IMemorable> nearbyEnemies = new List<IMemorable>();
@@ -245,7 +234,7 @@ public class UtilityActor : UnitController
 
         m_Pathfinder = GetComponent<IPathfinder>();
 
-        m_Health.OnDamaged += OnDamaged;
+        m_Health.OnDamaged += HealthChanged;
     }
     public override void Start()
     {
@@ -270,7 +259,7 @@ public class UtilityActor : UnitController
         StartCoroutine(UpdateBehavior());
         StartCoroutine(UpdateInfluencers());
 
-       // StartCoroutine(CheckNearbyRoutine());
+        // StartCoroutine(CheckNearbyRoutine());
     }
     public override void OnDisable()
     {
@@ -347,7 +336,7 @@ public class UtilityActor : UnitController
             {
                 continue;
             }
-            
+
             weightedBehaviors.Add(new WeightedObjectOfUtilityBehavior(m_Behaviors[i], _weight));
 
         }
@@ -359,7 +348,7 @@ public class UtilityActor : UnitController
             {
                 Debug.Log(m_Transform.name + " -- No weighted behaviors available.");
             }
-            
+
             return;
         }
 
@@ -543,7 +532,7 @@ public class UtilityActor : UnitController
     }
 
     #endregion
-    
+
 
     #region Stupidity Stuff
 
@@ -679,9 +668,9 @@ public class UtilityActor : UnitController
     /// <summary>
     /// React to Damage
     /// </summary>
-    public override void OnDamaged(Health _health)
+    public override void HealthChanged(Health _health)
     {
-        base.OnDamaged(_health);
+        base.HealthChanged(_health);
 
         float pctg = Mathf.Clamp01(Mathf.Abs(_health.LastHealthChange / _health.MaxHealth));
 
@@ -729,9 +718,9 @@ public class UtilityActor : UnitController
     /// <summary>
     /// React to Death
     /// </summary>
-    public override void OnDeath(Health _casualtyHealth)
+    public override void Died(Health _casualtyHealth)
     {
-        base.OnDeath(_casualtyHealth);
+        base.Died(_casualtyHealth);
 
         if (GameManager.Instance != null)
         {
@@ -1051,10 +1040,10 @@ public class UtilityActor : UnitController
                 {
                     newMemoryTracker.Add(memoryEnumerator.Current.Key, t);
                 }
-                //else
-                //{
-                //    Debug.Log(m_Transform + " --FORGETTING---> " + memoryEnumerator.Current.Key.GameObject);
-                //}
+                else
+                {
+                    Debug.Log(m_Transform + " --FORGETTING---> " + memoryEnumerator.Current.Key.GameObject);
+                }
             }
         }
 
@@ -1087,7 +1076,7 @@ public class UtilityActor : UnitController
         if (teamMember == null)
             return false;
 
-        return m_Team.IsFriendly(teamMember.CurrentTeam);
+        return m_Team.IsFriendly(teamMember);
         //return Utilities.IsInLayerMask(obj.gameObject, friendlyTeam) && allyTags.Contains(obj.gameObject.tag);
     }
     public bool IsEnemy(Team teamMember)
@@ -1095,7 +1084,7 @@ public class UtilityActor : UnitController
         if (teamMember == null)
             return false;
 
-        bool val = m_Team.IsEnemy(teamMember.CurrentTeam);
+        bool val = m_Team.IsEnemy(teamMember);
 
         return val;
         //return Utilities.IsInLayerMask(obj.gameObject, enemyTeam) && !allyTags.Contains(obj.gameObject.tag);
@@ -1149,7 +1138,7 @@ public class UtilityActor : UnitController
 
             uiObj.transform.position = transform.position;// + (Vector3.up * UI_START_HEIGHT_OFFSET);
             uiObj.SetActive(true);
-            m_TextUI.Initialize(m_Transform, true);
+            m_TextUI.Initialize(m_Transform);
 
 
             GameObject _text = m_TextUI.GetPrefab("ID");
@@ -1277,6 +1266,16 @@ public class UtilityActor : UnitController
                 }
             }
 
+            //if (TargetTransform == null)
+            //{
+            //    Transform t = ChooseTarget(initialTargetingMethod);
+
+            //    if (t != null)
+            //    {
+            //        TargetTransform = t;
+            //    }
+            //}
+
             if (TargetTransform == null || !objectsInSight.ContainsKey(TargetTransform))
                 return null;
 
@@ -1289,7 +1288,10 @@ public class UtilityActor : UnitController
         get { return targetTransform; }
         set
         {
-            //Debug.Log("Setting TargetTransform");
+            if (value == null)
+            {
+                Debug.Log("Setting TargetTransform to NULL");
+            }
             targetTransform = value;
         }
     }
@@ -1529,7 +1531,7 @@ public class UtilityActor : UnitController
 
         GameObject obj = memObj.GameObject;
         SightedObject sightedObj = null;// new SightedObject(obj.transform, obj.transform.position, Vector3.zero, false);
-        
+
         bool hasSeenBefore = objectsInSight.ContainsKey(obj.transform);
         bool shouldAddToSight = false;
 
@@ -1656,7 +1658,7 @@ public class UtilityActor : UnitController
             memoryTracker.Add(memObj, MemoryTime);
         }
 
-        if (!isForgetable && unforgetableObjects.Contains(memObj))
+        if (!isForgetable && !unforgetableObjects.Contains(memObj))
         {
             unforgetableObjects.Add(memObj);
         }
@@ -1865,7 +1867,6 @@ public class UtilityActor : UnitController
     {
         base.OnValidate();
 
-        checkNearbyTime = Mathf.Max(0.1f, checkNearbyTime);
         MemoryTime = MemoryTime;
 
         Utilities.ValidateCurve_Times(poorDecisionCurve, 0f, 100f);

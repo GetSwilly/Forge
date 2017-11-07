@@ -72,7 +72,7 @@ public class ForceAbility : Ability {
             hitRigid = hitColls[i].GetComponent<Rigidbody>();
 
             //Ignore triggers, objects without health, and objects in ignore mask
-            if (hitColls[i].isTrigger || hitRigid == null || Utilities.IsInLayerMask(hitColls[i].gameObject.layer, m_Controller.NoHitMask))
+            if (hitColls[i].isTrigger || hitRigid == null)
                 continue;
 
 

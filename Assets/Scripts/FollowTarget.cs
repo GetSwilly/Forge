@@ -35,14 +35,14 @@ public class FollowTarget : MonoBehaviour {
     [SerializeField]
     bool disableIfNoTarget = true;
 
-	Vector3 desiredPos = Vector3.zero;
-	Transform m_Transform;
-	
-	void Awake ()
+    Vector3 desiredPos = Vector3.zero;
+    Transform m_Transform;
+
+    void Awake()
     {
-		m_Transform = this.GetComponent<Transform> ();
-	}
-	
+        m_Transform = this.GetComponent<Transform>();
+    }
+
 
 
 	void LateUpdate ()

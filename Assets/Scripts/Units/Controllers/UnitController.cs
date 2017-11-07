@@ -11,38 +11,25 @@ using UnityEngine.Events;
 public abstract class UnitController : MonoBehaviour, IIdentifier, IMemorable, IStat
 {
 
-    protected static readonly float PICKUP_MOVE_SPEED = 0.15f;
-    protected static readonly float PICKUP_ROTATE_SPEED = 0.2f;
-    protected static readonly float DROP_FORCE = 2f;
+    protected static readonly float _PickupMovementSpeed = 15f;
+    protected static readonly float _PickupRotateSpeed = 10f;
+    protected static readonly float _PickupDropForce = 2f;
 
     [SerializeField]
-    String unitName;
+    string unitName;
 
     [Tooltip("Should show debug information?")]
     [SerializeField]
     protected bool showDebug = false;
 
     [SerializeField]
-    protected LayerMask ignoreMask;
-
-    [Tooltip("GameObject tags to be considered friendly")]
-    [SerializeField]
-    protected List<string> friendlyTags = new List<string>();
-
-    [Tooltip("GameObject tags to be considered friendly")]
-    [SerializeField]
-    protected List<string> allyTags = new List<string>();
-
-    [SerializeField]
-    protected LayerMask noHitMask;
-    [SerializeField]
-    protected LayerMask environmentMask;
-
-    [SerializeField]
     protected UnitStats m_Stats;
 
     [SerializeField]
     StatSubscriptions m_StatSubscriptions;
+
+    [SerializeField]
+    protected Vector3 rootPosition;
 
     [SerializeField]
     private CustomRangeSensor m_Sight;
@@ -55,7 +42,7 @@ public abstract class UnitController : MonoBehaviour, IIdentifier, IMemorable, I
     [SerializeField]
     [Range(0, 360)]
     private int fieldOfView = 20;
-    
+
     [SerializeField]
     private int m_Credits;
 
@@ -72,11 +59,15 @@ public abstract class UnitController : MonoBehaviour, IIdentifier, IMemorable, I
 
     Dictionary<StatType, int> statLevelTracker = new Dictionary<StatType, int>();
     public event Delegates.StatChanged OnLevelChanged;
-    public event Delegates.UIUpdateEvent UIAttributeChangedEvent;
 
     private UnityAction<GameObject> onSightAction;
     private UnityAction<GameObject> onMaintainSightAction;
     private UnityAction<GameObject> onLostSightAction;
+
+    public event Delegates.ValueChangeEvent OnHealthChange;
+    public event Delegates.ValueChangeEvent OnCreditsChange;
+
+    public event Health.AlertHealthChange OnDamageAchieved;
 
     public virtual void Awake()
     {
@@ -108,9 +99,8 @@ public abstract class UnitController : MonoBehaviour, IIdentifier, IMemorable, I
         AddSightCollider();
 
         //Establish Health event listeners
-        m_Health.OnHealthChange += UpdateHealthUI;
-        m_Health.OnDamaged += OnDamaged;
-        m_Health.OnKilled += OnDeath;
+        m_Health.OnHealthChange += HealthChanged;
+        m_Health.OnKilled += Died;
     }
     void SubscribeToStats()
     {
@@ -149,7 +139,7 @@ public abstract class UnitController : MonoBehaviour, IIdentifier, IMemorable, I
         //sightCollider.radius = m_SightRange / maxVal;
 
 
-       m_Sight.OnDetected.AddListener(onSightAction);
+        m_Sight.OnDetected.AddListener(onSightAction);
         m_Sight.OnStayDetected.AddListener(onMaintainSightAction);
         m_Sight.OnLostDetection.AddListener(onLostSightAction);
         //CollisionNotifier sightNotifier = m_Sight.GetComponent<CollisionNotifier>();
@@ -164,7 +154,7 @@ public abstract class UnitController : MonoBehaviour, IIdentifier, IMemorable, I
         //    sightNotifier.TriggerExit += SightTriggerExited;
         //}
     }
- 
+
 
     public virtual void OnDisable()
     {
@@ -200,14 +190,13 @@ public abstract class UnitController : MonoBehaviour, IIdentifier, IMemorable, I
 
         Vector3 worldPos = m_Transform.TransformPoint(localPos);
 
-        while ((objTransform.position - (worldPos = m_Transform.TransformPoint(localPos))).magnitude > 0.1f && Quaternion.Angle(objTransform.rotation, m_Transform.rotation) > 1f)
+        while ((objTransform.position - (worldPos = m_Transform.TransformPoint(localPos))).magnitude > 0.01f)// && Quaternion.Angle(objTransform.rotation, m_Transform.rotation) > 1f)
         {
-
-            objTransform.position = Vector3.MoveTowards(objTransform.position, worldPos, PICKUP_MOVE_SPEED);
-
-            objTransform.rotation = Quaternion.RotateTowards(objTransform.rotation, m_Transform.rotation, PICKUP_ROTATE_SPEED);
-
             yield return null;
+
+            objTransform.position = Vector3.MoveTowards(objTransform.position, worldPos, _PickupMovementSpeed * Time.deltaTime);
+
+            objTransform.rotation = Quaternion.RotateTowards(objTransform.rotation, m_Transform.rotation, _PickupRotateSpeed * Time.deltaTime);
         }
 
         objTransform.localPosition = localPos;
@@ -236,7 +225,7 @@ public abstract class UnitController : MonoBehaviour, IIdentifier, IMemorable, I
         if (checkTransform == null)
             return false;
 
-       return CanSee(checkTransform.position, FOV / 2f, new List<Transform>() { checkTransform });
+        return CanSee(checkTransform.position, FOV / 2f, new List<Transform>() { checkTransform });
     }
 
     /// <summary>
@@ -406,44 +395,33 @@ public abstract class UnitController : MonoBehaviour, IIdentifier, IMemorable, I
 
     #endregion
 
-    #region UI Stuff
-
-
-    public virtual void UpdateUI()
-    {
-        UpdateHealthUI(m_Health);
-    }
-    protected virtual void UpdateHealthUI(Health _health)
-    {
-        OnUIAttributeChanged(new UIEventArgs(UIManager.Component.Health, "", m_Health.HealthPercentage, false));
-        //m_Handler.UpdateUI(Attribute.Health, m_Health.HealthPercentage, false);
-    }
-
-    protected void OnUIAttributeChanged(UIEventArgs args)
-    {
-        if (UIAttributeChangedEvent != null)
-        {
-            UIAttributeChangedEvent(this, args);
-        }
-    }
-    #endregion
-
 
     #region Cost
 
     public virtual bool CanAfford(int creditsDelta)
     {
-        return (Credits + creditsDelta) > 0;
+        return (Credits + creditsDelta) >= 0;
     }
 
-    public bool Charge(int creditsDelta)
+    public bool CreditArithmetic(int creditsDelta)
     {
         if (!CanAfford(creditsDelta))
         {
             return false;
         }
 
+        if (creditsDelta != 0)
+        {
+            UIManager.Instance.CreateDynamicInfoScript(transform.position, creditsDelta, Colors._CreditColor);
+        }
+
         Credits += creditsDelta;
+
+
+        if (OnCreditsChange != null)
+        {
+            OnCreditsChange(Credits, creditsDelta);
+        }
 
         return true;
     }
@@ -451,22 +429,22 @@ public abstract class UnitController : MonoBehaviour, IIdentifier, IMemorable, I
     #endregion
 
 
-    public void DamageAchieved(Health _casualtyHealth)
+    public virtual void CasualtyAchieved(Health casualtyHealth)
     {
-
+        if(OnDamageAchieved != null)
+        {
+            OnDamageAchieved(casualtyHealth);
+        }
     }
-    public void KillAchieved(Health _casualtyHealth)
+    public void KillAchieved(Health casualtyHealth) { }
+    public virtual void HealthChanged(Health mHealth)
     {
-
+        if (OnHealthChange != null)
+        {
+            OnHealthChange(mHealth.HealthPercentage, mHealth.LastHealthChange);
+        }
     }
-    public virtual void OnDamaged(Health _casualtyHealth)
-    {
-
-    }
-    public virtual void OnDeath(Health _casualtyHealth)
-    {
-        //m_Handler.HideUI();
-    }
+    public virtual void Died(Health mHealth) { }
 
 
     protected virtual void SightCollisionEntered(Collision coll) { }
@@ -483,6 +461,7 @@ public abstract class UnitController : MonoBehaviour, IIdentifier, IMemorable, I
     protected virtual void SightLost(GameObject obj) { }
 
     #region Accessors
+
     public String Name
     {
         get { return unitName; }
@@ -510,23 +489,9 @@ public abstract class UnitController : MonoBehaviour, IIdentifier, IMemorable, I
 
             if (m_Sight != null)
             {
-                m_Sight.SensorRange = SightRange;
+                m_Sight.SensorRange = SightRange * 2;
             }
         }
-    }
-
-    public LayerMask IgnoreMask
-    {
-        get { return ignoreMask; }
-        set { IgnoreMask = value; }
-    }
-    public LayerMask NoHitMask
-    {
-        get { return noHitMask; }
-    }
-    public LayerMask EnvironmentMask
-    {
-        get { return environmentMask; }
     }
 
     public bool ShowDebug
@@ -543,7 +508,7 @@ public abstract class UnitController : MonoBehaviour, IIdentifier, IMemorable, I
     protected int Credits
     {
         get { return m_Credits; }
-        set { m_Credits = Mathf.Clamp(value, 0, value); }
+        private set { m_Credits = Mathf.Clamp(value, 0, value); }
     }
     #endregion
 

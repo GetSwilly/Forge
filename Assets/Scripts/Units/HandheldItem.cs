@@ -19,10 +19,10 @@ public abstract class HandheldItem : MonoBehaviour, IIdentifier
     protected bool showDebug = false;
 
 
-
-    [Space(10)]
+    /*
+    *******************************************************************************************************************************
+    */
     [Header("Input Types")]
-    [Space(5)]
 
     [Tooltip("Input type for PRIMARY action")]
     [SerializeField]
@@ -40,10 +40,10 @@ public abstract class HandheldItem : MonoBehaviour, IIdentifier
     protected InputType tertiaryInputType = InputType.Hold;
 
 
-    [Space(10)]
+    /*
+     *******************************************************************************************************************************
+     */
     [Header("Movement Effects")]
-    [Space(5)]
-
 
 
     [Tooltip("Speed Multiplier to apply on Item pickup")]
@@ -111,8 +111,9 @@ public abstract class HandheldItem : MonoBehaviour, IIdentifier
     //[Range(0f, 1f)]
     //float shakeTime = 0f;
 
-
-    [Space(15)]
+    /*
+    *******************************************************************************************************************************
+    */
     [Header("Sounds")]
     [Space(5)]
 
@@ -182,8 +183,8 @@ public abstract class HandheldItem : MonoBehaviour, IIdentifier
         m_Movement = m_Owner.GetComponent<MovementController>();
         if (m_Movement != null)
         {
-            m_Movement.AddSpeedMultiplier(SpeedMultiplier);
-            m_Movement.AddRotationMultiplier(RotationMultiplier);
+            m_Movement.AddSpeedMultiplier(this, SpeedMultiplier);
+            m_Movement.AddRotationMultiplier(this, RotationMultiplier);
         }
     }
     public virtual void Terminate()
@@ -209,8 +210,8 @@ public abstract class HandheldItem : MonoBehaviour, IIdentifier
 
         if (m_Movement != null)
         {
-            m_Movement.RemoveSpeedMultiplier(SpeedMultiplier);
-            m_Movement.RemoveRotationMultiplier(RotationMultiplier);
+            m_Movement.RemoveSpeedMultiplier(this);
+            m_Movement.RemoveRotationMultiplier(this);
         }
         m_Movement = null;
 
@@ -269,24 +270,33 @@ public abstract class HandheldItem : MonoBehaviour, IIdentifier
 
 
 
-    protected virtual void PlaySound(SoundClip _sound)
+    protected virtual void PlaySound(SoundClip sound)
     {
-        //Debug.Log("Playing Sound : " + _sound);
+        GameObject remnantObject = ObjectPoolerManager.Instance.AudioRemnantPooler.GetPooledObject();
+        AudioRemnant remnantScript = remnantObject.GetComponent<AudioRemnant>();
 
-        m_Audio.volume = _sound.Volume;
-        m_Audio.pitch = _sound.Pitch;
+        if (remnantScript != null)
+        {
+            remnantObject.transform.position = m_Transform.position;
+            remnantObject.SetActive(true);
 
-        if (_sound.IsLooping)
-        {
-            m_Audio.loop = true;
-            m_Audio.clip = _sound.Sound;
-            m_Audio.Play();
+            remnantScript.PlaySound(sound);
         }
-        else
-        {
-            m_Audio.loop = false;
-            m_Audio.PlayOneShot(_sound.Sound);
-        }
+
+        //m_Audio.volume = sound.Volume;
+        //m_Audio.pitch = sound.Pitch;
+
+        //if (sound.IsLooping)
+        //{
+        //    m_Audio.loop = true;
+        //    m_Audio.clip = sound.Sound;
+        //    m_Audio.Play();
+        //}
+        //else
+        //{
+        //    m_Audio.loop = false;
+        //    m_Audio.PlayOneShot(sound.Sound);
+        //}
     }
 
     #region Team
@@ -299,14 +309,14 @@ public abstract class HandheldItem : MonoBehaviour, IIdentifier
         }
 
 
-        m_Team.CurrentTeamTag = team.CurrentTeamTag;
+        m_Team.TeamType = team.TeamType;
         m_Team.FriendlyTeams = team.FriendlyTeams;
-        m_Team.FriendlyTeams.Add(Team.GetTeam(m_Team.CurrentTeamTag));
+        m_Team.FriendlyTeams.Add(Team.GetTeam(m_Team.TeamType));
         m_Team.EnemyTeams = team.EnemyTeams;
     }
     public void ResetTeam()
     {
-        m_Team.CurrentTeamTag = TeamTag.All;
+        m_Team.TeamType = Team.Type.All;
         m_Team.FriendlyTeams.Clear();
         m_Team.EnemyTeams.Clear();
     }

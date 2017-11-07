@@ -24,6 +24,12 @@ public class ForgeSite : MonoBehaviour, IMemorable, IStat
     Transform m_Transform;
     Team m_Team;
 
+    InteractableObject m_Interactable;
+
+    PlayerController forgingPlayer;
+    ForgeableObject attemptedForge;
+    GameObject timerUI;
+
     public event Delegates.StatChanged OnLevelChanged;
 
 
@@ -31,33 +37,76 @@ public class ForgeSite : MonoBehaviour, IMemorable, IStat
     {
         m_Transform = GetComponent<Transform>();
 
+        m_Interactable = GetComponent<InteractableObject>();
         m_Team = GetComponent<Team>();
     }
     void Start()
     {
         if (activeForge != null)
         {
-            Forge(activeForge.GetComponent<ForgeableObject>());
+            Forge(null, activeForge.GetComponent<ForgeableObject>());
         }
     }
 
-    public void Forge(ForgeableObject forgeObj)
+    public void Forge(PlayerController forger, ForgeableObject forgeObj)
     {
-        Forge(forgeObj, null);
+        Forge(forger,forgeObj, null);
     }
-    public void Forge(ForgeableObject forgeObj, Team _team)
+    public void Forge(PlayerController forger, ForgeableObject forgeObj, Team _team)
     {
-        StartCoroutine(AttemptForge(forgeObj, _team));
+        StartCoroutine(AttemptForge(forger, forgeObj, _team));
     }
-    IEnumerator AttemptForge(ForgeableObject forgeObj, Team team)
+    IEnumerator AttemptForge(PlayerController player, ForgeableObject forgeObj, Team team)
     {
-        yield return new WaitForSeconds(forgeObj.BuildTime);
+        forgingPlayer = player;
+        attemptedForge = forgeObj;
+        m_Interactable.enabled = false;
+
+        forgeObj.gameObject.SetActive(false);
+        forgeObj.transform.position = m_Transform.position;
+
+        timerUI = ObjectPoolerManager.Instance.TimerUIPooler.GetPooledObject();
+        timerUI.SetActive(true);
+
+        FollowTarget follow = timerUI.GetComponent<FollowTarget>();
+        timerUI.transform.position = m_Transform.position;
+        follow.TargetTransform = m_Transform;
+        
+        ProgressBarController progress = timerUI.GetComponent<ProgressBarController>();
+        progress.SetPercentage(1f, true);
+
+        float timer = forgeObj.BuildTime;
+
+        while(timer > 0f)
+        {
+            yield return null;
+            timer -= Time.deltaTime;
+
+            progress.SetPercentage(timer / forgeObj.BuildTime, false);
+            string timerString = (Mathf.Round(timer * 100) / 100f).ToString();
+            progress.SetText(timerString);
+        }
+
+        timerUI.SetActive(false);
+
+        attemptedForge = null;
+        timerUI = null;
+
         ProcessForge(forgeObj, team);
+
+        m_Interactable.enabled = true;
     }
     void ProcessForge(ForgeableObject forgeObj, Team _team)
     {
         if (forgeObj == null)
             return;
+
+        if(activeForge != null)
+        {
+            activeForge.transform.SetParent(null);
+            activeForge.SetActive(false);
+            Destroy(activeForge);
+        }
 
         activeForge = forgeObj.gameObject;
 
@@ -66,12 +115,36 @@ public class ForgeSite : MonoBehaviour, IMemorable, IStat
         activeForge.transform.localRotation = Quaternion.identity;
         // activeForge.transform.localScale = Vector3.one;
 
+        forgeObj.gameObject.SetActive(true);
+
         forgeObj.Initialize(this, _team);
     }
 
     public void CancelForgeAttempt()
     {
         StopAllCoroutines();
+
+        if(attemptedForge != null)
+        {
+            ItemPrice forgePrice = attemptedForge.GetComponent<ItemPrice>();
+            
+            if(forgePrice != null && forgingPlayer != null)
+            {
+                forgingPlayer.CreditArithmetic(forgePrice.Value);
+            }
+
+
+            Destroy(attemptedForge.gameObject);
+            attemptedForge = null;
+        }
+
+        if (timerUI != null)
+        {
+            timerUI.SetActive(false);
+            timerUI = null;
+        }
+
+        m_Interactable.enabled = true;
     }
     public void RemoveActiveForge()
     {

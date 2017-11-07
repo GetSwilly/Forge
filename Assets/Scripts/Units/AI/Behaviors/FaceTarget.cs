@@ -36,7 +36,7 @@ public class FaceTarget : BaseUtilityBehavior
                 Debug.DrawLine(m_Transform.position, m_Actor.TargetObject.LastKnownBasePosition);
             }
 
-            m_Pathfinder.RotateTowards(m_Actor.TargetObject.LastKnownBasePosition);
+            m_Movement.RotateTowards(m_Actor.TargetObject.LastKnownBasePosition);
             yield return null;
         }
 
@@ -77,7 +77,7 @@ public class FaceTarget : BaseUtilityBehavior
 
     public override void NotifySubBehaviorEnded(BaseUtilityBehavior _behavior)
     {
-        throw new NotImplementedException();
+        //throw new NotImplementedException();
     }
     public override bool CanStartSubBehavior
     {

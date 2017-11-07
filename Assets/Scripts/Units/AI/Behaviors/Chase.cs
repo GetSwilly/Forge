@@ -13,7 +13,6 @@ public class Chase : BaseUtilityBehavior
     [SerializeField]
     Type m_Type;
 
-
     [Tooltip("Maximum amount of time an object can be out of sight before behavior ends. -1 means infinity.")]
     [SerializeField]
     float maxTimeOutOfSight = 2f;
@@ -36,9 +35,14 @@ public class Chase : BaseUtilityBehavior
     [SerializeField]
     float stopDistance = 2f;
 
+    //[SerializeField]
+    //float slowdownDistance = 4f;
+
     float sightTimer;
     SightedObject targetObject;
 
+    //float originalEndReachedDistance;
+    //float originalSlowdownDistance;
 
     void Update()
     {
@@ -73,6 +77,21 @@ public class Chase : BaseUtilityBehavior
             EndBehavior(true, true);
         }
 
+        if (m_Pathfinder.GetDistanceRemaining() < StopDistance)
+        {
+            if (m_Actor.ShowDebug)
+            {
+                Debug.Log(string.Format("CHASE --- {0} --- Within StoppingDistance.", m_Transform.name));
+            }
+
+            EndBehavior(true, true);
+        }
+
+
+        if (ShowDebug)
+        {
+            Debug.DrawLine(m_Transform.position, targetObject.LastKnownBasePosition, Color.yellow);
+        }
         //if(m_Pathfinder.GetDistanceRemaining() < m_Actor.SightRange)
         //{
         //    m_Pathfinder.ShouldRotateTowardsPath = false;
@@ -82,7 +101,6 @@ public class Chase : BaseUtilityBehavior
         //{
         //    m_Pathfinder.ShouldRotateTowardsPath = true;
         //}
-
     }
 
 
@@ -91,6 +109,11 @@ public class Chase : BaseUtilityBehavior
     {
         IsActive = true;
 
+        //originalEndReachedDistance = m_Pathfinder.EndReachedDistance;
+        //m_Pathfinder.EndReachedDistance = StopDistance;
+
+        //originalSlowdownDistance = m_Pathfinder.SlowdownDistance;
+        //m_Pathfinder.SlowdownDistance = slowdownDistance;
         //m_Movement.AddSpeedMultiplier(chaseMovementSpeedup);
         // m_Movement.AddRotationMultiplier(chaseRotationSpeedup);
 
@@ -113,13 +136,16 @@ public class Chase : BaseUtilityBehavior
 
     public override void EndBehavior(bool shouldNotifySuper, bool shouldNotifyActor)
     {
+        if (!IsActive)
+            return;
+
         StopAllCoroutines();
 
         //m_Movement.RemoveSpeedMultiplier(chaseMovementSpeedup);
         //m_Movement.RemoveRotationMultiplier(chaseRotationSpeedup);
 
         // m_Pathfinder.ShouldRotateTowardsPath = true;
-
+        //m_Pathfinder.EndReachedDistance = originalEndReachedDistance;
         m_Pathfinder.StopPathTraversal();
 
         base.EndBehavior(shouldNotifySuper, shouldNotifyActor);
@@ -178,12 +204,11 @@ public class Chase : BaseUtilityBehavior
 
         float dist = Vector3.Distance(m_Actor.TargetObject.LastKnownBasePosition, m_Transform.position);
 
-        if (dist <= StopDistance)
+        if (dist <= StartDistance)
         {
             return 0f;
         }
-
-
+        
         return utilityCurve.Evaluate(Mathf.Clamp01(dist / StartDistance));
     }
 
@@ -218,7 +243,11 @@ public class Chase : BaseUtilityBehavior
         get { return startDistance; }
         set { startDistance = Mathf.Clamp(value, 0.5f, startDistance); }
     }
-
+    //public float SlowdownDistance
+    //{
+    //    get { return slowdownDistance; }
+    //    set { slowdownDistance = Mathf.Clamp(value, 0f, value); }
+    //}
 
     protected override void OnValidate()
     {
@@ -227,6 +256,7 @@ public class Chase : BaseUtilityBehavior
         MaximumTimeOutOfSight = MaximumTimeOutOfSight;
         StopDistance = StopDistance;
         StartDistance = StartDistance;
+        //SlowdownDistance = SlowdownDistance;
 
         Utilities.ValidateCurve_Times(utilityCurve, 0f, 1f);
     }

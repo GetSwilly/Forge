@@ -75,15 +75,37 @@ public class UIManager : MonoBehaviour
     ProgressBarController enemyHealthBar;
 
     [SerializeField]
-    float enemyUIDelay;
+    float fadeDelay;
 
     [SerializeField]
     UnitController subscribedUnit;
 
-    public delegate void ExposeUIEvent(UIManager.Component uiComponents);
-    public delegate void UIUpdateEvent(UIManager.Component component, float percentage, float shouldSetImmediately);
+    [SerializeField]
+    SoundClip healthGained;
 
+    [SerializeField]
+    SoundClip healthLost;
 
+    [SerializeField]
+    SoundClip experienceGained;
+
+    [SerializeField]
+    SoundClip experienceLost;
+
+    [SerializeField]
+    SoundClip creditsGained;
+
+    [SerializeField]
+    SoundClip creditsLost;
+
+    [SerializeField]
+    SoundClip normalDamageAchieved;
+
+    [SerializeField]
+    SoundClip criticalDamageAchieved;
+
+    [SerializeField]
+    SoundClip casualtyAchieved;
 
 
 
@@ -99,10 +121,7 @@ public class UIManager : MonoBehaviour
 
     void Start()
     {
-        if (subscribedUnit != null)
-        {
-            Subscribe(subscribedUnit);
-        }
+        Subscribe(subscribedUnit);
     }
 
     public void Subscribe(UnitController unit)
@@ -111,6 +130,9 @@ public class UIManager : MonoBehaviour
             return;
 
         Unsubscribe();
+
+        PlayerController p = unit as PlayerController;
+
 
         unit.UIAttributeChangedEvent += UIUpdate;
 
@@ -142,9 +164,11 @@ public class UIManager : MonoBehaviour
                 break;
             case UIManager.Component.NativeAbility:
                 nativeAbilityUI.SetPercentage(args.percentage, args.shouldSetImmediately);
+                nativeAbilityUI.SetText(args.text);
                 break;
             case UIManager.Component.AuxiliaryAbility:
                 auxiliaryAbilityUI.SetPercentage(args.percentage, args.shouldSetImmediately);
+                auxiliaryAbilityUI.SetText(args.text);
                 break;
             case UIManager.Component.Merchant:
                 break;
@@ -220,7 +244,7 @@ public class UIManager : MonoBehaviour
     {
         enemyHUD.SetActive(true);
 
-        yield return new WaitForSeconds(enemyUIDelay);
+        yield return new WaitForSeconds(fadeDelay);
 
         enemyHUD.SetActive(false);
     }
@@ -265,6 +289,20 @@ public class UIManager : MonoBehaviour
         DeflateInGame();
         DeflateLoadingScreen();
         //DisableCenterScreenText();
+    }
+
+
+    public void CreateDynamicInfoScript(Vector3 position, int value, Color color)
+    {
+        if (ObjectPoolerManager.Instance != null)
+        {
+            GameObject infoObject = ObjectPoolerManager.Instance.DynamicInfoPooler.GetPooledObject();
+            DynamicInfoScript infoScript = infoObject.GetComponentInChildren<DynamicInfoScript>();
+
+            infoObject.transform.position = position;
+            infoObject.SetActive(true);
+            infoScript.Initialize(value, color);
+        }
     }
 
 

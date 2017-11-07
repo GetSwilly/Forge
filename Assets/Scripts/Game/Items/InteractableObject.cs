@@ -13,18 +13,12 @@ public abstract class InteractableObject : MonoBehaviour, IIdentifier
 
     [SerializeField]
     Vector3 m_UIOffset = new Vector3(0, 1, 2);
-
-    [SerializeField]
-    protected bool shouldShowLines = true;
-
+    
     [SerializeField]
     protected int activationCost;
 
 
-
-    [Space(10)]
     [Header("Sounds")]
-    [Space(5)]
 
     [SerializeField]
     protected SoundClip activationSound;
@@ -35,9 +29,7 @@ public abstract class InteractableObject : MonoBehaviour, IIdentifier
     [EnumFlags]
     UIManager.Component m_UIComponents;
 
-
-    public event UIManager.ExposeUIEvent OnUI_Inflate;
-    public event UIManager.ExposeUIEvent OnUI_Deflate;
+    
     public event Delegates.Alert OnUse;
     public event EventHandler ObjectAcquired;
 
@@ -157,7 +149,7 @@ public abstract class InteractableObject : MonoBehaviour, IIdentifier
         //if (healthSum != 0)
         //    playerHealth.HealthArithmetic(healthSum, false, transform);
 
-        if (!controller.Charge(ActivationCost))
+        if (!controller.CreditArithmetic(ActivationCost))
         {
             return false;
         }
@@ -201,6 +193,9 @@ public abstract class InteractableObject : MonoBehaviour, IIdentifier
 
     public virtual void InflateUI()
     {
+        if (!this.enabled)
+            return;
+
         if (activeUI != null && activeUI.gameObject.activeInHierarchy && activeUI.TargetTransform == m_Transform)
         {
             activeUI.SetFollowOffset(Vector3.zero);
@@ -226,7 +221,7 @@ public abstract class InteractableObject : MonoBehaviour, IIdentifier
 
             uiObj.transform.position = transform.position;
             uiObj.SetActive(true);
-            activeUI.Initialize(m_Transform, shouldShowLines);
+            activeUI.Initialize(m_Transform);
 
 
 
@@ -260,13 +255,6 @@ public abstract class InteractableObject : MonoBehaviour, IIdentifier
 
             hasUIInflated = true;
 
-
-            if (OnUI_Inflate != null)
-            {
-                OnUI_Inflate(m_UIComponents);
-            }
-
-
             if (hasUIInflated)
             {
                 SoundClip uiSound = SoundManager.Instance.UI_Sound;
@@ -287,11 +275,6 @@ public abstract class InteractableObject : MonoBehaviour, IIdentifier
             return;
 
         activeUI.Deflate();
-
-        if (OnUI_Deflate != null)
-        {
-            OnUI_Deflate(m_UIComponents);
-        }
     }
 
 

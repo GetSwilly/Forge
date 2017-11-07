@@ -5,96 +5,86 @@ using UnityEngine;
 
 public class Team : MonoBehaviour
 {
-    [SerializeField]
-    SingleTeamClassification m_Team = new SingleTeamClassification();
 
+    public enum Type
+    {
+        All,
+        Player,
+        Wild
+    }
+
+    [SerializeField]
+    Type m_TeamType;
+
+    [SerializeField]
+    String m_TeamTag;
+    
     [SerializeField]
     protected List<TeamClassification> friendlyTeams = new List<TeamClassification>();
 
     [SerializeField]
     protected List<TeamClassification> enemyTeams = new List<TeamClassification>();
 
-    public static TeamClassification GetTeam(TeamTag tag)
+
+    public static TeamClassification GetTeam(Team.Type type)
     {
-        TeamClassification classification = new TeamClassification();
-        classification.Team = tag;
-        classification.Types = new TeamTypeTag[] { TeamTypeTag.All };
+        TeamClassification classification = new TeamClassification(type, new string[] { "ALL" });
 
         return classification;
+    }
+    public static bool IsClassified(Team.Type type, string tag, List<TeamClassification> classifications)
+    {
+        for (int i = 0; i < classifications.Count; i++)
+        {
+            if (classifications[i].TeamType == Team.Type.All)
+                return true;
+
+            if (type != classifications[i].TeamType)
+                continue;
+
+            for (int k = 0; k < classifications[i].TeamTags.Length; k++)
+            {
+                if (classifications[i].TeamTags[k].Equals("ALL"))
+                    return true;
+
+                if (!classifications[i].TeamTags[k].Equals(tag.ToUpper()))
+                    continue;
+
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public bool IsFriendly(Team team)
     {
-        return IsFriendly(team.CurrentTeam);
+        return IsFriendly(team.TeamType, team.TeamTag);
     }
-    public bool IsFriendly(SingleTeamClassification teamClassification)
+    public bool IsFriendly(Team.Type type, string tag)
     {
-        return IsFriendly(FriendlyTeams, teamClassification);
+        return IsClassified(type, tag, FriendlyTeams);
     }
-    public static bool IsFriendly(List<TeamClassification> friendlyClassifications, SingleTeamClassification teamClassification)
-    {
-        for (int i = 0; i < friendlyClassifications.Count; i++)
-        {
-            if (friendlyClassifications[i].Team == TeamTag.All)
-                return true;
-
-            if (friendlyClassifications[i].Team != teamClassification.Team)
-                continue;
-
-            for (int k = 0; i < friendlyClassifications[i].Types.Length; k++)
-            {
-                if (friendlyClassifications[i].Types[k] == TeamTypeTag.All)
-                    return true;
-
-                if (friendlyClassifications[i].Types[k] != teamClassification.Type)
-                    continue;
-
-                return true;
-            }
-        }
-
-        return false;
-    }
+    
     public bool IsEnemy(Team team)
     {
-        return IsEnemy(team.CurrentTeam);
+        return IsEnemy(team.TeamType, team.TeamTag);
     }
-    public bool IsEnemy(SingleTeamClassification teamClassification)
-    {    
-        for (int i = 0; i < EnemyTeams.Count; i++)
-        {
-            if (EnemyTeams[i].Team == TeamTag.All)
-                return true;
-
-            if (EnemyTeams[i].Team != teamClassification.Team)
-                continue;
-
-            for (int k = 0; k < EnemyTeams[i].Types.Length; k++)
-            {
-                if (EnemyTeams[i].Types[k] == TeamTypeTag.All)
-                    return true;
-
-                if (EnemyTeams[i].Types[k] != teamClassification.Type)
-                    continue;
-
-                return true;
-            }
-        }
-
-        return false;
+    public bool IsEnemy(Team.Type type, string tag)
+    {
+        return IsClassified(type, tag, EnemyTeams);
     }
 
     #region Accessors
 
-    public TeamTag CurrentTeamTag
+    public Team.Type TeamType
     {
-        get { return m_Team.Team; }
-        set { m_Team.Team = value; }
+        get { return m_TeamType; }
+        set { m_TeamType = value; }
     }
-    public SingleTeamClassification CurrentTeam
+    public string TeamTag
     {
-        get { return m_Team; }
-        private set { m_Team = value; }
+        get { return m_TeamTag; }
     }
 
     public List<TeamClassification> FriendlyTeams
@@ -111,43 +101,30 @@ public class Team : MonoBehaviour
     #endregion
 }
 
-[System.Serializable]
-public class SingleTeamClassification
-{
-    [SerializeField]
-    private TeamTag m_Team;
 
-    [SerializeField]
-    private TeamTypeTag m_Type;
-
-    public TeamTag Team
-    {
-        get { return m_Team; }
-        set { m_Team = value; }
-    }
-    public TeamTypeTag Type
-    {
-        get { return m_Type; }
-        set { m_Type = value; }
-    }
-}
 [System.Serializable]
 public class TeamClassification
 {
     [SerializeField]
-    private TeamTag m_Team;
+    Team.Type m_TeamType;
 
     [SerializeField]
-    private TeamTypeTag[] m_Types;
+    string[] m_TeamTags;
 
-    public TeamTag Team
+    public TeamClassification(Team.Type type, string[] tags)
     {
-        get { return m_Team; }
-        set { m_Team = value; }
+        TeamType = type;
+        TeamTags = tags;
     }
-    public TeamTypeTag[] Types
+
+    public Team.Type TeamType
     {
-        get { return m_Types; }
-        set { m_Types = value; }
+        get { return m_TeamType; }
+        set { m_TeamType = value; }
+    }
+    public string[] TeamTags
+    {
+        get { return m_TeamTags; }
+        set { m_TeamTags = value; }
     }
 }

@@ -17,6 +17,8 @@ public class ObjectPoolerManager : MonoBehaviour {
     [HideInInspector]
     public ObjectPooler InteractableUIPooler;
     [HideInInspector]
+    public ObjectPooler TimerUIPooler;
+    [HideInInspector]
     public ObjectPooler AudioRemnantPooler;
 
     [SerializeField]
@@ -29,6 +31,8 @@ public class ObjectPoolerManager : MonoBehaviour {
     GameObject GenericUIPrefab;
     [SerializeField]
     GameObject InteractableUIPrefab;
+    [SerializeField]
+    GameObject TimerUIPrefab;
     [SerializeField]
     GameObject AudioRemnantPrefab;
 
@@ -117,6 +121,22 @@ public class ObjectPoolerManager : MonoBehaviour {
             InteractableUIPooler.Parent = uis.transform;
             go.transform.parent = this.gameObject.transform;
             InteractableUIPooler.Initialize();
+        }
+
+        if (TimerUIPooler == null && TimerUIPrefab != null)
+        {
+            GameObject go = new GameObject("TimerUIPooler");
+            TimerUIPooler = go.AddComponent<ObjectPooler>();
+            TimerUIPooler.PooledObject = TimerUIPrefab;
+            TimerUIPooler.PoolLength = 3;
+
+
+            GameObject uis = new GameObject("Timer UIs");
+            uis.transform.parent = pools.transform;
+
+            TimerUIPooler.Parent = uis.transform;
+            go.transform.parent = this.gameObject.transform;
+            TimerUIPooler.Initialize();
         }
 
         if (AudioRemnantPooler == null && AudioRemnantPrefab != null)

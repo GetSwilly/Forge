@@ -6,10 +6,8 @@ public abstract class Weapon : HandheldItem {
 
     protected static readonly float FIRE_RATE_MINIMUM = 0.01f;
     protected static readonly int NUMBER_RAYSWEEP_INCREMENTS = 50;
-
-    [Space(15)]
+    
     [Header("Targetting")]
-    [Space(5)]
 
     [Tooltip("Layers to target")]
     [SerializeField]
@@ -30,10 +28,10 @@ public abstract class Weapon : HandheldItem {
     protected float maxSlope = 10f;
 
 
-  
-    [Space(15)]
+    /*
+    *******************************************************************************************************************************
+    */
     [Header("Stats")]
-    [Space(5)]
     
     [Tooltip("Base Attack Power")]
     [SerializeField]

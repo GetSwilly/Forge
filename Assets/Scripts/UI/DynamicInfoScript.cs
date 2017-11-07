@@ -2,85 +2,109 @@
 using System.Collections;
 
 [RequireComponent(typeof(TextMesh))]
-public class DynamicInfoScript : MonoBehaviour {
+public class DynamicInfoScript : MonoBehaviour
+{
+    private static readonly float _AngleY = 1f;
+    private static readonly float _AngleMultiplier = 4f;
 
     [SerializeField]
-    float displayTime = 0.75f;
-    [SerializeField]
-    float baseSpeed = 1f;
+    Color textColor;
 
     [SerializeField]
-    AnimationCurve speedCurve = AnimationCurve.Linear(0f, 1f, 1f, 1f);
+    float animationTime;
+
     [SerializeField]
-    AnimationCurve fadeCurve = AnimationCurve.EaseInOut(0f, 1f, 1f, 0f);
+    AnimationCurve alphaOverTime;
 
-    Transform myTransform;
-    TextMesh infoText;
-	Color infoColor;
-	Vector3 moveDir;
+    [SerializeField]
+    AnimationCurve sizeOverTime;
 
-	
-	void Awake()
+    [SerializeField]
+    AnimationCurve speedOverTime;
+
+    [SerializeField]
+    float redirectTime;
+
+    Transform m_Transform;
+    TextMesh m_Text;
+    Vector3 moveDir;
+
+
+    void Awake()
     {
-		myTransform = GetComponent<Transform>();
-		infoText = GetComponent<TextMesh>();
-	}
+        m_Transform = GetComponent<Transform>();
+        m_Text = GetComponent<TextMesh>();
+    }
 
-	
-	public void Initialize(int numToDisplay, Color textColor)
+    public void Initialize(int numToDisplay, Color color)
     {
-		Initialize(numToDisplay.ToString(), textColor);
-	}
-	public void Initialize(string textToDisplay, Color textColor)
+        Initialize(numToDisplay.ToString(), color);
+    }
+    public void Initialize(string textToDisplay, Color color)
     {
+        textColor = color;
 
-		infoText.text = textToDisplay;
+        m_Text.text = textToDisplay;
 
-		myTransform.rotation = Camera.main.transform.rotation;
+        m_Transform.rotation = Camera.main.transform.rotation;
 
-		infoColor = textColor;
+        moveDir.x = Random.Range(-_AngleY * _AngleMultiplier, _AngleY * _AngleMultiplier);
+        moveDir.y = Random.Range(-_AngleY, _AngleY);
+        moveDir.Normalize();
 
-		Vector3 randomDir = Random.insideUnitSphere;
-		randomDir.y = Mathf.Abs(randomDir.y);
-        randomDir.z = Mathf.Abs(randomDir.z);
-        
-		moveDir = randomDir; //(myTransform.right * randomDir.x) + (myTransform.up * randomDir.y);
-		moveDir.Normalize();
+        StartCoroutine(AnimationRoutine());
+    }
 
-		StartCoroutine(DisplayText());
-	}
-
-
-
-	void OnDisable()
+    IEnumerator AnimationRoutine()
     {
-		StopAllCoroutines();
-	}
-	
-	
-	IEnumerator DisplayText()
-    {
+        float timer = 0f;
+        bool hasRedirected = false;
 
-		infoColor.a = fadeCurve.Evaluate(0f); 
-		infoText.color = infoColor;
-
-		float timer = 0f;
-
-		while(timer <= displayTime)
+        while (timer < AnimationTime)
         {
             yield return null;
 
+            timer += Time.deltaTime;
 
-			timer += Time.deltaTime;
+            if (!hasRedirected && timer > RedirectTime)
+            {
+                //moveDir.y += Random.Range(-_Angle2, _Angle2);
+                //moveDir.Normalize();
 
-			infoColor.a = fadeCurve.Evaluate(timer/displayTime);  //= Utilities.FadeColor(infoColor, 1/(fadeTime/2));
-			infoText.color = infoColor;
+                hasRedirected = true;
+            }
 
-			myTransform.Translate(moveDir * baseSpeed * speedCurve.Evaluate(timer/displayTime) * Time.deltaTime);
-		}
+            textColor.a = alphaOverTime.Evaluate(timer);
+            m_Text.color = textColor;
 
-		
-		gameObject.SetActive(false);
-	}
+            m_Transform.localScale = Vector3.one * sizeOverTime.Evaluate(timer);
 
+            m_Transform.position += m_Transform.TransformDirection(moveDir) * speedOverTime.Evaluate(timer) * Time.deltaTime;
+        }
+
+        m_Transform.gameObject.SetActive(false);
+    }
+
+    void OnDisable()
+    {
+        StopAllCoroutines();
+    }
+
+    float AnimationTime
+    {
+        get { return animationTime; }
+        set { animationTime = Mathf.Clamp(value, 0f, value); }
+    }
+    float RedirectTime
+    {
+        get { return redirectTime; }
+        set { redirectTime = Mathf.Clamp(value, 0f, value); }
+    }
+
+
+    void OnValidate()
+    {
+        AnimationTime = AnimationTime;
+        RedirectTime = RedirectTime;
+    }
 }

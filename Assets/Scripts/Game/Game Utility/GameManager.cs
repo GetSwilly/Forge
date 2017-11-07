@@ -16,13 +16,11 @@ public class GameManager : MonoBehaviour
     
     static readonly float ENEMY_DEATH_WEIGHT = 1f;
     
-    static readonly float ITEM_DROP_LAUNCH_POWER = .8f;
-    static readonly Vector3 ITEM_DROP_OFFSET = new Vector3(0f,0.2f,0f);
-    static readonly float ITEM_DROP_DELAY = 0.05f;
+    static readonly float _ItemDropLaunchPower = 1.3f;
+    static readonly Vector3 _ItemDropOffset = new Vector3(0f,0.2f,0f);
+    static readonly float _ItemDropDelay = 0.05f;
     
     static readonly Vector3 HUB_WORLD_PLAYER_SPAWN = new Vector3(0f, .5f, 0f);
-    static readonly float KILL_DEPTH = -150f;
-    static readonly float KILL_PLANE_SCALE = 150;
 
     #endregion
 
@@ -97,14 +95,6 @@ public class GameManager : MonoBehaviour
         currentGameState = GameState.START;
         frameTracker = new FrameRateTracker();
 
-        GameObject killPlane = GameObject.CreatePrimitive(PrimitiveType.Plane);
-        killPlane.name = "Kill Plane";
-
-        killPlane.GetComponent<MeshRenderer>().enabled = false;
-        killPlane.transform.localScale = Vector3.one * KILL_PLANE_SCALE;
-        killPlane.transform.position = new Vector3(0f, KILL_DEPTH, 0f);
-        killPlane.AddComponent<KillBox>();
-
 
         GameObject g = new GameObject("Generated Objects");
         g.transform.position = transform.position;
@@ -112,14 +102,28 @@ public class GameManager : MonoBehaviour
         //LoadLootTables();
 
         UIManager.Instance.ShowTitleText("FORGE");
-        
     }
 
+    void Subscribe(PlayerController _player)
+    {
+        if (_player == null)
+            return;
+
+
+        pController = _player;
+        player = pController.gameObject;
+        pInput = _player.GetComponent<UserInput>();
+
+        if(UIManager.Instance != null)
+        {
+            UIManager.Instance.Subscribe(pController);
+        }
+    }
 
 
     public void StartGame(PlayerController _player)
     {
-        SetPlayer(_player);
+        Subscribe(_player);
 
         StartGame();
     }
@@ -286,16 +290,7 @@ public class GameManager : MonoBehaviour
     }
     */
 
-    void SetPlayer(PlayerController _player)
-    {
-        if (_player == null)
-            return;
-
-
-        pController = _player;
-        player = pController.gameObject;
-        pInput = _player.GetComponent<UserInput>();
-    }
+ 
     void SpawnPlayer()
     {
 
@@ -442,27 +437,27 @@ public class GameManager : MonoBehaviour
         //UnityEngine.Debug.Log("Enemy Killed: " + enemyHealth.gameObject);
         //UnityEngine.Debug.Log("Last Attacker: " + enemyHealth.LastAttacker);
 
-        StartCoroutine(EnemyKilled_DropRoutine(enemyHealth));
+        //StartCoroutine(EnemyKilled_DropRoutine(enemyHealth));
 
         enemyHealth.gameObject.SetActive(false);
     }
-    IEnumerator EnemyKilled_DropRoutine(Health _health)
-    {
-        if (_health != null && _health.LastAttacker != null && _health.LastAttacker.tag == "Player")
-        {
-            DeathDrop dropScript = _health.GetComponent<DeathDrop>();
+    //IEnumerator EnemyKilled_DropRoutine(Health _health)
+    //{
+    //    if (_health != null && _health.LastAttacker != null && _health.LastAttacker.tag == "Player")
+    //    {
+    //        DeathDrop dropScript = _health.GetComponent<DeathDrop>();
 
-            if (dropScript != null)
-            {
-                for (int i = 0; i < dropScript.NumberOfDrops; i++)
-                {
-                    DropLoot(_health.gameObject);
+    //        if (dropScript != null)
+    //        {
+    //            for (int i = 0; i < dropScript.NumberOfDrops; i++)
+    //            {
+    //                DropLoot(_health.gameObject);
 
-                    yield return new WaitForSeconds(ITEM_DROP_DELAY);
-                }
-            }
-        }
-    }
+    //                yield return new WaitForSeconds(ITEM_DROP_DELAY);
+    //            }
+    //        }
+    //    }
+    //}
     
     public bool CanModifyLevelPoints(int delta)
     {
@@ -521,20 +516,55 @@ public class GameManager : MonoBehaviour
         if (newItem == null)
             return;
 
-        Vector3 launchVector = UnityEngine.Random.insideUnitSphere * ITEM_DROP_LAUNCH_POWER;
+        Vector3 launchVector = UnityEngine.Random.insideUnitSphere * _ItemDropLaunchPower;
 
         if (launchVector.y < 0)
             launchVector.y *= -1;
 
         Rigidbody _rigidbody = newItem.GetComponent<Rigidbody>();
 
-        newItem.transform.position = droppingObject.transform.position + ITEM_DROP_OFFSET;
+        newItem.transform.position = droppingObject.transform.position + _ItemDropOffset;
         newItem.SetActive(true);
 
         if(_rigidbody != null)
         {
             _rigidbody.velocity = Vector3.zero;
             _rigidbody.AddForce(launchVector, ForceMode.Impulse);
+        }
+    }
+
+    public void DropItems(Transform droppingTransform, ListDefinitionName desiredListDefinition, int numberOfDrops)
+    {
+        if (droppingTransform == null || numberOfDrops <= 0)
+            return;
+
+        StartCoroutine(DropItemsRoutine(droppingTransform, desiredListDefinition, numberOfDrops));
+    }
+    IEnumerator DropItemsRoutine(Transform droppingTransform, ListDefinitionName desiredListDefinition, int numberOfDrops)
+    {
+        for (int i = 0; i < numberOfDrops; i++)
+        {
+            GameObject newItem = GetItem(desiredListDefinition);
+
+            if (newItem == null)
+                continue;
+
+            Vector3 launchVector = UnityEngine.Random.insideUnitSphere.normalized * _ItemDropLaunchPower;
+
+            if (launchVector.y < 0)
+                launchVector.y *= -1;
+
+            newItem.transform.position = droppingTransform.position + _ItemDropOffset;
+            newItem.SetActive(true);
+
+            Rigidbody _rigidbody = newItem.GetComponent<Rigidbody>();
+            if (_rigidbody != null)
+            {
+                _rigidbody.velocity = Vector3.zero;
+                _rigidbody.AddForce(launchVector, ForceMode.Impulse);
+            }
+
+            yield return new WaitForSeconds(_ItemDropDelay);
         }
     }
 

@@ -2,7 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 
-public class MovementController : MonoBehaviour
+public class MovementController : MonoBehaviour, IMovement
 {
     //static readonly float GROUND_CHECK_DISTANCE = .6f;
     static readonly float SLOPE_CHECK_HEIGHT = 0.05f;
@@ -36,11 +36,11 @@ public class MovementController : MonoBehaviour
     CharacterController m_Character;
     Rigidbody m_Rigidbody;
 
-    List<float> speedMultipliers = new List<float>();
-    float totalMovementMultiplier = 1f;
+    Dictionary<object, float> speedMultiplierSet = new Dictionary<object, float>();
+    float speedMultiplier = 1f;
 
-    List<float> rotationMultipliers = new List<float>();
-    float totalRotationMultiplier = 1f;
+    Dictionary<object, float> rotationMultiplierSet = new Dictionary<object, float>();
+    float rotationMultiplier = 1f;
 
 
     Vector3 bounds;
@@ -59,12 +59,6 @@ public class MovementController : MonoBehaviour
     {
         bounds = Utilities.CalculateObjectBounds(gameObject, false);
         maxBoundsValue = Mathf.Max(bounds.x, bounds.z);
-    }
-
-
-    public void MoveInLocalDirection(Vector3 localDir)
-    {
-        Move(m_Transform.TransformDirection(localDir));
     }
 
     public virtual void Move(Vector3 moveDir)
@@ -152,14 +146,17 @@ public class MovementController : MonoBehaviour
         Move(targetPosition - m_Transform.position);
     }
 
-
     public void Move(Vector3 position3D, Vector3 deltaPosition, bool useDeltaAsDirection)
+    {
+        Move(position3D, deltaPosition, useDeltaAsDirection, MovementSpeed);
+    }
+    public void Move(Vector3 position3D, Vector3 deltaPosition, bool useDeltaAsDirection, float speed)
     {
         if (m_Character != null && m_Character.enabled)
         {
             if (useDeltaAsDirection)
             {
-                deltaPosition = deltaPosition.normalized * MovementSpeed * Time.deltaTime;
+                deltaPosition = deltaPosition.normalized * speed * Time.deltaTime;
             }
 
 
@@ -191,121 +188,93 @@ public class MovementController : MonoBehaviour
     }
 
 
+    #region Modifiers
 
-
-
-
-
-
-
-    public void AddSpeedMultiplier(float _multiplier)
+    public void AddSpeedMultiplier(object obj, float multiplier)
     {
-        if (Mathf.Approximately(_multiplier, 1f))
+        if (Mathf.Approximately(multiplier, 1f))
             return;
 
-        speedMultipliers.Add(Mathf.Abs(_multiplier));
-        totalMovementMultiplier *= _multiplier;
-    }
-    public void RemoveSpeedMultiplier(float _multiplier)
-    {
-        if (speedMultipliers.Count == 1 && Mathf.Approximately(speedMultipliers[0], _multiplier))
+        if (speedMultiplierSet.ContainsKey(obj))
         {
-            speedMultipliers.Clear();
-            totalMovementMultiplier = 1f;
-            return;
-        }
-
-
-
-        int index = -1;
-
-        for (int i = 0; i < speedMultipliers.Count; i++)
-        {
-            if (Mathf.Approximately(speedMultipliers[i], _multiplier))
-            {
-                index = i;
-                break;
-            }
-        }
-
-
-        if (index == -1)
-            return;
-
-        speedMultipliers.RemoveAt(index);
-
-        if (_multiplier == 0)
-        {
-
-            totalMovementMultiplier = 1f;
-
-
-            for (int i = 0; i < speedMultipliers.Count; i++)
-            {
-                totalMovementMultiplier *= speedMultipliers[i];
-            }
+            speedMultiplierSet[obj] = multiplier;
         }
         else
         {
-            totalMovementMultiplier /= _multiplier;
+            speedMultiplierSet.Add(obj, multiplier);
+        }
+        
+        speedMultiplier = GetTotalSpeedMultiplier();
+    }
+    public void RemoveSpeedMultiplier(object obj)
+    {
+        if (!speedMultiplierSet.ContainsKey(obj))
+        {
+            return;
         }
 
+        speedMultiplierSet.Remove(obj);
+
+        speedMultiplier = GetTotalSpeedMultiplier();
+    }
+    float GetTotalSpeedMultiplier()
+    {
+       Dictionary<object, float>.Enumerator enumerator =  speedMultiplierSet.GetEnumerator();
+
+        float multiplier = 1f;
+
+        while (enumerator.MoveNext())
+        {
+            multiplier *= enumerator.Current.Value;
+        }
+
+        return multiplier;
     }
 
-    public void AddRotationMultiplier(float _multiplier)
+
+
+    public void AddRotationMultiplier(object obj, float multiplier)
     {
-        if (Mathf.Approximately(_multiplier, 1f))
+        if (Mathf.Approximately(multiplier, 1f))
             return;
 
-        rotationMultipliers.Add(Mathf.Abs(_multiplier));
-        totalRotationMultiplier *= _multiplier;
-    }
-    public void RemoveRotationMultiplier(float _multiplier)
-    {
-        if (rotationMultipliers.Count == 1 && Mathf.Approximately(rotationMultipliers[0], _multiplier))
+        if (rotationMultiplierSet.ContainsKey(obj))
         {
-            rotationMultipliers.Clear();
-            totalRotationMultiplier = 1f;
-            return;
-        }
-
-
-        int index = -1;
-
-        for (int i = 0; i < rotationMultipliers.Count; i++)
-        {
-            if (Mathf.Approximately(rotationMultipliers[i], _multiplier))
-            {
-                index = i;
-                break;
-            }
-        }
-
-
-        if (index == -1)
-            return;
-
-        rotationMultipliers.RemoveAt(index);
-
-        if (_multiplier == 0)
-        {
-
-            totalRotationMultiplier = 1f;
-
-
-            for (int i = 0; i < rotationMultipliers.Count; i++)
-            {
-                totalRotationMultiplier *= rotationMultipliers[i];
-            }
+            rotationMultiplierSet[obj] = multiplier;
         }
         else
         {
-            totalRotationMultiplier /= _multiplier;
+            rotationMultiplierSet.Add(obj, multiplier);
         }
 
+        rotationMultiplier = GetTotalRotationMultiplier();
+    }
+    public void RemoveRotationMultiplier(object obj)
+    {
+        if (!rotationMultiplierSet.ContainsKey(obj))
+        {
+            return;
+        }
+
+        rotationMultiplierSet.Remove(obj);
+
+        rotationMultiplier = GetTotalRotationMultiplier();
+    }
+    float GetTotalRotationMultiplier()
+    {
+        Dictionary<object, float>.Enumerator enumerator = rotationMultiplierSet.GetEnumerator();
+
+        float multiplier = 1f;
+
+        while (enumerator.MoveNext())
+        {
+            multiplier *= enumerator.Current.Value;
+        }
+
+        return multiplier;
     }
 
-
+    #endregion
 
     #region Accessors
 
@@ -319,8 +288,8 @@ public class MovementController : MonoBehaviour
     }
     public float MovementSpeedMultiplier
     {
-        get { return totalMovementMultiplier; }
-        set { totalMovementMultiplier = value; }
+        get { return speedMultiplier; }
+        set { speedMultiplier = value; }
     }
 
 
@@ -331,8 +300,8 @@ public class MovementController : MonoBehaviour
     }
     public float RotationMultiplier
     {
-        get { return totalRotationMultiplier; }
-        set { totalRotationMultiplier = value; }
+        get { return rotationMultiplier; }
+        set { rotationMultiplier = value; }
     }
 
     public float AdditionalSpeedMultiplier

@@ -58,8 +58,8 @@ public class IceAttribute : AttributeEffect {
     {
         if (m_Movement != null)
         {
-            m_Movement.AddSpeedMultiplier(latestSpeedSlowdown);
-            m_Movement.AddRotationMultiplier(latestRotationSlowdown);
+            m_Movement.AddSpeedMultiplier(this,latestSpeedSlowdown);
+            m_Movement.AddRotationMultiplier(this, latestRotationSlowdown);
         }
     }
     public void DisableMovementEffects()
@@ -67,8 +67,8 @@ public class IceAttribute : AttributeEffect {
 
         if (m_Movement != null)
         {
-            m_Movement.RemoveSpeedMultiplier(latestSpeedSlowdown);
-            m_Movement.RemoveRotationMultiplier(latestRotationSlowdown);
+            m_Movement.RemoveSpeedMultiplier(this);
+            m_Movement.RemoveRotationMultiplier(this);
         }
     }
 

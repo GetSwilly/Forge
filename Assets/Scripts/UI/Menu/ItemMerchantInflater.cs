@@ -160,7 +160,7 @@ public class ItemMerchantInflater : MenuInflater {
             return;
 
 
-        if (!activatingPlayer.Charge(-selectedPrice.Value))
+        if (!activatingPlayer.CreditArithmetic(-selectedPrice.Value))
         {
             return;
         }

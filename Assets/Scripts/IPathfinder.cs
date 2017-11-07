@@ -23,13 +23,14 @@ public interface IPathfinder {
 
     void StopPathTraversal();
 
-    void RotateTowards(Vector3 position);
-
     float GetDistanceRemaining();
 
+    bool IsActive { get; set; }
     bool CanMove { get; set; }
     //bool ShouldRotateTowardsPath { get; set; }
     Path Path { get; }
     float Speed { get; }
     Vector3 Velocity { get; }
+    //float EndReachedDistance { get; set; }
+    //float SlowdownDistance { get; set; }
 }

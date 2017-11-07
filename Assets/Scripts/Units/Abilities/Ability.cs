@@ -1,7 +1,12 @@
 ﻿using UnityEngine;
 using System.Collections;
 
-public abstract class Ability : MonoBehaviour, IIdentifier {
+[RequireComponent(typeof(AudioSource))]
+public abstract class Ability : MonoBehaviour, IIdentifier
+{
+
+    [SerializeField]
+    protected bool showDebug = false;
 
     [SerializeField]
     string m_AbilityName = "Ability";
@@ -27,7 +32,7 @@ public abstract class Ability : MonoBehaviour, IIdentifier {
 
     [Tooltip("Maximum possible charge for the ability")]
     [SerializeField]
-    float maxCharge = 0f;
+    float maxCharge = 100f;
 
     [Tooltip("Amount the ability charges over time")]
     [SerializeField]
@@ -41,14 +46,33 @@ public abstract class Ability : MonoBehaviour, IIdentifier {
     [SerializeField]
     float chargeDeltaKill = 0f;
 
-    protected float currentCharge = 0f;
+    /*
+    *******************************************************************************************************************************
+    */
+    [Header("Effects")]
+
+    [SerializeField]
+    protected SoundClip m_Sound;
+
+    protected float currentCharge = 100f;
     float chargeMultiplier = 1f;
     protected bool isAbilityActive = false;
 
     public delegate void AbilityChange(float _percent);
     public event AbilityChange OnAbilityChanged;
 
+    protected Transform m_Transform;
+    AudioSource m_Audio;
 
+    protected virtual void Awake()
+    {
+        m_Transform = GetComponent<Transform>();
+        m_Audio = GetComponent<AudioSource>();
+    }
+    protected virtual void OnEnable()
+    {
+        CurrentCharge = CurrentCharge;
+    }
 
     protected virtual void Update()
     {
@@ -66,7 +90,7 @@ public abstract class Ability : MonoBehaviour, IIdentifier {
 
     public virtual bool CanUseAbility()
     {
-        return IsAbilityActive || (!IsAbilityActive && CurrentCharge - ActivationCost > 0);
+        return IsAbilityActive || (!IsAbilityActive && CurrentCharge - ActivationCost >= 0);
     }
 
 
@@ -77,9 +101,9 @@ public abstract class Ability : MonoBehaviour, IIdentifier {
         {
             _delta *= ChargeMultiplier;
         }
-        
+
         CurrentCharge += _delta;
-        
+
     }
 
 
@@ -114,7 +138,39 @@ public abstract class Ability : MonoBehaviour, IIdentifier {
         return Mathf.Clamp01(currentCharge / maxCharge);
     }
 
+    protected void PlaySound(SoundClip sound)
+    {
+        if (sound.UseRemnant)
+        {
+            GameObject remnantObject = ObjectPoolerManager.Instance.AudioRemnantPooler.GetPooledObject();
+            AudioRemnant remnantScript = remnantObject.GetComponent<AudioRemnant>();
 
+            if (remnantScript != null)
+            {
+                remnantObject.transform.position = m_Transform.position;
+                remnantObject.SetActive(true);
+
+                remnantScript.PlaySound(sound);
+            }
+        }
+        else
+        {
+            m_Audio.volume = sound.Volume;
+            m_Audio.pitch = sound.Pitch;
+
+            if (sound.IsLooping)
+            {
+                m_Audio.loop = true;
+                m_Audio.clip = sound.Sound;
+                m_Audio.Play();
+            }
+            else
+            {
+                m_Audio.loop = false;
+                m_Audio.PlayOneShot(sound.Sound);
+            }
+        }
+    }
     #region Accessors
 
     public InputType InputType
@@ -139,9 +195,9 @@ public abstract class Ability : MonoBehaviour, IIdentifier {
         get { return currentCharge; }
         private set
         {
-            currentCharge = Mathf.Clamp(value,0f,MaxCharge);
+            currentCharge = Mathf.Clamp(value, 0f, MaxCharge);
 
-           if(OnAbilityChanged != null)
+            if (OnAbilityChanged != null)
             {
                 OnAbilityChanged(GetChargePercentage());
             }
@@ -154,7 +210,7 @@ public abstract class Ability : MonoBehaviour, IIdentifier {
         {
             maxCharge = value;
 
-            if(maxCharge < 0)
+            if (maxCharge < 0)
             {
                 maxCharge = 0;
             }
@@ -173,7 +229,7 @@ public abstract class Ability : MonoBehaviour, IIdentifier {
                 activationCost = 0;
             }
 
-            if(activationCost > MaxCharge)
+            if (activationCost > MaxCharge)
             {
                 activationCost = MaxCharge;
             }
@@ -181,7 +237,7 @@ public abstract class Ability : MonoBehaviour, IIdentifier {
     }
     public float ChargeMultiplier
     {
-       get { return chargeMultiplier; }
+        get { return chargeMultiplier; }
         set { chargeMultiplier = value; }
     }
 

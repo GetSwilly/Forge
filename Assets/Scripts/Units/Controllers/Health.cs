@@ -6,10 +6,13 @@ using System;
 [RequireComponent(typeof(AudioSource))]
 public class Health : MonoBehaviour, IMemorable
 {
-
-	static readonly float LOW_HEALTH_PERCENT = 0.2f;
+    static readonly Color _HealthLostColor = Color.white;
+    static readonly Color _HealthGainedColor = Color.red;
+    static readonly Color _CriticalHitColor = Color.cyan;
+    static readonly float LOW_HEALTH_PERCENT = 0.2f;
     //static readonly float INVINCIBILITY_TIME = 0.2f;
     
+    [SerializeField]
     float currentHealth;
 
     [Tooltip("Maximum possible health")]
@@ -45,34 +48,12 @@ public class Health : MonoBehaviour, IMemorable
 	public AlertHealthChange OnHealthChange;
 	public AlertHealthChange OnDamaged;
 	public AlertHealthChange OnKilled;
-
-    [SerializeField]
-    AudioClip damagedSound;
-
-    [SerializeField]
-    AudioClip deathSound;
-
-
-    [SerializeField]
-    DisplayEffect healthGainedEffect;
-
-    [SerializeField]
-    DisplayEffect healthLostEffect;
-
-    [SerializeField]
-    DisplayEffect deathEffect;
-
-
+    
     [SerializeField]
     bool showDebug = false;
-
-	AudioSource m_Audio;
-   
-
+    
 	void Awake()
     {
-		m_Audio = GetComponent<AudioSource>();
-
 		Initialize();
 	}
 
@@ -81,10 +62,7 @@ public class Health : MonoBehaviour, IMemorable
 		if(maxHealthOnActive)
 			Initialize();
 	}
-
-
-
-
+  
 
 
 
@@ -115,51 +93,51 @@ public class Health : MonoBehaviour, IMemorable
 
 
 	//Add amount to currentHealth and sign the attack with a transform and (optional) direction
-	public void HealthArithmetic (float dmgAmount, bool isCritical, Transform attackerTransform)
+	public void HealthArithmetic (float healthDelta, bool isCritical, Transform attackerTransform)
     {
-		HealthArithmetic(dmgAmount, isCritical, attackerTransform, Vector3.zero);
+		HealthArithmetic(healthDelta, isCritical, attackerTransform, Vector3.zero);
 	}
-	public void HealthArithmetic (float dmgAmount, bool isCritical, Transform attackerTransform, Vector3 attackDirection)
+	public void HealthArithmetic (float healthDelta, bool isCritical, Transform attackerTransform, Vector3 attackDirection)
     {
 		if(!isAlive || isInvincible)
 			return;
 
-		if(dmgAmount < 0)
+		if(healthDelta < 0)
         {
 			//Sign the attack
 			lastAttacker = attackerTransform;
 			lastAttackDirection = attackDirection;
-		}
+        }
 
-        if (ObjectPoolerManager.Instance != null)
+        if (healthDelta > 0 && currentHealth >= MaxHealth)
         {
-            GameObject _info = ObjectPoolerManager.Instance.DynamicInfoPooler.GetPooledObject();
-            _info.transform.position = transform.position;
+            return;
+        }
 
-            DynamicInfoScript _infoScript = _info.GetComponent<DynamicInfoScript>();
-            //_infoScript.infoText.text = Mathf.Abs(dmgAmount).ToString();
-            Color infoColor = isCritical ? Color.yellow : Color.white;
 
-            _info.SetActive(true);
 
-            _infoScript.Initialize(Mathf.Abs(dmgAmount).ToString(), infoColor);
+        int roundedValue = Mathf.RoundToInt(healthDelta);
 
+        if (!roundedValue.Equals(0))
+        {
+            Color infoColor = roundedValue > 0f ? _HealthGainedColor : (isCritical ? _CriticalHitColor : _HealthLostColor);
+            UIManager.Instance.CreateDynamicInfoScript(transform.position, roundedValue, infoColor);
         }
 
 
 
 		//Check if can resist damage
-		if(dmgAmount < 0 && Mathf.Abs(dmgAmount) <= damageResistance)
-			dmgAmount = 1;
+		if(healthDelta < 0 && Mathf.Abs(healthDelta) <= damageResistance)
+			healthDelta = 1;
 
         if (showDebug)
         {
-            Debug.Log(string.Format("{0} -- Health Arithmetic. Current Health: {1}. Delta: {2}. Last Attacker: {3}.", this.name, CurHealth, dmgAmount, LastAttacker));
+            Debug.Log(string.Format("{0} -- Health Arithmetic. Current Health: {1}. Delta: {2}. Last Attacker: {3}.", this.name, CurHealth, healthDelta, LastAttacker));
         }
 
 		//Add to currentHealth and contain it
-		CurHealth += dmgAmount;
-		lastHealthChange = dmgAmount;
+		CurHealth += healthDelta;
+		lastHealthChange = healthDelta;
 	
 		if(CurHealth <= 0)
         {
@@ -167,30 +145,21 @@ public class Health : MonoBehaviour, IMemorable
 		}
         else
         {
-			if (dmgAmount < 0)
+			if (healthDelta < 0)
             {
 				if(OnDamaged != null)
 					OnDamaged(this);
-
-                //StartEffects(damagedSound);
-                if (healthLostEffect != null)
-                {
-                    healthLostEffect.Play();
-                }
 			}
-            else
-            {
-                if (healthGainedEffect != null)
-                {
-                    healthGainedEffect.Play();
-                }
-            }
 			
 			if(OnHealthChange != null)
 				OnHealthChange(this);
 
-			StopCoroutine(TemporaryInvincibility());
-			StartCoroutine(TemporaryInvincibility());
+
+            if (healthDelta < 0)
+            {
+                StopCoroutine(TemporaryInvincibility());
+                StartCoroutine(TemporaryInvincibility());
+            }
 		}
 	}
 	
@@ -225,18 +194,9 @@ public class Health : MonoBehaviour, IMemorable
 		GameObject go = ObjectPoolerManager.Instance.DeathAnimationPooler.GetPooledObject();
 		go.transform.position = this.transform.position;
 
-		go.GetComponent<DeathParticles>().deathSound = deathSound;
-
 		//go.GetComponent<ParticleSystem>().startColor = GetComponent<SpriteRenderer>().color;
 
 		go.SetActive(true);
-
-
-       if(deathEffect != null)
-        {
-            deathEffect.Play();
-        }
-	
 
 		if(OnDamaged != null)
 			OnDamaged(this);

@@ -66,6 +66,7 @@ namespace SensorToolkit
             for (int i = 0; i < sensedColliders.Length; i++)
             {
                 var newDetection = addCollider(sensedColliders[i]);
+                
                 if (newDetection != null)
                 {
                     if (previousDetectedObjects.Contains(newDetection))

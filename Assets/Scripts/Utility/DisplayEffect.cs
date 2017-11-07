@@ -18,7 +18,7 @@ public class DisplayEffect {
     public void Play()
     {
 
-        if(m_ParticleSystem != null)
+        if(m_ParticleSystem != null && !m_ParticleSystem.isPlaying)
         {
             m_ParticleSystem.Play(true);
         }
