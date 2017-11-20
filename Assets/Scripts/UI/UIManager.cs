@@ -57,6 +57,15 @@ public class UIManager : MonoBehaviour
     ProgressBarController experienceUI;
 
     [SerializeField]
+    Text levelUI;
+
+    [SerializeField]
+    Text levelPointsUI;
+
+    [SerializeField]
+    Text creditUI;
+
+    [SerializeField]
     ProgressBarController handheldUI;
 
     [SerializeField]
@@ -75,10 +84,11 @@ public class UIManager : MonoBehaviour
     ProgressBarController enemyHealthBar;
 
     [SerializeField]
-    float fadeDelay;
+    AllyUIController allyUI;
 
     [SerializeField]
-    UnitController subscribedUnit;
+    float fadeDelay;
+    
 
     [SerializeField]
     SoundClip healthGained;
@@ -104,10 +114,8 @@ public class UIManager : MonoBehaviour
     [SerializeField]
     SoundClip criticalDamageAchieved;
 
-    [SerializeField]
-    SoundClip casualtyAchieved;
 
-
+    UnitController subscribedUnit;
 
     [HideInInspector]
     public static UIManager Instance { get; private set; }
@@ -119,10 +127,6 @@ public class UIManager : MonoBehaviour
         Instance = this;
     }
 
-    void Start()
-    {
-        Subscribe(subscribedUnit);
-    }
 
     public void Subscribe(UnitController unit)
     {
@@ -131,66 +135,176 @@ public class UIManager : MonoBehaviour
 
         Unsubscribe();
 
+        unit.OnHealthChange += HealthChanged;
+        unit.OnCreditsChange += CreditsChanged;
+        unit.OnDamageAchieved += CasualtyAchieved;
+        unit.OnStatLevelChanged += StatLevelChanged;
+
+
         PlayerController p = unit as PlayerController;
 
-
-        unit.UIAttributeChangedEvent += UIUpdate;
-
-        if (unit.gameObject.activeInHierarchy)
+        if(p != null)
         {
-            unit.UpdateUI();
+            p.OnExpChange += ExperienceChanged;
+            p.OnLevelChange += LevelChanged;
+            p.OnLevelPointsChange += LevelPointsChanged;
+            p.OnHandheldChange += HandheldChanged;
+            p.OnNativeAbilityChange += NativeAbilityChanged;
+            p.OnAuxiliaryAbilityChange += AuxiliaryAbilityChanged;
         }
+        else
+        {
+            ExperienceChanged(0f, 0f);
+            HandheldChanged(0f);
+            NativeAbilityChanged("", 0f);
+            AuxiliaryAbilityChanged("",0f);
+        }
+
+        subscribedUnit = unit;
+        subscribedUnit.UpdateUI();
     }
+
+
     public void Unsubscribe()
     {
         if (subscribedUnit == null)
             return;
 
-        subscribedUnit.UIAttributeChangedEvent += UIUpdate;
+        subscribedUnit.OnHealthChange -= HealthChanged;
+        subscribedUnit.OnCreditsChange -= CreditsChanged;
+        subscribedUnit.OnDamageAchieved -= CasualtyAchieved;
+        subscribedUnit.OnStatLevelChanged -= StatLevelChanged;
+
+        PlayerController subscribedPlayer = subscribedUnit as PlayerController;
+
+        if (subscribedPlayer != null)
+        {
+            subscribedPlayer.OnExpChange -= ExperienceChanged;
+            subscribedPlayer.OnLevelChange -= LevelChanged;
+            subscribedPlayer.OnLevelPointsChange += LevelPointsChanged;
+            subscribedPlayer.OnHandheldChange -= HandheldChanged;
+            subscribedPlayer.OnNativeAbilityChange -= NativeAbilityChanged;
+            subscribedPlayer.OnAuxiliaryAbilityChange -= AuxiliaryAbilityChanged;
+        }
+
+        HealthChanged(0f, 0f);
+        CreditsChanged(0f, 0f);
+        CasualtyAchieved(null);
+
+        ExperienceChanged(0f, 0f);
+        HandheldChanged(0f);
+        NativeAbilityChanged("", 0f);
+        AuxiliaryAbilityChanged("", 0f);
     }
 
-    private void UIUpdate(UnitController unit, UIEventArgs args)
+    #region UI Events
+    
+    private void AuxiliaryAbilityChanged(string abilityName, float percentage)
     {
-        switch (args.component)
+        auxiliaryAbilityUI.SetText(abilityName);
+        auxiliaryAbilityUI.SetPercentage(percentage);
+    }
+
+    private void NativeAbilityChanged(string abilityName, float percentage)
+    {
+        nativeAbilityUI.SetText(abilityName);
+        nativeAbilityUI.SetPercentage(percentage);
+    }
+
+    private void HandheldChanged(float percentage)
+    {
+        handheldUI.SetPercentage(percentage);
+    }
+
+    private void StatLevelChanged(StatType type, int level)
+    {
+        throw new NotImplementedException();
+    }
+
+    private void CasualtyAchieved(Health casualtyHealth)
+    {
+        StopAllCoroutines();
+
+        if (casualtyHealth == null || casualtyHealth.HealthPercentage <= 0f)
         {
-            case UIManager.Component.Health:
-                healthUI.SetPercentage(args.percentage, args.shouldSetImmediately);
-                break;
-            case UIManager.Component.Experience:
-                experienceUI.SetPercentage(args.percentage, args.shouldSetImmediately);
-                break;
-            case UIManager.Component.Handheld:
-                handheldUI.SetPercentage(args.percentage, args.shouldSetImmediately);
-                break;
-            case UIManager.Component.NativeAbility:
-                nativeAbilityUI.SetPercentage(args.percentage, args.shouldSetImmediately);
-                nativeAbilityUI.SetText(args.text);
-                break;
-            case UIManager.Component.AuxiliaryAbility:
-                auxiliaryAbilityUI.SetPercentage(args.percentage, args.shouldSetImmediately);
-                auxiliaryAbilityUI.SetText(args.text);
-                break;
-            case UIManager.Component.Merchant:
-                break;
-            case UIManager.Component.Enemy:
-                StopAllCoroutines();
+            enemyHUD.SetActive(false);
+        }
+        else
+        {
+            StartCoroutine(EnemyHUDVisibilityDelay());
 
-                if (args.percentage <= 0f)
-                {
-                    enemyHUD.SetActive(false);
-                }
-                else
-                {
-                    StartCoroutine(EnemyHUDVisibilityDelay());
+            IIdentifier identifier = casualtyHealth.GetComponent<IIdentifier>();
 
-                    enemyTitle.text = args.text;
-                    enemyHealthBar.SetPercentage(args.percentage, enemyHUD.activeInHierarchy ? args.shouldSetImmediately : true);
-                }
-                break;
-            default:
-                throw new NotImplementedException();
+            enemyTitle.text = identifier != null ? identifier.Name : "";
+            enemyHealthBar.SetPercentage(casualtyHealth.HealthPercentage);
+        }
+
+
+        if (SoundManager.Instance != null && casualtyHealth != null)
+        {
+            if (casualtyHealth.WasLastAttackCritical)
+            {
+                SoundManager.Instance.PlaySound(criticalDamageAchieved);
+            }
+            else
+            {
+                SoundManager.Instance.PlaySound(normalDamageAchieved);
+            }
         }
     }
+
+    private void CreditsChanged(float newValue, float valueDelta)
+    {
+        creditUI.text = newValue.ToString("N0");
+
+        if (valueDelta > 0)
+        {
+            SoundManager.Instance.PlaySound(creditsGained);
+        }
+        else
+        {
+            SoundManager.Instance.PlaySound(creditsLost);
+        }
+    }
+
+    private void HealthChanged(float newValue, float valueDelta)
+    {
+        healthUI.SetPercentage(newValue);
+
+        if (valueDelta > 0)
+        {
+            SoundManager.Instance.PlaySound(healthGained);
+        }
+        else
+        {
+            SoundManager.Instance.PlaySound(healthLost);
+        }
+    }
+    private void ExperienceChanged(float newValue, float valueDelta)
+    {
+        experienceUI.SetPercentage(newValue);
+
+        if (valueDelta > 0)
+        {
+            SoundManager.Instance.PlaySound(experienceGained);
+        }
+        else
+        {
+            SoundManager.Instance.PlaySound(experienceLost);
+        }
+    }
+    private void LevelChanged(float newValue)
+    {
+        levelUI.text = ((int)newValue).ToString();
+    }
+
+    private void LevelPointsChanged(float newValue)
+    {
+        levelPointsUI.text = ((int)newValue).ToString();
+    }
+
+    #endregion
+
 
     public void SetColors()
     {
@@ -247,6 +361,15 @@ public class UIManager : MonoBehaviour
         yield return new WaitForSeconds(fadeDelay);
 
         enemyHUD.SetActive(false);
+    }
+
+    public void AddAllyUI(GameObject allyObject)
+    {
+        allyUI.AddAllyUI(allyObject);
+    }
+    public void RemoveAllyUI(GameObject allyObject)
+    {
+        allyUI.RemoveAllyUI(allyObject);
     }
 
     #endregion

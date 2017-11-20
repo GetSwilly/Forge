@@ -8,7 +8,7 @@ public class Chest : InteractableObject
     static readonly float SPAWN_DELAY = 0.25f;
 
     [SerializeField]
-    ListDefinitionName m_ListDefinition;
+    ItemPoolDefinition m_ListDefinition;
 
 
     [SerializeField]

@@ -11,15 +11,21 @@ public class Strafe : BaseUtilityBehavior {
     [SerializeField]
     float strafeValueDelta = 1f;
 
+    [SerializeField]
+    Vector2 radiusRange = new Vector2(4f, 7f);
+
+    [SerializeField]
+    float maxDistance = 5f;
+
     float currentStrafeValue = 0f;
 
-    IMovement m_Movement;
+    IMovement movementInterface;
 
     public override void Awake()
     {
         base.Awake();
 
-        m_Movement = GetComponent<IMovement>();
+        movementInterface = GetComponent<IMovement>();
     }
 
 
@@ -32,6 +38,8 @@ public class Strafe : BaseUtilityBehavior {
             Debug.Log(Time.time + " #### " + m_Transform.name + " -- Strafe -- Target: " + targetObject);
         }
 
+        float travelledDistance = 0f;
+        float desiredRadius = UnityEngine.Random.Range(RadiusRange.x, RadiusRange.y);
 
         while (IsActive)
         {
@@ -45,9 +53,17 @@ public class Strafe : BaseUtilityBehavior {
             _delta *= UnityEngine.Random.value < 0.5f ? -1f : 1f;
 
             currentStrafeValue += _delta;
+            
+            //if (m_Actor.ShowDebug)
+            //{
+            //    Debug.Log(Time.time + " #### " + m_Transform.name + " -- Strafe -- Strafing Dir: " + (strafeValue < 0 ? "Left": "Right"));
+            //}
+
+          
+            movementInterface.RotateTowards(targetObject.LastKnownBasePosition);
 
 
-            Vector3 localStrafeDirection = m_Transform.right;
+            Vector3 localStrafeDirection = new Vector3(1,0,0);
             localStrafeDirection.y = 0;
             localStrafeDirection.Normalize();
 
@@ -56,24 +72,36 @@ public class Strafe : BaseUtilityBehavior {
                 localStrafeDirection *= -1;
             }
 
+            Vector3 movementVector = m_Transform.TransformDirection(localStrafeDirection).normalized * movementInterface.Speed * Time.deltaTime  ;
+            Vector3 position = m_Transform.position + movementVector;
 
-            //if (m_Actor.ShowDebug)
-            //{
-            //    Debug.Log(Time.time + " #### " + m_Transform.name + " -- Strafe -- Strafing Dir: " + (strafeValue < 0 ? "Left": "Right"));
-            //}
+            if (Vector3.Distance(position, targetObject.LastKnownBasePosition) < desiredRadius)
+            {
+                position = targetObject.LastKnownBasePosition + (position - targetObject.LastKnownBasePosition).normalized * desiredRadius;
+            }
 
+            // m_Pathfinder.SetTarget(position);
+            Vector3 originalPosition = m_Transform.position;
 
-            m_Movement.Move(m_Transform.TransformDirection(localStrafeDirection));
-            m_Movement.RotateTowards(targetObject.LastKnownBasePosition);
+            movementInterface.MoveToPosition(position);
 
+            travelledDistance += Vector3.Distance(originalPosition, m_Transform.position);
 
+            if(travelledDistance >= MaxDistance)
+            {
+                if (ShowDebug)
+                {
+                    //Debug.Log("")
+                }
+                break;
+            }
+            
 
             yield return null;
         }
 
         EndBehavior(true,true);
     }
-
 
 
     public override void StartBehavior()
@@ -86,6 +114,7 @@ public class Strafe : BaseUtilityBehavior {
     public override void EndBehavior(bool shouldNotifySuper, bool shouldNotifyActor)
     {
         StopAllCoroutines();
+        
         
         base.EndBehavior(shouldNotifySuper, shouldNotifyActor);
     }
@@ -124,13 +153,30 @@ public class Strafe : BaseUtilityBehavior {
         get { return strafeValueDelta; }
         set { strafeValueDelta = Mathf.Clamp(value, 0f, strafeValueDelta); }
     }
-
+    public Vector2 RadiusRange
+    {
+        get { return radiusRange; }
+        private set
+        {
+            radiusRange = value;
+            radiusRange.x = Mathf.Clamp(radiusRange.x, 0f, radiusRange.x);
+            radiusRange.y = Mathf.Clamp(radiusRange.y, radiusRange.x, radiusRange.y);
+        }
+    }
+    public float MaxDistance
+    {
+        get { return maxDistance; }
+        private set { maxDistance = Mathf.Clamp(value, 0f, value); }
+    }
 
     protected override void OnValidate()
     {
         base.OnValidate();
 
         StrafeValueDelta = StrafeValueDelta;
+        RadiusRange = RadiusRange;
+        MaxDistance = MaxDistance;
+
         Utilities.ValidateCurve_Times(utilityCurve, 0f, 1f);
     }
 

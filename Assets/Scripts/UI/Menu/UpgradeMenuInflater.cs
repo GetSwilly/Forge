@@ -48,13 +48,13 @@ public class UpgradeMenuInflater : MenuInflater {
 
     void AttemptStatUpgrade(StatType _type)
     {
-        int availableCurrency = GameManager.Instance.LevelPoints;
+        int availableCurrency = activatingPlayer.LevelPoints;
 
 
         if (availableCurrency > 0 && activatingPlayer.CanChangeStatLevel(_type, 1))
         {
             activatingPlayer.ChangeStat(_type, 1);
-            GameManager.Instance.AddLevelPoints(-1);
+            activatingPlayer.ModifyLevelPoints(-1);
             UpdatePanel(_type);
         }
     }

@@ -24,15 +24,10 @@ public class ForceAbility : Ability {
     [Tooltip("Falloff of force power/damage over range")]
     [SerializeField]
     AnimationCurve falloffCurve = AnimationCurve.Linear(0f, 1f, 1f, 1f);
-
-
-    Transform m_Transform;
+    
     UnitController m_Controller;
 
-    void Awake()
-    {
-        m_Transform = GetComponent<Transform>();
-    }
+
 
     public override void Initialize(Transform _transform)
     {

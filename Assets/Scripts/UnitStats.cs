@@ -6,6 +6,7 @@ using UnityEngine;
 [System.Serializable]
 public class UnitStats {
 
+
     [Tooltip("Stat Attributes that affect unit capablities")]
     [SerializeField]
     private List<Stat> m_Stats = new List<Stat>();

@@ -22,6 +22,9 @@ public class CustomAIPath : AIPath, IPathfinder, IMovement
     [SerializeField]
     Vector3 targetPosition;
 
+    [SerializeField]
+    Vector3 rootPosition = new Vector3(0, 0.5f, 0);
+
     float originalSpeed;
     //[SerializeField]
     //public bool shouldRotateTowardsPath = true;
@@ -84,12 +87,31 @@ public class CustomAIPath : AIPath, IPathfinder, IMovement
 
     public void Move(Vector3 direction)
     {
-        Vector3 position = m_Transform.position;
+        Vector3 movementVector = direction.normalized * Speed * Time.deltaTime;
+        Vector3 position = m_Transform.position + movementVector;
 
+        MoveToPosition(position);
+    }
+    public void Move(Vector3 direction, float speed)
+    {
+        throw new NotImplementedException();
+    }
+    public void MoveToPosition(Vector3 position)
+    {
+        Vector3 movementVector = position - m_Transform.position;
+
+        if(movementVector.magnitude > Speed)
+        {
+            Debug.Log("AGGRESSIVE MOVETOPOSITION");
+            Debug.DrawLine(m_Transform.position, position, Color.yellow, 3f);
+            
+            movementVector = movementVector.normalized * Speed * Time.deltaTime;
+            position = m_Transform.position + movementVector;
+        }
         if (m_Character != null && m_Character.enabled)
         {
-            m_Character.Move(direction * Speed * Time.deltaTime);
-            position = m_Transform.position;
+            m_Character.Move(movementVector);
+            //position = m_Transform.position;
         }
 
         if (m_Rigidbody != null)
@@ -100,10 +122,6 @@ public class CustomAIPath : AIPath, IPathfinder, IMovement
         {
             m_Transform.position = position;
         }
-    }
-    public void Move(Vector3 direction, float speed)
-    {
-        throw new NotImplementedException();
     }
     public void RotateTowards(Vector3 position)
     {
@@ -347,6 +365,22 @@ public class CustomAIPath : AIPath, IPathfinder, IMovement
     public float GetDistanceRemaining()
     {
         return interpolator.remainingDistance;
+    }
+
+    public bool CheckClearPath(Vector3 direction)
+    {
+        Ray checkRay = new Ray(m_Transform.TransformPoint(rootPosition), direction);
+        RaycastHit[] hits = Physics.RaycastAll(checkRay);
+
+        for (int i = 0; i < hits.Length; i++)
+        {
+            if (!hits[i].collider.isTrigger)
+            {
+                return false;
+            }
+        }
+
+        return false;
     }
 
     #endregion

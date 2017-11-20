@@ -12,7 +12,10 @@ public class PlayerController : UnitController
     [Header("Levelling")]
 
     [Tooltip("Current Character Level")]
-    int currentLevel = 1;
+    int currentLevel = 0;
+    
+    int currentLevelPoints = 0;
+
 
     [Tooltip("Current Character Exp")]
     int currentExp = 0;
@@ -87,53 +90,19 @@ public class PlayerController : UnitController
     protected Ability auxiliaryAbility;
 
 
-    /*
-     * ########################################################
-     */
-    [Header("Effects")]
-
-    [Tooltip("Effect to be played upon damaging an enemy")]
-    [SerializeField]
-    DisplayEffect damageAchievedEffect;
-
-    [Tooltip("Effect to be played upon killing an enemy")]
-    [SerializeField]
-    DisplayEffect killAchievedEffect;
-
-    [Tooltip("Effect to be played upon gaining health")]
-    [SerializeField]
-    DisplayEffect healthGainedEffect;
-
-    [Tooltip("Effect to be played upon losing health")]
-    [SerializeField]
-    DisplayEffect healthLostEffect;
-
-    [Tooltip("Effect to be played upon gaining experience")]
-    [SerializeField]
-    DisplayEffect experienceGainedEffect;
-
-    [Tooltip("Effect to be played upon losing experience")]
-    [SerializeField]
-    DisplayEffect experienceLostEffect;
-
-    [Tooltip("Effect to be played upon gaining credits")]
-    [SerializeField]
-    DisplayEffect creditsGainedEffect;
-
-    [Tooltip("Effect to be played upon losing credits")]
-    [SerializeField]
-    DisplayEffect creditsLostEffect;
-
     InteractableObject currentInteractable;
     Coroutine handheldPickupRoutine = null;
     Coroutine abilityPickupRoutine = null;
 
 
-    public event Delegates.ValueChangeEvent OnHandheldChange;
-    public event Delegates.ValueChangeEvent OnNativeAbilityChange;
-    public event Delegates.ValueChangeEvent OnAuxiliaryAbilityChange;
+    public event Delegates.ValueAlertEvent OnLevelChange;
+    public event Delegates.ValueAlertEvent OnLevelPointsChange;
+
+    public event Delegates.ValueAlertEvent OnHandheldChange;
+    public event Delegates.AbilityChangeEvent OnNativeAbilityChange;
+    public event Delegates.AbilityChangeEvent OnAuxiliaryAbilityChange;
     public event Delegates.ValueChangeEvent OnExpChange;
-  
+
 
 
 
@@ -143,10 +112,10 @@ public class PlayerController : UnitController
 
         if (GameManager.Instance != null)
         {
-            m_Health.OnDamaged += GameManager.Instance.PlayerDamaged;
-            m_Health.OnKilled += GameManager.Instance.PlayerKilled;
+            //m_Health.OnDamaged += GameManager.Instance.PlayerDamaged;
+            //m_Health.OnKilled += GameManager.Instance.PlayerKilled;
         }
-        
+
         //m_Handler.ShowUI(true);
         //m_Handler.UpdateUI(Attribute.Experience, CurrentExperienceLevelProgress, false);
 
@@ -712,73 +681,93 @@ public class PlayerController : UnitController
 
     #endregion
 
-    public override void HealthChanged(Health _casualtyHealth)
-    {
-        if (m_Health.LastHealthChange > 0)
-        {
-            PlayEffect(healthGainedEffect);
-        }
-        else
-        {
-            PlayEffect(healthLostEffect);
-        }
-    }
 
     #region Experience Stuff
 
-    public void ExperienceArithmetic(int experienceDelta)
+    public void ModifyExperiencePoints(int experienceDelta)
     {
         if (experienceDelta == 0)
             return;
 
         CurrentExperience += experienceDelta;
 
-        if (SoundManager.Instance != null)
+        if (CurrentExperience > GetExpRequiredForLevel(CurrentLevel))
+        {
+            CurrentLevel++;
+
+            ModifyLevelPoints(1);
+
+            if (OnLevelChange != null)
+            {
+                OnLevelChange(CurrentLevel);
+            }
+        }
+
+        if (UIManager.Instance != null)
         {
             if (experienceDelta > 0)
             {
-                //SoundManager.Instance.PlaySound(expGainedSound);
                 UIManager.Instance.CreateDynamicInfoScript(transform.position, experienceDelta, Colors._ExperienceColor);
-                PlayEffect(experienceGainedEffect);
             }
             else
             {
-                //SoundManager.Instance.PlaySound(expLostSound);
                 UIManager.Instance.CreateDynamicInfoScript(transform.position, experienceDelta, Colors._ExperienceColor);
-                PlayEffect(experienceLostEffect);
             }
         }
 
         if (OnExpChange != null)
         {
-            OnExpChange(CurrentExperience, experienceDelta);
+            OnExpChange(CurrentExperienceLevelProgress, experienceDelta);
         }
     }
 
     public bool CanModifyExp(int delta)
     {
         int temp = CurrentExperience + delta;
-
-        return temp >= GetExpRequiredForLevel(CurrentLevel); // ? false : true;
+       
+        return temp >= GetExpRequiredForLevel(CurrentLevel - 1); // ? false : true;
     }
 
     public void ResetExp()
     {
         int requiredExp = GetExpRequiredForLevel(CurrentLevel);
 
-        ExperienceArithmetic(requiredExp - CurrentExperience);
+        ModifyExperiencePoints(requiredExp - CurrentExperience);
     }
 
     public int GetExpRequiredForLevel(int lvl)
     {
-        if (lvl <= 1)
+        if (lvl <= 0)
             return 0;
 
-        return (int)((Mathf.Pow(2, lvl) * 100f) + 100);
+        return 100 + (int)(25 * Mathf.Pow(lvl, 1.8f));
     }
 
 
     #endregion
+
+
+    public bool CanModifyLevelPoints(int delta)
+    {
+        return LevelPoints + delta >= 0;
+    }
+    public void ModifyLevelPoints(int delta)
+    {
+        if (LevelPoints + delta < 0)
+        {
+            return;
+        }
+
+
+        LevelPoints += delta;
+
+        if(OnLevelPointsChange != null)
+        {
+            OnLevelPointsChange(LevelPoints);
+        }
+    }
+
+
 
     protected void PlayEffect(DisplayEffect _effect)
     {
@@ -787,37 +776,63 @@ public class PlayerController : UnitController
 
 
 
-
-
-    protected void HandheldChanged(float percentage, bool setImmediate)
+    public override void UpdateUI()
     {
-        if(OnHandheldChange != null)
+        base.UpdateUI();
+
+        HandheldChanged(HandheldItem == null ? 0f : HandheldItem.GetPercentage());
+
+        if (NativeAbility == null)
         {
-            OnHandheldChange(percentage, 0f);
+            NativeAbilityChanged("", 0f);
+        }
+        else
+        {
+            NativeAbilityChanged(NativeAbility.Name, NativeAbility.GetChargePercentage());
+        }
+
+        if (AuxiliaryAbility == null)
+        {
+            AuxiliaryAbilityChanged("", 0f);
+        }
+        else
+        {
+            AuxiliaryAbilityChanged(AuxiliaryAbility.Name, AuxiliaryAbility.GetChargePercentage());
+        }
+
+        if (OnExpChange != null)
+        {
+            OnExpChange(CurrentExperienceLevelProgress, 0);
+        }
+
+        if (OnLevelChange != null)
+        {
+            OnLevelChange(CurrentLevel);
         }
     }
 
-    private void NativeAbilityChanged(float percentage)
+    protected void HandheldChanged(float percentage)
+    {
+        if (OnHandheldChange != null)
+        {
+            OnHandheldChange(percentage);
+        }
+    }
+
+    private void NativeAbilityChanged(string name, float percentage)
     {
         if (OnNativeAbilityChange != null)
         {
-            OnNativeAbilityChange(percentage, 0f);
+            OnNativeAbilityChange(name, percentage);
         }
     }
-    private void AuxiliaryAbilityChanged(float percentage)
+    private void AuxiliaryAbilityChanged(string name, float percentage)
     {
         if (OnAuxiliaryAbilityChange != null)
         {
-            OnAuxiliaryAbilityChange(percentage, 0f);
+            OnAuxiliaryAbilityChange(name, percentage);
         }
     }
-    protected void UpdateAbilityUI(bool setImmediate)
-    {
-        OnUIAttributeChanged(new UIEventArgs(UIManager.Component.NativeAbility, "", NativeAbility == null ? 0f : NativeAbility.GetChargePercentage(), setImmediate));
-
-        OnUIAttributeChanged(new UIEventArgs(UIManager.Component.AuxiliaryAbility, "", AuxiliaryAbility == null ? 0f : AuxiliaryAbility.GetChargePercentage(), setImmediate));
-    }
-
 
 
     //public override void DamageAchieved(Health _casualtyHealth)
@@ -897,7 +912,12 @@ public class PlayerController : UnitController
     public int CurrentLevel
     {
         get { return currentLevel; }
-        private set { currentLevel = Mathf.Clamp(value, 1, value); }
+        private set { currentLevel = Mathf.Clamp(value, 0, value); }
+    }
+    public int LevelPoints
+    {
+        get { return currentLevelPoints; }
+        private set { currentLevelPoints = Mathf.Clamp(value, 0, value); }
     }
     public int CurrentExperience
     {
@@ -908,10 +928,13 @@ public class PlayerController : UnitController
     {
         get
         {
-            int totalDiff = GetExpRequiredForLevel(CurrentLevel + 1) - GetExpRequiredForLevel(CurrentLevel);
-            int curDiff = CurrentExperience - GetExpRequiredForLevel(CurrentLevel);
+            int totalDiff = GetExpRequiredForLevel(CurrentLevel) - GetExpRequiredForLevel(CurrentLevel - 1);
+            int curDiff = CurrentExperience - GetExpRequiredForLevel(CurrentLevel - 1);
 
-            return curDiff / (float)totalDiff;
+
+            //Debug.Log(string.Format("Current Experience: {0}. Exp Required for current"))
+
+            return Mathf.Clamp01(curDiff / (float)totalDiff);
         }
     }
 

@@ -33,8 +33,10 @@ public class Sprint : Ability, IMovementAffector {
     MovementController unitMovement;
     TrailRenderer m_TrailRenderer;
      
-    protected void Awake()
+    protected override void Awake()
     {
+        base.Awake();
+
         m_TrailRenderer = GetComponent<TrailRenderer>();
         m_TrailRenderer.enabled = false;
     }

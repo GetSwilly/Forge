@@ -24,6 +24,11 @@ namespace TestRealm
 
         public void StartWaves()
         {
+            m_Cores.ForEach(c =>
+            {
+                UIManager.Instance.AddAllyUI(c);
+            });
+
             StartCoroutine(WaveRoutine());
         }
 

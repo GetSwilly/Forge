@@ -36,6 +36,7 @@ public abstract class ForgeableObject : MonoBehaviour, IMemorable
 
     protected Team m_Team;
     protected Transform m_Transform;
+    HashSet<Transform> ignoreSet = new HashSet<Transform>();
 
     UnityAction<GameObject> onSightAction;
     UnityAction<GameObject> onMaintainSightAction;
@@ -75,6 +76,9 @@ public abstract class ForgeableObject : MonoBehaviour, IMemorable
 
     public virtual void Initialize(ForgeSite forgeActivator, Team team)
     {
+        ignoreSet.Clear();
+        ignoreSet.Add(forgeActivator.Transform);
+
         if (team != null)
         {
             m_Team.TeamType = team.TeamType;
@@ -86,12 +90,21 @@ public abstract class ForgeableObject : MonoBehaviour, IMemorable
 
     public bool ShouldAffect(Team team)
     {
+        if (ShouldIgnore(team.transform))
+        {
+            return false;
+        }
+
         bool isFriendly = m_Team.IsFriendly(m_Team);
         bool isEnemy = m_Team.IsEnemy(m_Team);
 
         return (affectFriendly && isFriendly)
              || (affectEnemy && isEnemy)
              || (affectUnclassified && !(isFriendly || isEnemy));
+    }
+    protected bool ShouldIgnore(Transform t)
+    {
+        return ignoreSet.Contains(t);
     }
 
     protected virtual void SightGained(GameObject obj) { }

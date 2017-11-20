@@ -6,21 +6,22 @@ using UnityEngine;
 [RequireComponent(typeof(FollowTarget))]
 [RequireComponent(typeof(CanvasGroup))]
 [RequireComponent(typeof(Animator))]
-public class GenericUI : MonoBehaviour {
+public class GenericUI : MonoBehaviour
+{
 
 
     [SerializeField]
     List<DisplayProperties> staticDisplays = new List<DisplayProperties>();
 
     List<DisplayProperties> activeDisplays = new List<DisplayProperties>();
-  
+
 
     [Serializable]
     public class DisplayProperties
     {
         [SerializeField]
         string m_Name;
-        
+
         [SerializeField]
         DisplayUI m_UI;
 
@@ -65,7 +66,7 @@ public class GenericUI : MonoBehaviour {
 
     [SerializeField]
     Transform attributeParent;
- 
+
     bool isFading = false;
 
 
@@ -96,7 +97,7 @@ public class GenericUI : MonoBehaviour {
     void OnEnable()
     {
         m_Follow.TargetOffset = Vector3.zero;
-        
+
         activeDisplays.Clear();
 
         Alpha = 0f;
@@ -112,36 +113,36 @@ public class GenericUI : MonoBehaviour {
     {
         m_Line.positionCount = 0;
 
-            List<Vector3> lineVertices = new List<Vector3>();
-         
-
-            for (int i = 0; i < transform.childCount; i++)
-            {
-                if (!transform.GetChild(i).gameObject.activeInHierarchy)
-                    continue;
+        List<Vector3> lineVertices = new List<Vector3>();
 
 
-                lineVertices.Add(m_Follow.TargetTransform != null ? m_Follow.TargetTransform.position : transform.position);
-                lineVertices.Add(transform.GetChild(i).position);
-            }
-
-            m_Line.positionCount = lineVertices.Count;
-            m_Line.SetPositions(lineVertices.ToArray());
+        for (int i = 0; i < transform.childCount; i++)
+        {
+            if (!transform.GetChild(i).gameObject.activeInHierarchy)
+                continue;
 
 
-            /*
-            Vector3[] lineVertices = new Vector3[activeDisplays.Count * 2];
-            m_Line.numPositions = lineVertices.Length;
+            lineVertices.Add(m_Follow.TargetTransform != null ? m_Follow.TargetTransform.position : transform.position);
+            lineVertices.Add(transform.GetChild(i).position);
+        }
 
-            for (int i = 0; i < activeDisplays.Count; i++)
-            {
-                lineVertices[i * 2] = m_Follow.TargetTransform != null ? m_Follow.TargetTransform.position : transform.position;
-                lineVertices[(i * 2) + 1] = activeDisplays[i].UI.transform.position;
-            }
+        m_Line.positionCount = lineVertices.Count;
+        m_Line.SetPositions(lineVertices.ToArray());
 
-            m_Line.SetPositions(lineVertices);
-            */
-        
+
+        /*
+        Vector3[] lineVertices = new Vector3[activeDisplays.Count * 2];
+        m_Line.numPositions = lineVertices.Length;
+
+        for (int i = 0; i < activeDisplays.Count; i++)
+        {
+            lineVertices[i * 2] = m_Follow.TargetTransform != null ? m_Follow.TargetTransform.position : transform.position;
+            lineVertices[(i * 2) + 1] = activeDisplays[i].UI.transform.position;
+        }
+
+        m_Line.SetPositions(lineVertices);
+        */
+
     }
 
 
@@ -156,7 +157,7 @@ public class GenericUI : MonoBehaviour {
 
         RemoveAll();
 
-        for(int i = 0; i < initialUIs.Length; i++)
+        for (int i = 0; i < initialUIs.Length; i++)
         {
             AddAttribute(initialUIs[i]);
         }
@@ -186,11 +187,11 @@ public class GenericUI : MonoBehaviour {
         if (HasAttribute(newAttribute.Name))
             return;
 
-       // Debug.Log(string.Format("Adding attribute: {0}. Parent : {1}.", newAttribute.Name, newParent));
+        // Debug.Log(string.Format("Adding attribute: {0}. Parent : {1}.", newAttribute.Name, newParent));
 
 
         Transform _transform = newAttribute.UI.transform;
-        
+
 
         Orientation _orientation = newAttribute.Orientation;
 
@@ -209,7 +210,7 @@ public class GenericUI : MonoBehaviour {
         if (attr == null || attr.UI == null)
         {
             return;
-           // AddAttribute(new DisplayProperties(attrName, new Orientation)
+            // AddAttribute(new DisplayProperties(attrName, new Orientation)
         }
 
         attr.UI.SetPercentage(pctg, setImmediately);
@@ -234,7 +235,7 @@ public class GenericUI : MonoBehaviour {
         if (attr == null)
             return;
 
-        if(attr.UI != null)
+        if (attr.UI != null)
             Destroy(attr.UI.gameObject);
 
         for (int i = 0; i < activeDisplays.Count; i++)
@@ -253,13 +254,13 @@ public class GenericUI : MonoBehaviour {
     }
     void RemoveAll()
     {
-        while(activeDisplays.Count > 0)
+        while (activeDisplays.Count > 0)
         {
             RemoveAttribute(activeDisplays[0].Name);
         }
     }
 
-    
+
     public void SetOrientation(string attrName, Orientation newOrientation)
     {
         DisplayProperties _properties = GetAttribute(attrName);
@@ -272,7 +273,7 @@ public class GenericUI : MonoBehaviour {
 
     public DisplayProperties GetAttribute(string attrName)
     {
-        for(int i = 0; i < staticDisplays.Count; i++)
+        for (int i = 0; i < staticDisplays.Count; i++)
         {
             if (staticDisplays[i].Name == attrName)
                 return staticDisplays[i];
@@ -320,7 +321,7 @@ public class GenericUI : MonoBehaviour {
     }
     public GameObject GetPrefab(string _name)
     {
-        for(int i = 0; i < displayPrefabs.Count; i++)
+        for (int i = 0; i < displayPrefabs.Count; i++)
         {
             if (displayPrefabs[i].Item1.Equals(_name))
                 return Instantiate(displayPrefabs[i].Item2) as GameObject;
@@ -340,7 +341,7 @@ public class GenericUI : MonoBehaviour {
     {
         m_Animator.SetTrigger("Deflate");
     }
-   public void SetInactive()
+    public void SetInactive()
     {
         gameObject.SetActive(false);
     }
@@ -364,13 +365,13 @@ public class GenericUI : MonoBehaviour {
 
             Gradient colorGradient = m_Line.colorGradient;
             GradientAlphaKey[] alphaKeys = colorGradient.alphaKeys;
-           
-            for(int i = 0; i < alphaKeys.Length; i++)
+
+            for (int i = 0; i < alphaKeys.Length; i++)
             {
-                alphaKeys[i].alpha = a; 
+                alphaKeys[i].alpha = a;
             }
 
-            
+
             colorGradient.alphaKeys = alphaKeys;
             m_Line.colorGradient = colorGradient;
         }
@@ -403,7 +404,7 @@ public class GenericUI : MonoBehaviour {
             //_orientation.LocalScale = _transform.localScale;
 
             _transform.localPosition = _orientation.LocalPosition;
-             _transform.localEulerAngles = _orientation.LocalEuler;
+            _transform.localEulerAngles = _orientation.LocalEuler;
             _transform.localScale = _orientation.LocalScale;
 
 

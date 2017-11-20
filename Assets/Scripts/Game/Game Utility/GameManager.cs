@@ -11,24 +11,24 @@ public class GameManager : MonoBehaviour
 {
 
     #region Static Variables
-    
+
     static readonly int START_LIVES_PLAYER = 1;
-    
+
     static readonly float ENEMY_DEATH_WEIGHT = 1f;
-    
+
     static readonly float _ItemDropLaunchPower = 1.3f;
-    static readonly Vector3 _ItemDropOffset = new Vector3(0f,0.2f,0f);
+    static readonly Vector3 _ItemDropOffset = new Vector3(0f, 0.2f, 0f);
     static readonly float _ItemDropDelay = 0.05f;
-    
+
     static readonly Vector3 HUB_WORLD_PLAYER_SPAWN = new Vector3(0f, .5f, 0f);
 
     #endregion
 
-    
+
 
     [SerializeField]
     bool showDebug;
-    
+
 
     public enum GameState { START, PLAYING, WON, LOST };
     GameState currentGameState;
@@ -41,26 +41,18 @@ public class GameManager : MonoBehaviour
     int m_Lives = 0;
 
 
-    [SerializeField]
-    int currentLevelPoints = 0;
-    
-
     int numKilled = 0;
 
 
     [SerializeField]
     public GameObject generatedObjectHolder;
 
-
-    //Active objects on screen	
+    [SerializeField]
     GameObject player;
 
-    PlayerController pController;
+    PlayerController playerController;
     UserInput pInput;
     
-    [SerializeField]
-    List<ItemPoolListDefinition> m_ItemPoolDefinitions = new List<ItemPoolListDefinition>();
-
 
     Dictionary<string, GameObject> lootDictionary = new Dictionary<string, GameObject>();
 
@@ -69,7 +61,7 @@ public class GameManager : MonoBehaviour
 
     [SerializeField]
     BalancingProbabilities m_ItemClassProbabilities = new BalancingProbabilities();
-    
+
     FrameRateTracker frameTracker;
     Settings m_Settings;
 
@@ -101,25 +93,43 @@ public class GameManager : MonoBehaviour
 
         //LoadLootTables();
 
+        Subscribe(player);
+
         UIManager.Instance.ShowTitleText("FORGE");
     }
 
+    void Subscribe(GameObject playerObject)
+    {
+        if (playerObject == null)
+            return;
+
+        Subscribe(playerObject.GetComponent<PlayerController>());
+    }
     void Subscribe(PlayerController _player)
     {
         if (_player == null)
             return;
 
 
-        pController = _player;
-        player = pController.gameObject;
+        playerController = _player;
+        player = playerController.gameObject;
         pInput = _player.GetComponent<UserInput>();
 
-        if(UIManager.Instance != null)
+        Health pHealth = player.GetComponent<Health>();
+        if (pHealth != null)
         {
-            UIManager.Instance.Subscribe(pController);
+            pHealth.OnDamaged += PlayerDamaged;
+        }
+
+        if (UIManager.Instance != null)
+        {
+            UIManager.Instance.Subscribe(playerController);
         }
     }
-
+    public void Unsubscribe()
+    {
+        throw new NotImplementedException();
+    }
 
     public void StartGame(PlayerController _player)
     {
@@ -132,18 +142,13 @@ public class GameManager : MonoBehaviour
         currentLevel = 1;
 
         m_Lives = START_LIVES_PLAYER;
-       
+
         CameraFollow camFollow = Camera.main.GetComponent<CameraFollow>();
         if (camFollow != null && player != null)
         {
             camFollow.TargetTransform = player.transform;
         }
 
-
-        LevelController.Instance.DestroyAllGenerated();
-        //killDropLootTable.Initialize();
-        //weaponLootTable.Initialize();
-        //abilityLootTable.Initialize();
 
         currentGameState = GameState.PLAYING;
 
@@ -153,279 +158,62 @@ public class GameManager : MonoBehaviour
             UIManager.Instance.SetColors();
             UIManager.Instance.InflateInGame();
         }
-
-
-
-        StartCoroutine(NewLevel());
     }
 
-    void EndGame()
-    {
 
-        pInput.CanEngage = false;
-        pController.enabled = false;
-
-        if (CurrentGameState == GameState.WON)
-        {
-
-        }
-        else if (CurrentGameState == GameState.LOST)
-        {
-
-        }
-
-        LevelController.Instance.DestroyAllGenerated();
-
-        currentLevel = 0;
-
-        player.transform.position = Vector3.zero;
-        pController.enabled = true;
-        pInput.enabled = true;
-        pInput.CanEngage = false;
-    }
-
-    public void NextLevel()
-    {
-        if (currentLevel == 0)
-        {
-            StartGame();
-        }
-        else
-        {
-            StartCoroutine(NewLevel());
-        }
-    }
-
-    IEnumerator NewLevel()
-    {
-        UIManager.Instance.DeflateAll();
-        
-        player.SetActive(false);
-
-        numKilled = 0;
-        
-        yield return StartCoroutine(LevelController.Instance.GenerateLevel());
-        
-        currentGameState = GameState.PLAYING;
-
-        UIManager.Instance.DeflateAll();
-
-        UIManager.Instance.InflateInGame();
-
-        //UIManager.Instance.SetPause(false);
-
-        //StartCoroutine(CheckForPause());
-
-        LevelStartCamera c = Camera.main.GetComponent<LevelStartCamera>();
-        if (c != null)
-        {
-            c.Initiate();
-        }
-
-    }
-
-    public void EndLevel()
-    {
-        StopAllCoroutines();
-
-        pController.enabled = false;
-        pController.GetComponent<UserInput>().enabled = false;
-
-        currentLevel++;
-
-        if (currentLevel > maxLevel)
-        {
-            currentGameState = GameState.WON;
-            EndGame();
-        }
-        else
-        {
-
-            LevelController.Instance.DestroyAllGenerated();
-        }
-    }
-
-    
-    void ShowUpgradeScreen(bool isEndOfLevel)
-    {
-
-        //Time.timeScale = 0f;
-
-        pController.enabled = false;
-
-        //CheckPlayerLevelUp();
-
-
-        // StartCoroutine(WaitForUpgradeScreen(isEndOfLevel));
-    }
-   
-    //IEnumerator CheckForPause()
+    //public void UnitDamaged(Health unitHealth)
     //{
-    //    while (CurrentGameState == GameState.PLAYING)
-    //    {
-    //        if (Input.GetKeyDown(KeyCode.Escape))
-    //        {
-    //            TogglePause();
-    //        }
+    //    GameObject unitObj = unitHealth.gameObject;
 
-    //        yield return null;
+    //    switch (unitObj.tag)
+    //    {
+    //        case "Player":
+    //            PlayerDamaged(unitObj);
+    //            break;
+    //        default:
+    //            break;
+    //    }
+
+    //    Transform attackerTransform = unitHealth.LastAttacker;
+
+    //    if (attackerTransform != null)
+    //    {
+    //        UnitController attackerController = attackerTransform.GetComponent<UnitController>();
+
+    //        if (attackerController != null)
+    //        {
+    //            ///attackerController.DamageAchieved(unitHealth);
+    //        }
     //    }
     //}
+    //public void UnitKilled(Health unitHealth)
+    //{
+    //    GameObject unitObj = unitHealth.gameObject;
 
-    /*
-    //TODO --- Remove Coroutine and split into functions
-    IEnumerator WaitForUpgradeScreen(bool isEndOfLevel)
-    {
+    //    switch (unitObj.tag)
+    //    {
+    //        case "Player":
+    //            PlayerKilled(unitObj);
+    //            break;
+    //        default:
+    //            numKilled++;
+    //            EnemyKilled(unitHealth);
+    //            break;
+    //    }
 
-        UIManager.Instance.InflateUpgradeMenu();
-
-        yield return null;
-
-       // yield return StartCoroutine(UIManager.Instance.WaitForUpgradeMenu());
-
-     
-
-        if (isEndOfLevel)
-            StartCoroutine(NewLevel());
-    }
-    */
-
- 
-    void SpawnPlayer()
-    {
-
-        if (player == null)
-            return;
-
-        Vector3 spawnPos = LevelController.Instance.StartGoalPosition;
-        spawnPos.y += Utilities.CalculateObjectBounds(player, false).y / 2f;
-        spawnPos.y += 0.1f;
-
-        player.transform.position = spawnPos;
-        player.transform.rotation = Quaternion.identity;
-
-        player.SetActive(true);
-        pInput.CanEngage = true;
-
-        Rigidbody rigid = player.GetComponent<Rigidbody>();
-
-        if (rigid != null)
-        {
-            rigid.velocity = Vector3.zero;
-        }
-
-        pController.enabled = true;
-        pInput.CanEngage = true;
-
-        
-        //Health pHealth = player.GetComponent<Health>();
-        //pHealth.ReviveMax();
-
-
-        AttributeHandler pHandler = player.GetComponent<AttributeHandler>();
-        if(pHandler != null)
-        {
-            pHandler.RemoveAllActiveAttributes();
-        }
-    }
-
-
-
-    public void ResetLevel()
-    {       //  ChangeScore(-Score);
-        currentGameState = GameState.PLAYING;
-
-        SpawnPlayer();
-        //SpawnWard();
-
-        //PauseMenu.SetActive(false);
-        //Time.timeScale = 1.0f;
-
-        UIManager.Instance.SetPause(false);
-    }
-    void GameOver()
-    {
-        currentGameState = GameState.LOST;
-    }
-
-
-    public void UnitDamaged(Health unitHealth)
-    {
-        GameObject unitObj = unitHealth.gameObject;
-
-        switch (unitObj.tag)
-        {
-            case "Player":
-                PlayerDamaged(unitObj);
-                break;
-            default:
-                break;
-        }
-
-        Transform attackerTransform = unitHealth.LastAttacker;
-
-        if (attackerTransform != null)
-        {
-            UnitController attackerController = attackerTransform.GetComponent<UnitController>();
-
-            if (attackerController != null)
-            {
-                ///attackerController.DamageAchieved(unitHealth);
-            }
-        }
-    }
-    public void UnitKilled(Health unitHealth)
-    {
-        GameObject unitObj = unitHealth.gameObject;
-
-        switch (unitObj.tag)
-        {
-            case "Player":
-                PlayerKilled(unitObj);
-                break;
-            default:
-                numKilled++;
-                EnemyKilled(unitHealth);
-                break;
-        }
-
-        unitObj.SetActive(false);
-    }
+    //    unitObj.SetActive(false);
+    //}
 
 
     public void PlayerDamaged(Health playerHealth)
     {
-        PlayerDamaged(playerHealth.gameObject);
-    }
-    public void PlayerDamaged(GameObject playerObj)
-    {
-        //CameraShake.Instance.ShakeMinor();
+        CameraShake.Instance.StartShake();
     }
 
 
     public void PlayerKilled(Health playerHealth)
     {
-        PlayerKilled(playerHealth.gameObject);
-    }
-    public void PlayerKilled(GameObject playerObj)
-    {
         m_Lives--;
-        // ChangeScore(SCORE_ONPLAYERKILLED);
-
-        if (m_Lives <= 0)
-        {
-            GameOver();
-        }
-        else
-        {
-
-            if (pController != null)
-            {
-                pController.ResetExp();
-            }
-
-            SpawnPlayer();
-        }
     }
 
 
@@ -458,60 +246,23 @@ public class GameManager : MonoBehaviour
     //        }
     //    }
     //}
-    
-    public bool CanModifyLevelPoints(int delta)
-    {
-        return LevelPoints + delta >= 0;
-    }
-    public void AddLevelPoints(int delta)
-    {
 
-        if (currentLevelPoints + delta < 0)
-        {
-            UnityEngine.Debug.Log("ERROR -- GameManager -- AddLevelPoints() - Adding delta would resuly in negative LevelPoints available.");
-            return;
-        }
-
-
-        currentLevelPoints += delta;
-    }
-
-    public GameObject GetItem(ListDefinitionName listName)
+    public GameObject GetItem(ItemPoolDefinition listName)
     {
         return GetItem(listName, 0f);
     }
-    public GameObject GetItem(ListDefinitionName listName, float luckBonus)
+    public GameObject GetItem(ItemPoolDefinition listName, float luckBonus)
     {
-        ItemPoolListDefinition listDefinition = GetItemPoolListDefinition(listName);
-
-        if (listDefinition == null)
-        {
-            return null;
-        }
-
-
-        return listDefinition.GetItem(luckBonus);
+        return ItemPoolManager.Instance.GetItem(listName, luckBonus);
 
     }
-    ItemPoolListDefinition GetItemPoolListDefinition(ListDefinitionName listName)
-    {
-        for (int i = 0; i < m_ItemPoolDefinitions.Count; i++)
-        {
-            if (m_ItemPoolDefinitions[i].ListName == listName)
-            {
-                return m_ItemPoolDefinitions[i];
-            }
-        }
-
-        return null;
-    }
-
+   
     public void DropLoot(GameObject droppingObject)
     {
         if (droppingObject == null)
             return;
-        
-        GameObject newItem = GetItem(ListDefinitionName.GeneralItems);
+
+        GameObject newItem = GetItem(ItemPoolDefinition.GeneralItems);
 
         if (newItem == null)
             return;
@@ -526,21 +277,21 @@ public class GameManager : MonoBehaviour
         newItem.transform.position = droppingObject.transform.position + _ItemDropOffset;
         newItem.SetActive(true);
 
-        if(_rigidbody != null)
+        if (_rigidbody != null)
         {
             _rigidbody.velocity = Vector3.zero;
             _rigidbody.AddForce(launchVector, ForceMode.Impulse);
         }
     }
 
-    public void DropItems(Transform droppingTransform, ListDefinitionName desiredListDefinition, int numberOfDrops)
+    public void DropItems(Transform droppingTransform, ItemPoolDefinition desiredListDefinition, int numberOfDrops)
     {
         if (droppingTransform == null || numberOfDrops <= 0)
             return;
 
         StartCoroutine(DropItemsRoutine(droppingTransform, desiredListDefinition, numberOfDrops));
     }
-    IEnumerator DropItemsRoutine(Transform droppingTransform, ListDefinitionName desiredListDefinition, int numberOfDrops)
+    IEnumerator DropItemsRoutine(Transform droppingTransform, ItemPoolDefinition desiredListDefinition, int numberOfDrops)
     {
         for (int i = 0; i < numberOfDrops; i++)
         {
@@ -606,8 +357,8 @@ public class GameManager : MonoBehaviour
                 throw new NotImplementedException();
         }
     }
-    
-    
+
+
     #region Accessors
 
     public GameObject Player
@@ -616,7 +367,7 @@ public class GameManager : MonoBehaviour
     }
     public PlayerController PlayerController
     {
-        get { return pController; }
+        get { return playerController; }
     }
 
     public GameState CurrentGameState
@@ -626,56 +377,19 @@ public class GameManager : MonoBehaviour
     public int Lives
     {
         get { return m_Lives; }
-        private set { m_Lives = Mathf.Clamp(value,0,value); }
+        private set { m_Lives = Mathf.Clamp(value, 0, value); }
     }
     public int CurrentLevel
     {
         get { return currentLevel; }
     }
-    public int LevelPoints
-    {
-        get { return currentLevelPoints; }
-    }
+
     #endregion
-        
+
 
     void OnValidate()
     {
         Lives = Lives;
-
-        ValidateItemPoolDefinitions();
     }
-    void ValidateItemPoolDefinitions()
-    {
-        HashSet<ListDefinitionName> encounteredNameSet = new HashSet<ListDefinitionName>();
-        HashSet<ListDefinitionName> referenceSet = new HashSet<ListDefinitionName>((ListDefinitionName[])Enum.GetValues(typeof(ListDefinitionName)));
-
-        for (int i = 0; i < m_ItemPoolDefinitions.Count; i++)
-        {
-            if (encounteredNameSet.Contains(m_ItemPoolDefinitions[i].ListName))
-            {
-                m_ItemPoolDefinitions.RemoveAt(i);
-                i--;
-                continue;
-            }
-            else
-            {
-                encounteredNameSet.Add(m_ItemPoolDefinitions[i].ListName);
-                referenceSet.Remove(m_ItemPoolDefinitions[i].ListName);
-
-                m_ItemPoolDefinitions[i].Validate();
-            }
-        }
-
-        HashSet<ListDefinitionName>.Enumerator enumerator = referenceSet.GetEnumerator();
-
-        while (enumerator.MoveNext())
-        {
-            m_ItemPoolDefinitions.Add(new ItemPoolListDefinition(enumerator.Current));
-        }
-
-
-        m_ItemClassProbabilities.Validate(true);
-
-    }
+   
 }

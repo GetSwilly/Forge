@@ -57,7 +57,7 @@ public class ForgeMenuInflater : MenuInflater
 
             ItemPrice _price = f.gameObject.GetComponent<ItemPrice>();
 
-            _button.SecondaryText = "Credits: " + _price.Value;
+            _button.SecondaryText = "Credits: " + _price.CreditValue;
 
             buttonToForgeDictionary.Add(_button, f);
         });
@@ -71,7 +71,7 @@ public class ForgeMenuInflater : MenuInflater
         ForgeableObject forgeable = buttonToForgeDictionary[selectedButton];
 
         ItemPrice price =  forgeable.gameObject.GetComponent<ItemPrice>();
-        if (!activatingPlayer.CreditArithmetic(-price.Value))
+        if (!activatingPlayer.CreditArithmetic(-price.CreditValue))
         {
             return;
         }

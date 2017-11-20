@@ -7,14 +7,14 @@ using UnityEngine;
 public class ItemPoolListDefinition
 {
     [SerializeField]
-    ListDefinitionName m_ListName;
+    ItemPoolDefinition m_ListName;
 
 
     [SerializeField]
     List<Tuple_ItemPool_PoolWeightIdentifier> m_Pools = new List<Tuple_ItemPool_PoolWeightIdentifier>();
 
 
-    public ItemPoolListDefinition(ListDefinitionName listName)
+    public ItemPoolListDefinition(ItemPoolDefinition listName)
     {
         m_ListName = listName;
     }
@@ -53,7 +53,7 @@ public class ItemPoolListDefinition
 
 
 
-    public ListDefinitionName ListName
+    public ItemPoolDefinition ListName
     {
         get { return m_ListName; }
     }

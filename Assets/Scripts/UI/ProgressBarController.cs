@@ -50,7 +50,7 @@ public class ProgressBarController : DisplayUI
         progessBarImage.fillAmount = 1f;
     }
 
-    void Update()
+    protected override void Update()
     {
         if (curPercentage != desiredPercentage)
         {
@@ -76,7 +76,10 @@ public class ProgressBarController : DisplayUI
 
     }
 
-
+    public void SetPercentage(float percentage)
+    {
+        SetPercentage(percentage, false);
+    }
     public override void SetPercentage(float pctg, bool setImmediately)
     {
         if (setImmediately)

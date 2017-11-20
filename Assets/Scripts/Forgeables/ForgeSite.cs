@@ -30,7 +30,7 @@ public class ForgeSite : MonoBehaviour, IMemorable, IStat
     ForgeableObject attemptedForge;
     GameObject timerUI;
 
-    public event Delegates.StatChanged OnLevelChanged;
+    public event Delegates.StatChanged OnStatLevelChanged;
 
 
     void Awake()
@@ -130,7 +130,7 @@ public class ForgeSite : MonoBehaviour, IMemorable, IStat
             
             if(forgePrice != null && forgingPlayer != null)
             {
-                forgingPlayer.CreditArithmetic(forgePrice.Value);
+                forgingPlayer.CreditArithmetic(forgePrice.CreditValue);
             }
 
 
@@ -244,6 +244,9 @@ public class ForgeSite : MonoBehaviour, IMemorable, IStat
 
     void OnValidate()
     {
-        m_Stats.Validate();
+        if (m_Stats != null)
+        {
+            m_Stats.Validate();
+        }
     }
 }

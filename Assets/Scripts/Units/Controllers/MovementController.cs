@@ -92,11 +92,37 @@ public class MovementController : MonoBehaviour, IMovement
 
         float dirSpeedup = directionalSpeedupCurve.Evaluate(Vector3.Angle(m_Transform.forward, moveDir));
 
-        Vector3 forceVector = moveDir.normalized * MovementSpeed * dirSpeedup * Time.deltaTime;
+        Vector3 forceVector = moveDir.normalized * Speed * dirSpeedup * Time.deltaTime;
 
         m_Rigidbody.AddForce(forceVector, ForceMode.Acceleration);
     }
+    public void MoveToPosition(Vector3 position)
+    {
+        Vector3 movementVector = position - m_Transform.position;
 
+        if (movementVector.magnitude > (Speed * Time.deltaTime))
+        {
+            Debug.Log(movementVector.magnitude);
+            movementVector = movementVector.normalized * Speed * Time.deltaTime;
+            position = m_Transform.position + movementVector;
+            Debug.Log(movementVector.magnitude);
+        }
+
+        if (m_Character != null && m_Character.enabled)
+        {
+            m_Character.Move(movementVector);
+            position = m_Transform.position;
+        }
+
+        if (m_Rigidbody != null)
+        {
+            m_Rigidbody.MovePosition(position);
+        }
+        else
+        {
+            m_Transform.position = position;
+        }
+    }
 
     public void RotateTowards(Transform t)
     {
@@ -148,7 +174,7 @@ public class MovementController : MonoBehaviour, IMovement
 
     public void Move(Vector3 position3D, Vector3 deltaPosition, bool useDeltaAsDirection)
     {
-        Move(position3D, deltaPosition, useDeltaAsDirection, MovementSpeed);
+        Move(position3D, deltaPosition, useDeltaAsDirection, Speed);
     }
     public void Move(Vector3 position3D, Vector3 deltaPosition, bool useDeltaAsDirection, float speed)
     {
@@ -203,7 +229,7 @@ public class MovementController : MonoBehaviour, IMovement
         {
             speedMultiplierSet.Add(obj, multiplier);
         }
-        
+
         speedMultiplier = GetTotalSpeedMultiplier();
     }
     public void RemoveSpeedMultiplier(object obj)
@@ -219,7 +245,7 @@ public class MovementController : MonoBehaviour, IMovement
     }
     float GetTotalSpeedMultiplier()
     {
-       Dictionary<object, float>.Enumerator enumerator =  speedMultiplierSet.GetEnumerator();
+        Dictionary<object, float>.Enumerator enumerator = speedMultiplierSet.GetEnumerator();
 
         float multiplier = 1f;
 
@@ -278,7 +304,7 @@ public class MovementController : MonoBehaviour, IMovement
 
     #region Accessors
 
-    public float MovementSpeed
+    public float Speed
     {
         get
         {
@@ -327,7 +353,7 @@ public class MovementController : MonoBehaviour, IMovement
 
     void OnValidate()
     {
-        MovementSpeed = MovementSpeed;
+        Speed = Speed;
         RotationSpeed = RotationSpeed;
 
         Utilities.ValidateCurve_Times(directionalSpeedupCurve, 0f, 180f);

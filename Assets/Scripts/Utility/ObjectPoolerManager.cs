@@ -7,8 +7,6 @@ using System.Collections.Generic;
 public class ObjectPoolerManager : MonoBehaviour {
 	
 	[HideInInspector]
-	public ObjectPooler DeathAnimationPooler;
-	[HideInInspector]
 	public ObjectPooler DynamicInfoPooler;
     [HideInInspector]
     public ObjectPooler Unit_UIPooler;
@@ -20,9 +18,9 @@ public class ObjectPoolerManager : MonoBehaviour {
     public ObjectPooler TimerUIPooler;
     [HideInInspector]
     public ObjectPooler AudioRemnantPooler;
-
-    [SerializeField]
-    GameObject DeathAnimationPrefab;
+    [HideInInspector]
+    public ObjectPooler VoxelPooler;
+    
     [SerializeField]
     GameObject DynamicInfoPrefab;
     [SerializeField]
@@ -35,7 +33,8 @@ public class ObjectPoolerManager : MonoBehaviour {
     GameObject TimerUIPrefab;
     [SerializeField]
     GameObject AudioRemnantPrefab;
-
+    [SerializeField]
+    GameObject VoxelObjectPrefab;
 
     [HideInInspector]
 	public static ObjectPoolerManager Instance {get;private set;}
@@ -44,22 +43,6 @@ public class ObjectPoolerManager : MonoBehaviour {
 		Instance = this;
 
 		GameObject pools = new GameObject ("Pools");
-	
-		
-		if (DeathAnimationPooler == null && DeathAnimationPrefab != null)
-		{
-			GameObject go = new GameObject("DeathAnimationPooler");
-			DeathAnimationPooler = go.AddComponent<ObjectPooler>();
-			DeathAnimationPooler.PooledObject = DeathAnimationPrefab;
-            DeathAnimationPooler.PoolLength = 3;
-
-            GameObject anims = new GameObject("Death Animations");
-			anims.transform.parent = pools.transform;
-
-			DeathAnimationPooler.Parent = anims.transform;
-			go.transform.parent = this.gameObject.transform;
-			DeathAnimationPooler.Initialize();
-		}
 
 
 		if (DynamicInfoPooler == null && DynamicInfoPrefab != null)
@@ -144,7 +127,7 @@ public class ObjectPoolerManager : MonoBehaviour {
             GameObject go = new GameObject("AudioRemnantPooler");
             AudioRemnantPooler = go.AddComponent<ObjectPooler>();
             AudioRemnantPooler.PooledObject = AudioRemnantPrefab;
-            AudioRemnantPooler.PoolLength = 3;
+            AudioRemnantPooler.PoolLength = 15;
 
 
             GameObject audioRemnants = new GameObject("Audio Remnants");
@@ -153,6 +136,23 @@ public class ObjectPoolerManager : MonoBehaviour {
             AudioRemnantPooler.Parent = audioRemnants.transform;
             go.transform.parent = this.gameObject.transform;
             AudioRemnantPooler.Initialize();
+        }
+
+        if (VoxelPooler == null && VoxelObjectPrefab != null)
+        {
+            GameObject go = new GameObject("VoxelPooler");
+            VoxelPooler = go.AddComponent<ObjectPooler>();
+            VoxelPooler.PooledObject = VoxelObjectPrefab;
+            VoxelPooler.PoolLength = 25;
+
+
+            GameObject voxels = new GameObject("Voxels");
+            voxels.transform.parent = pools.transform;
+
+            VoxelPooler.Parent = voxels.transform;
+            go.transform.parent = this.gameObject.transform;
+
+            VoxelPooler.Initialize();
         }
     }
 }

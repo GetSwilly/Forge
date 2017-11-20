@@ -5,6 +5,7 @@ using UnityEngine;
 public interface IMovement {
 
     void Move(Vector3 direction);
+    void MoveToPosition(Vector3 position);
     //void Move(Vector3 direction, float speed);
     void RotateTowards(Vector3 position);
 
@@ -13,4 +14,6 @@ public interface IMovement {
 
     void AddRotationMultiplier(object obj, float multiplier);
     void RemoveRotationMultiplier(object obj);
+
+    float Speed { get; }
 }

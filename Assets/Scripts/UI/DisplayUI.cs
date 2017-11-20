@@ -9,12 +9,21 @@ public class DisplayUI : MonoBehaviour {
     protected Transform m_Transform;
    protected CanvasGroup m_CanvasGroup;
 
+    [SerializeField]
+    bool faceCamera = true;
 
 
     protected virtual void Awake()
     {
         m_Transform = GetComponent<Transform>();
         m_CanvasGroup = GetComponent<CanvasGroup>();
+    }
+    protected virtual void Update()
+    {
+        if (faceCamera && Camera.main != null)
+        {
+            m_Transform.rotation = Camera.main.transform.rotation;
+        }
     }
 
     public virtual void SetText(string txt) { }

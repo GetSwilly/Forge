@@ -219,7 +219,7 @@ public abstract class BaseUtilityBehavior : MonoBehaviour
         get { return minimumRechargeDelay; }
         set
         {
-            minimumRechargeDelay = Mathf.Clamp(value, MINIMUM_DELAY, minimumRechargeDelay);
+            minimumRechargeDelay = Mathf.Clamp(value, MINIMUM_DELAY, value);
         }
     }
     public virtual bool CanStartBehavior
@@ -271,7 +271,6 @@ public abstract class BaseUtilityBehavior : MonoBehaviour
     {
         MinimumRechargeDelay = MinimumRechargeDelay;
     }
-
 
     public override abstract string ToString();
 }

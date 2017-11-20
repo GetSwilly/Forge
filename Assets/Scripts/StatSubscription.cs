@@ -9,14 +9,14 @@ public class StatSubscription {
     StatType m_Type;
 
     [SerializeField]
-    AnimationCurve statCurve = AnimationCurve.Linear(0f, Stat.MAX_LEVEL, 0f, 0f);
+    AnimationCurve statCurve = AnimationCurve.Linear(0f, Stat._MaxLevel, 0f, 0f);
 
 
     public void Validate()
     {
         Keyframe[] oldKeys = statCurve.keys;
 
-        Keyframe[] newKeys = new Keyframe[Stat.MAX_LEVEL];
+        Keyframe[] newKeys = new Keyframe[Stat._MaxLevel];
         
         for(int i = 0; i < newKeys.Length; i++)
         {

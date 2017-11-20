@@ -4,6 +4,9 @@ using System;
 
 public class Chase : BaseUtilityBehavior
 {
+    static readonly float _MaxHoldupTime = 3f;
+    static readonly float _HoldupDistance = 0.2f;
+
     enum Type
     {
         LastKnownPosition,
@@ -40,6 +43,9 @@ public class Chase : BaseUtilityBehavior
 
     float sightTimer;
     SightedObject targetObject;
+    Vector3 previousPosition;
+    float lastMovementTime;
+
 
     //float originalEndReachedDistance;
     //float originalSlowdownDistance;
@@ -49,13 +55,28 @@ public class Chase : BaseUtilityBehavior
         if (!IsActive)
             return;
 
-        sightTimer += Time.deltaTime;
-
-
-        if (targetObject == null)
+        if (!IsUsable || targetObject == null)
         {
             EndBehavior(true, true);
         }
+
+        if (Vector3.Distance(previousPosition, m_Transform.position) > _HoldupDistance)
+        {
+            lastMovementTime = Time.realtimeSinceStartup;
+        }
+        else if (Time.realtimeSinceStartup - lastMovementTime > _MaxHoldupTime)
+        {
+            if (ShowDebug)
+            {
+                Debug.Log("CHASE --- {0} --- Too long without movement. Ending behavior.");
+            }
+
+            EndBehavior(true, true);
+        }
+
+        previousPosition = m_Transform.position;
+
+        sightTimer += Time.deltaTime;
 
 
         if (targetObject.InSight)
@@ -69,7 +90,7 @@ public class Chase : BaseUtilityBehavior
         }
         else if (MaximumTimeOutOfSight != -1 && sightTimer >= MaximumTimeOutOfSight)
         {
-            if (m_Actor.ShowDebug)
+            if (ShowDebug)
             {
                 Debug.Log(string.Format("CHASE --- {0} --- Max out of sight time reached: {1}.", m_Transform.name, sightTimer));
             }
@@ -79,7 +100,7 @@ public class Chase : BaseUtilityBehavior
 
         if (m_Pathfinder.GetDistanceRemaining() < StopDistance)
         {
-            if (m_Actor.ShowDebug)
+            if (ShowDebug)
             {
                 Debug.Log(string.Format("CHASE --- {0} --- Within StoppingDistance.", m_Transform.name));
             }

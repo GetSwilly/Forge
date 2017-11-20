@@ -24,6 +24,9 @@ public class UtilityActor : UnitController
 
     bool recentlyUpdatedBehaviorFlag = false;
 
+    [SerializeField]
+    [Range(0f, 100f)]
+    float minimumBehaviorScoreThreshold = 10f;
 
 
     [Tooltip("Poor decision response based on stupidity level")]
@@ -315,8 +318,7 @@ public class UtilityActor : UnitController
             {
                 Debug.Log(m_Transform.name + " -- Can't end current behavior. Current Behavior: " + CurrentBehavior.ToString());
             }
-
-
+            
             return;
         }
 
@@ -332,7 +334,7 @@ public class UtilityActor : UnitController
 
             float _weight = m_Behaviors[i].GetBehaviorScore();
 
-            if (_weight <= 0f)
+            if (_weight <= 0 || _weight <= MinimumBehaviorScoreThreshold)
             {
                 continue;
             }
@@ -348,6 +350,13 @@ public class UtilityActor : UnitController
             {
                 Debug.Log(m_Transform.name + " -- No weighted behaviors available.");
             }
+
+            if(CurrentBehavior != null)
+            {
+                CurrentBehavior.EndBehavior(true, false);
+            }
+
+            CurrentBehavior = null;
 
             return;
         }
@@ -833,7 +842,7 @@ public class UtilityActor : UnitController
             if (_health == null)
                 continue;
 
-            validEnemies.Add(new CustomTuple2<Transform, float>(nearbyEnemies[i].Transform, _health.CurHealth));
+            validEnemies.Add(new CustomTuple2<Transform, float>(nearbyEnemies[i].Transform, _health.CurrentHealth));
 
         }
 
@@ -886,7 +895,7 @@ public class UtilityActor : UnitController
             if (_health == null)
                 continue;
 
-            validEnemies.Add(new CustomTuple2<Transform, float>(nearbyEnemies[i].Transform, _health.CurHealth));
+            validEnemies.Add(new CustomTuple2<Transform, float>(nearbyEnemies[i].Transform, _health.CurrentHealth));
 
         }
 
@@ -1236,24 +1245,27 @@ public class UtilityActor : UnitController
     {
         get { return reactionTime; }
     }
-
+    public float MinimumBehaviorScoreThreshold
+    {
+        get { return minimumBehaviorScoreThreshold; }
+    }
 
     public SightedObject TargetObject
     {
         get
         {
             //Should check and possibly retarget?
-            if (TargetTransform != null && TargetTransform.gameObject.activeInHierarchy && EnemyTraitThresholdCheck(TargetTransform))
+            if (TargetTransform != null && TargetTransform.gameObject.activeInHierarchy && !EnemyTraitThresholdCheck(TargetTransform))
             {
-                if (UnityEngine.Random.value < retargetChance)
-                {
-                    Transform t = ChooseTarget(reTargetingMethod);
+                //if (UnityEngine.Random.value < retargetChance)
+                //{
+                //    Transform t = ChooseTarget(reTargetingMethod);
 
-                    if (t != null)
-                    {
-                        TargetTransform = t;
-                    }
-                }
+                //    if (t != null)
+                //    {
+                //        TargetTransform = t;
+                //    }
+                //}
             }
             //Initial target
             else

@@ -332,11 +332,7 @@ public static class Utilities
     {
         return ((mask.value & 1 << layer) > 0);
     }
-
-    public static bool HasFlag(NodeType a, NodeType b)
-    {
-        return (a & b) == b;
-    }
+    
     public static bool HasFlag(StatType a, StatType b)
     {
         return (a & b) == b;
@@ -346,10 +342,6 @@ public static class Utilities
         return (a & b) == b;
     }
     public static bool HasFlag(UtilityActor.TargetingMethod a, UtilityActor.TargetingMethod b)
-    {
-        return (a & b) == b;
-    }
-    public static bool HasFlag(LevelController.LevelOptions a, LevelController.LevelOptions b)
     {
         return (a & b) == b;
     }

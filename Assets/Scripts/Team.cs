@@ -16,7 +16,6 @@ public class Team : MonoBehaviour
     [SerializeField]
     Type m_TeamType;
 
-    [SerializeField]
     String m_TeamTag;
     
     [SerializeField]
@@ -25,6 +24,16 @@ public class Team : MonoBehaviour
     [SerializeField]
     protected List<TeamClassification> enemyTeams = new List<TeamClassification>();
 
+
+    void Awake()
+    {
+        IIdentifier identifier = GetComponent<IIdentifier>();
+
+        if(identifier != null)
+        {
+            m_TeamTag = identifier.Name;
+        }
+    }
 
     public static TeamClassification GetTeam(Team.Type type)
     {

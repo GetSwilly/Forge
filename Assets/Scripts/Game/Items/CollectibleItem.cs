@@ -2,15 +2,20 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class CollectibleItem : MonoBehaviour {
+public class CollectibleItem : MonoBehaviour, IIdentifier{
 
     public enum Type { Health, Experience, Credit }
+
+    [SerializeField]
+    string myName;
 
     [SerializeField]
     Type m_Type;
 
     [SerializeField]
     int value;
+
+    bool isActive = true;
 
     void OnCollisionEnter(Collision coll)
     {
@@ -29,6 +34,9 @@ public class CollectibleItem : MonoBehaviour {
     
     public void AttemptApply(GameObject targetObject)
     {
+        if (!isActive)
+            return;
+
         switch (ItemType)
         {
             case Type.Health:
@@ -49,6 +57,7 @@ public class CollectibleItem : MonoBehaviour {
 
         if (_health != null && _health.NeedsHealth)
         {
+            isActive = false;
             _health.HealthArithmetic(Value, false, transform);
 
             Destroy(gameObject);
@@ -60,7 +69,8 @@ public class CollectibleItem : MonoBehaviour {
 
         if (_player != null && _player.CanModifyExp(Value))
         {
-            _player.ExperienceArithmetic(Value);
+            isActive = false;
+            _player.ModifyExperiencePoints(Value);
 
             Destroy(gameObject);
         }
@@ -71,10 +81,17 @@ public class CollectibleItem : MonoBehaviour {
 
         if (_player != null && _player.CreditArithmetic(Value))
         {
+            isActive = false;
             Destroy(gameObject);
         }
     }
 
+    #region Accessors
+
+    public string Name
+    {
+        get { return myName; }
+    }
     public Type ItemType
     {
         get { return m_Type; }
@@ -83,4 +100,6 @@ public class CollectibleItem : MonoBehaviour {
     {
         get { return value; }
     }
+
+    #endregion
 }

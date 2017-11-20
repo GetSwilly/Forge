@@ -95,36 +95,6 @@ public class Tuple_StringGameobject : CustomTuple2<string, GameObject>
 
 
 [System.Serializable]
-public class Tuple_NodeTypeFloat
-{
-    [SerializeField]
-    [EnumFlags]
-    NodeType node;
-
-    [SerializeField]
-    [Range(0f, 1f)]
-    float placementChance;
-
-
-
-    public Tuple_NodeTypeFloat(NodeType a, float b)
-    {
-        node = a;
-        placementChance = b;
-    }
-
-    public NodeType Node
-    {
-        get { return node; }
-    }
-    public float PlacementChance
-    {
-        get { return placementChance; }
-    }
-}
-
-
-[System.Serializable]
 public class Tuple_AttributeFloat : CustomTuple2<Attribute, float>
 {
 

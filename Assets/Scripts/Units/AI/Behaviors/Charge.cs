@@ -3,8 +3,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System;
 
-[System.Serializable]
-[RequireComponent(typeof(MovementController))]
 public class Charge : BaseUtilityBehavior
 {
     [SerializeField]
@@ -30,17 +28,6 @@ public class Charge : BaseUtilityBehavior
 
     [SerializeField]
     AudioClip chargeSound;
-    
-    
-    MovementController m_Movement;
-    
-
-    public override void Awake()
-    {
-        base.Awake();
-        m_Movement = GetComponent<MovementController>();
-    }
-
 
 
     IEnumerator ChargeAttack()

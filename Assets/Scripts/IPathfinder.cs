@@ -25,6 +25,8 @@ public interface IPathfinder {
 
     float GetDistanceRemaining();
 
+    bool CheckClearPath(Vector3 direction);
+
     bool IsActive { get; set; }
     bool CanMove { get; set; }
     //bool ShouldRotateTowardsPath { get; set; }

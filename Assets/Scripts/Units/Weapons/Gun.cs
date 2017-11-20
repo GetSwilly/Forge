@@ -575,7 +575,7 @@ public class Gun : Weapon {
             {
                 StopAllCoroutines();
                 isReloading = false;
-                AlertWeaponChange(GetPercentage(), true);
+                AlertWeaponChange(GetPercentage());
             }
 
             //myAudio.pitch = pitchCurve.Evaluate(currentDeterioration);
@@ -617,7 +617,7 @@ public class Gun : Weapon {
             {
                 StopAllCoroutines();
                 isReloading = false;
-                AlertWeaponChange(GetPercentage(), true);
+                AlertWeaponChange(GetPercentage());
             }
 
             //myAudio.pitch = pitchCurve.Evaluate(currentDeterioration);
@@ -687,14 +687,14 @@ public class Gun : Weapon {
 		isReloading = true;
 		curReloadTime = 0f;
 
-		AlertWeaponChange(0f, true);
+		AlertWeaponChange(0f);
 		
 		while(curReloadTime < reloadTime)
         {
 			curReloadTime += Time.deltaTime;
 
 
-			AlertWeaponChange(GetPercentage(), false);
+			AlertWeaponChange(GetPercentage());
 
 			yield return null;
 		}
@@ -784,7 +784,7 @@ public class Gun : Weapon {
 
 	void UpdateAmmo(float _percent)
     {
-		AlertWeaponChange(_percent, false);
+		AlertWeaponChange(_percent);
 	}
 
 

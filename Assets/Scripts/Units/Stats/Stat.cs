@@ -5,7 +5,7 @@ using System.Collections;
 public class Stat
 {
 
-    public static readonly int MAX_LEVEL = 10;
+    public static readonly int _MaxLevel = 10;
     public event Delegates.StatChanged OnValueChange;
 
 
@@ -18,7 +18,7 @@ public class Stat
 
     [Tooltip("Maximum possible level for Attribute")]
     [SerializeField]
-    int maxLevel = MAX_LEVEL;
+    int maxLevel = _MaxLevel;
 
 
     int startingLevel;

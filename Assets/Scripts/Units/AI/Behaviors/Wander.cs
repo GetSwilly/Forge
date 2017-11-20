@@ -14,9 +14,7 @@ public class Wander : BaseUtilityBehavior
     public enum WanderType
     {
         Wander = 1,
-        PatrolStartLevel = 1 << 1,
-        PatrolEndLevel = 1 << 2,
-        PatrolOrigin = 1 << 3
+        PatrolOrigin = 1 << 1
     }
 
 
@@ -195,18 +193,6 @@ public class Wander : BaseUtilityBehavior
     {
         List<Vector3> potentialOrigins = new List<Vector3>();
 
-        if (Utilities.HasFlag(m_WanderType, WanderType.PatrolStartLevel))
-        {
-
-        }
-
-
-        if (Utilities.HasFlag(m_WanderType, WanderType.PatrolEndLevel))
-        {
-            potentialOrigins.Add(patrolTarget == null ? m_Transform.position : patrolTarget.position);
-        }
-
-
         if (Utilities.HasFlag(m_WanderType, WanderType.PatrolOrigin))
         {
             potentialOrigins.Add(patrolPosition);
@@ -227,10 +213,8 @@ public class Wander : BaseUtilityBehavior
     {
         switch (m_WanderType)
         {
-            case WanderType.PatrolStartLevel:
-                return LevelController.Instance.StartGoalTransform;
-            case WanderType.PatrolEndLevel:
-                return LevelController.Instance.EndGoalTransform;
+            default:
+                break;
         }
 
         return null;

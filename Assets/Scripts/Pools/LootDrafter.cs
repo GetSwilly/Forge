@@ -6,7 +6,7 @@ using UnityEngine;
 public class LootDrafter : MonoBehaviour {
 
     [SerializeField]
-    ListDefinitionName m_LootList;
+    ItemPoolDefinition m_LootList;
 
     [SerializeField]
     bool useCustomItemPool;

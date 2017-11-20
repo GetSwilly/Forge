@@ -7,12 +7,14 @@ public class ShieldAbility : Ability {
 
 	[SerializeField] float activateRate;
 
-    Shield myShield;
+    Shield m_Shield;
 
 
-    void Awake()
+    protected override void Awake()
     {
-        myShield = GetComponent<Shield>();
+        base.Awake();
+
+        m_Shield = GetComponent<Shield>();
     }
     public override void Initialize(Transform _transform)
     {
@@ -45,12 +47,12 @@ public class ShieldAbility : Ability {
 
 	void ActivateShield()
     {
-		myShield.enabled = true;
+		m_Shield.enabled = true;
 	}
 
 	void DeactivateShield()
     {
-        myShield.enabled = false;
+        m_Shield.enabled = false;
 	}
 	
 

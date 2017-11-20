@@ -6,22 +6,65 @@ using UnityEngine;
 public class ItemPrice : MonoBehaviour {
 
     [SerializeField]
-    int m_Value;
+    List<PoolWeighting> m_Pools = new List<PoolWeighting>();
+
+    [SerializeField]
+    int creditValue;
     
-    public void Charge()
+
+    public List<PoolWeighting> Pools
     {
-        throw new System.NotImplementedException();
+        get { return m_Pools; }
     }
 
-    public int Value
+    public int CreditValue
     {
-        get { return m_Value; }
-        set { m_Value = Mathf.Clamp(value, 0, value); }
+        get { return creditValue; }
+        set { creditValue = Mathf.Clamp(value, 0, value); }
     }
 
 
     void OnValidate()
     {
-        Value = Value;
+        CreditValue = CreditValue;
+
+        ValidatePools();
+    }
+
+    void ValidatePools()
+    {
+        HashSet<ItemPoolDefinition> referenceSet = new HashSet<ItemPoolDefinition>();
+        
+        for(int i = 0; i < m_Pools.Count; i++)
+        {
+            if (referenceSet.Contains(m_Pools[i].poolDefinition))
+            {
+                m_Pools.RemoveAt(i);
+                i--;
+            }
+            else
+            {
+                referenceSet.Add(m_Pools[i].poolDefinition);
+                m_Pools[i].Validate();
+            }
+        }
+    }
+}
+
+[System.Serializable]
+public class PoolWeighting
+{
+    [SerializeField]
+    public ItemPoolDefinition poolDefinition;
+
+    [SerializeField]
+    public int weight;
+
+    [SerializeField]
+    public Rank rank;
+
+    public void Validate()
+    {
+        weight = Mathf.Clamp(weight, 0, weight);
     }
 }

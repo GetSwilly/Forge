@@ -57,9 +57,8 @@ public abstract class Ability : MonoBehaviour, IIdentifier
     protected float currentCharge = 100f;
     float chargeMultiplier = 1f;
     protected bool isAbilityActive = false;
-
-    public delegate void AbilityChange(float _percent);
-    public event AbilityChange OnAbilityChanged;
+    
+    public event Delegates.AbilityChangeEvent OnAbilityChanged;
 
     protected Transform m_Transform;
     AudioSource m_Audio;
@@ -199,7 +198,7 @@ public abstract class Ability : MonoBehaviour, IIdentifier
 
             if (OnAbilityChanged != null)
             {
-                OnAbilityChanged(GetChargePercentage());
+                OnAbilityChanged(Name, GetChargePercentage());
             }
         }
     }

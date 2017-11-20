@@ -10,7 +10,7 @@ public class ItemMerchantInflater : MenuInflater {
     
 
     [SerializeField]
-    ListDefinitionName m_ListDefinition;
+    ItemPoolDefinition m_ListDefinition;
 
     [SerializeField]
     [EnumFlags]
@@ -160,7 +160,7 @@ public class ItemMerchantInflater : MenuInflater {
             return;
 
 
-        if (!activatingPlayer.CreditArithmetic(-selectedPrice.Value))
+        if (!activatingPlayer.CreditArithmetic(-selectedPrice.CreditValue))
         {
             return;
         }

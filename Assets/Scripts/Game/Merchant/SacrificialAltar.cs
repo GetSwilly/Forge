@@ -16,7 +16,7 @@ public class SacrificialAltar : InteractableObject
 
 
     [SerializeField]
-    ListDefinitionName m_StandardListDefinition;
+    ItemPoolDefinition m_StandardListDefinition;
 
     [SerializeField]
     SpawnStruct standardSpawn;
@@ -44,7 +44,7 @@ public class SacrificialAltar : InteractableObject
     float summonChance = 0f;
 
     [SerializeField]
-    ListDefinitionName m_RewardListDefinition;
+    ItemPoolDefinition m_RewardListDefinition;
 
     [SerializeField]
     bool useCustomExtinction = false;
@@ -136,7 +136,7 @@ public class SacrificialAltar : InteractableObject
         StartCoroutine(DropRewards(m_RewardListDefinition, useCustomExtinction, false, TEMP_BONUS));
     }
 
-	IEnumerator DropRewards(ListDefinitionName lstName, bool useCustom, bool isStandard, float luckBonus)
+	IEnumerator DropRewards(ItemPoolDefinition lstName, bool useCustom, bool isStandard, float luckBonus)
     {
 
         int _num = (int)rewardCountCurve.Evaluate(Random.value);
@@ -318,8 +318,10 @@ public class SacrificialAltar : InteractableObject
 
 
 
-    void OnValidate()
+    protected override void OnValidate()
     {
+        base.OnValidate();
+
         Utilities.ValidateCurve_Times(rewardCountCurve, 0f, 1f);
         Utilities.ValidateCurve_Times(summonCountCurve, 0f, 1f);
     }

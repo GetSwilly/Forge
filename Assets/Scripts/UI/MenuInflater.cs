@@ -22,6 +22,14 @@ public abstract class MenuInflater : InteractableObject
 
         m_Listener = GetComponent<InputListener>();
     }
+    protected virtual void Update()
+    {
+        if (Input.GetButtonDown(UserInput._CancelInputString))
+        {
+            DeflateMenu();
+        }
+    }
+
 
     public override bool Interact(PlayerController _player)
     {

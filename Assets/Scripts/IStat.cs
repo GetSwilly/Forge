@@ -4,7 +4,7 @@ using UnityEngine;
 
 public interface IStat
 {
-    event Delegates.StatChanged OnLevelChanged;
+    event Delegates.StatChanged OnStatLevelChanged;
 
     int GetCurrentStatLevel(StatType _type);
     int GetMaxStatLevel(StatType _type);

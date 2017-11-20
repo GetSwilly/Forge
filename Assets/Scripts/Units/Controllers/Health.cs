@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System;
+using mattatz.VoxelSystem;
 
 [RequireComponent(typeof(AudioSource))]
 public class Health : MonoBehaviour, IMemorable
@@ -9,7 +10,8 @@ public class Health : MonoBehaviour, IMemorable
     static readonly Color _HealthLostColor = Color.white;
     static readonly Color _HealthGainedColor = Color.red;
     static readonly Color _CriticalHitColor = Color.cyan;
-    static readonly float LOW_HEALTH_PERCENT = 0.2f;
+    static readonly float _LowHealthPercentage = 0.2f;
+    static readonly float _FlashDamageTime = .2f;
     //static readonly float INVINCIBILITY_TIME = 0.2f;
     
     [SerializeField]
@@ -28,7 +30,8 @@ public class Health : MonoBehaviour, IMemorable
     [SerializeField]
     float invincibilityTime = 0.2f;
 
-	bool isAlive;
+	bool isAlive = true;
+    bool wasLastAttackCritical;
 	float lastHealthChange;
 	Transform lastAttacker;
 	Vector3 lastAttackDirection;
@@ -39,24 +42,26 @@ public class Health : MonoBehaviour, IMemorable
     [Tooltip("Should the unit receive Maximum Health on activation?")]
     [SerializeField]
     bool maxHealthOnActive = true;
-
-    [Tooltip("Should the unit deactive?")]
+    
     [SerializeField]
-    bool deactivateOnDeath = true;
+    bool shouldVoxelizeOnDeath = true;
 
-	public delegate void AlertHealthChange(Health healthScript);
+    [SerializeField]
+    bool showDebug = false;
+
+
+    public delegate void AlertHealthChange(Health healthScript);
 	public AlertHealthChange OnHealthChange;
 	public AlertHealthChange OnDamaged;
 	public AlertHealthChange OnKilled;
-    
-    [SerializeField]
-    bool showDebug = false;
-    
-	void Awake()
-    {
-		Initialize();
-	}
 
+    Voxelizer m_Voxelizer;
+    
+
+    void Awake()
+    {
+        m_Voxelizer = GetComponent<Voxelizer>();
+    }
 	void OnEnable()
     {
 		if(maxHealthOnActive)
@@ -64,15 +69,13 @@ public class Health : MonoBehaviour, IMemorable
 	}
   
 
-
-
 	void Initialize()
     {
 		StopAllCoroutines();
-		//StopEffects();
-		currentHealth = MaxHealth;
-		isAlive = true;
-		isInvincible = false;
+
+		CurrentHealth = MaxHealth;
+		IsAlive = true;
+		IsInvincible = false;
 	}
 
 
@@ -99,8 +102,10 @@ public class Health : MonoBehaviour, IMemorable
 	}
 	public void HealthArithmetic (float healthDelta, bool isCritical, Transform attackerTransform, Vector3 attackDirection)
     {
-		if(!isAlive || isInvincible)
-			return;
+        if (!IsAlive || IsInvincible)
+        {
+            return;
+        }
 
 		if(healthDelta < 0)
         {
@@ -109,12 +114,10 @@ public class Health : MonoBehaviour, IMemorable
 			lastAttackDirection = attackDirection;
         }
 
-        if (healthDelta > 0 && currentHealth >= MaxHealth)
+        if (healthDelta > 0 && CurrentHealth >= MaxHealth)
         {
             return;
         }
-
-
 
         int roundedValue = Mathf.RoundToInt(healthDelta);
 
@@ -127,19 +130,20 @@ public class Health : MonoBehaviour, IMemorable
 
 
 		//Check if can resist damage
-		if(healthDelta < 0 && Mathf.Abs(healthDelta) <= damageResistance)
+		if(healthDelta < 0 && Mathf.Abs(healthDelta) <= DamageResistance)
 			healthDelta = 1;
 
         if (showDebug)
         {
-            Debug.Log(string.Format("{0} -- Health Arithmetic. Current Health: {1}. Delta: {2}. Last Attacker: {3}.", this.name, CurHealth, healthDelta, LastAttacker));
+            Debug.Log(string.Format("{0} -- Health Arithmetic. Current Health: {1}. Delta: {2}. Last Attacker: {3}.", this.name, CurrentHealth, healthDelta, LastAttacker));
         }
 
 		//Add to currentHealth and contain it
-		CurHealth += healthDelta;
-		lastHealthChange = healthDelta;
+		CurrentHealth += healthDelta;
+		LastHealthChange = healthDelta;
+        WasLastAttackCritical = isCritical;
 	
-		if(CurHealth <= 0)
+		if(CurrentHealth <= 0)
         {
 			Death();
 		}
@@ -157,6 +161,9 @@ public class Health : MonoBehaviour, IMemorable
 
             if (healthDelta < 0)
             {
+                StopCoroutine(FlashDamageColor());
+                StartCoroutine(FlashDamageColor());
+
                 StopCoroutine(TemporaryInvincibility());
                 StartCoroutine(TemporaryInvincibility());
             }
@@ -169,8 +176,9 @@ public class Health : MonoBehaviour, IMemorable
 	}
 	public void Revive(float newHealth)
     {
-		isAlive = true;
-		currentHealth = newHealth;
+		IsAlive = true;
+		CurrentHealth = newHealth;
+
 		lastAttacker = null;
 		lastAttackDirection = Vector3.zero;
         lastHealthChange = 0;
@@ -188,15 +196,9 @@ public class Health : MonoBehaviour, IMemorable
 	public void Death ()
     {
 		// Set the death flag so this function won't be called again.
-		isAlive = false;
+		IsAlive = false;
 		StopAllCoroutines();
-
-		GameObject go = ObjectPoolerManager.Instance.DeathAnimationPooler.GetPooledObject();
-		go.transform.position = this.transform.position;
-
-		//go.GetComponent<ParticleSystem>().startColor = GetComponent<SpriteRenderer>().color;
-
-		go.SetActive(true);
+    
 
 		if(OnDamaged != null)
 			OnDamaged(this);
@@ -208,19 +210,40 @@ public class Health : MonoBehaviour, IMemorable
 			OnKilled(this);
         
 
+        if (shouldVoxelizeOnDeath && m_Voxelizer != null)
+        {
+            m_Voxelizer.Activate();
+        }
 
-        if(deactivateOnDeath)
-            gameObject.SetActive(false);
-
+        gameObject.SetActive(false);
 	}
 
+    IEnumerator FlashDamageColor()
+    {
+        Renderer[] renderers = GetComponentsInChildren<Renderer>();
+        Color[] colors = new Color[renderers.Length];
+
+        for (int i = 0; i < renderers.Length; i++)
+        {
+            colors[i] = renderers[i].material.HasProperty("_Color") ? renderers[i].material.color : Color.white;
+
+            renderers[i].material.color = _HealthLostColor;
+        }
+
+        yield return new WaitForSeconds(_FlashDamageTime);
+
+        for (int i = 0; i < renderers.Length; i++)
+        {
+            renderers[i].material.color = colors[i];
+        }
+    }
 	IEnumerator TemporaryInvincibility()
     {
-		isInvincible = true;
+		IsInvincible = true;
 
 		yield return new WaitForSeconds(InvincibilityTime);
         
-		isInvincible = false;
+		IsInvincible = false;
 	}
 
     public bool CanBeDamaged()
@@ -229,11 +252,12 @@ public class Health : MonoBehaviour, IMemorable
     }
     public bool CanBeDamaged(float dmg)
     {
-        return (isAlive && !isInvincible && Mathf.Abs(dmg) > damageResistance);
+        return (IsAlive && !IsInvincible && Mathf.Abs(dmg) > DamageResistance);
     }
 
 
     #region Accessors
+
     public GameObject GameObject
     {
         get { return this.gameObject; }
@@ -242,7 +266,7 @@ public class Health : MonoBehaviour, IMemorable
     {
         get { return this.transform; }
     }
-    public float CurHealth
+    public float CurrentHealth
     {
 		get { return currentHealth; }
 		private set
@@ -271,6 +295,11 @@ public class Health : MonoBehaviour, IMemorable
         get { return invincibilityTime; }
         set { invincibilityTime = Mathf.Clamp(value, 0, value); }
     }
+    public bool WasLastAttackCritical
+    {
+        get { return wasLastAttackCritical; }
+        private set { wasLastAttackCritical = value; }
+    }
 	public Transform LastAttacker
     {
 		get { return lastAttacker; }
@@ -282,27 +311,34 @@ public class Health : MonoBehaviour, IMemorable
 	public float LastHealthChange
     {
 		get { return lastHealthChange; }
+        private set { lastHealthChange = value; }
 	}
 
 
-	
+	public bool IsInvincible
+    {
+        get { return isInvincible; }
+        private set { isInvincible = value; }
+    }
 	public bool IsAlive
     {
 		get { return isAlive; }
+        private set { isAlive = value; }
 	}
 	public bool IsLowHealth
     {
-		get { return HealthPercentage <= LOW_HEALTH_PERCENT; }
+		get { return HealthPercentage <= _LowHealthPercentage; }
 	}
 	public bool NeedsHealth
     {
-		get { return CurHealth < MaxHealth; }
+		get { return CurrentHealth < MaxHealth; }
 	}
 	
 	public float HealthPercentage
     {
-		get { return CurHealth / (float)MaxHealth; }
+		get { return CurrentHealth / (float)MaxHealth; }
 	}
+
 	#endregion
 
     void OnValidate()

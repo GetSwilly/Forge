@@ -5,13 +5,14 @@ using System.Collections;
 public class UserInput : MonoBehaviour
 {
     static readonly float _MaxRayDistance = 100f;
-    static readonly string _NativeAbilityInputString = "Ability1";
-    static readonly string _AuxiliaryAbilityInputString = "Ability2";
-    static readonly string _HandheldPrimaryInputString = "Primary";
-    static readonly string _HandheldSecondaryInputString = "Secondary";
-    static readonly string _HandheldTertiaryInputString = "Tertiary";
-    static readonly string _InteractionInputString = "Interact";
-    static readonly string _ThrowInputString = "Throw";
+    public static readonly string _NativeAbilityInputString = "Ability1";
+    public static readonly string _AuxiliaryAbilityInputString = "Ability2";
+    public static readonly string _HandheldPrimaryInputString = "Primary";
+    public static readonly string _HandheldSecondaryInputString = "Secondary";
+    public static readonly string _HandheldTertiaryInputString = "Tertiary";
+    public static readonly string _InteractionInputString = "Interact";
+    public static readonly string _CancelInputString = "Cancel";
+    public static readonly string _ThrowInputString = "Throw";
 
     public enum WorldSpace { TwoD, ThreeD }
     public enum MovementRelativityType { Global, Camera, User };

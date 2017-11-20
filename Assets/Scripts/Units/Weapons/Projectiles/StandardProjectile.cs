@@ -2,16 +2,23 @@
 using System.Collections;
 using System.Collections.Generic;
 using System;
+using mattatz.VoxelSystem;
 
 [RequireComponent(typeof(Rigidbody))]
 [RequireComponent(typeof(Collider))]
 [RequireComponent(typeof(AudioSource))]
-public class StandardProjectile : MonoBehaviour, IProjectile {
+[RequireComponent(typeof(TrailRenderer))]
+[RequireComponent(typeof(Voxelizer))]
+public class StandardProjectile : MonoBehaviour, IProjectile
+{
+    [SerializeField]
+    LayerMask collisionLayer;
 
     Team m_Team;
 
     Transform owner;
     Vector3 direction;
+    float speed;
     double maxRange = 10;
     float maxTime;
     int power;
@@ -26,22 +33,61 @@ public class StandardProjectile : MonoBehaviour, IProjectile {
     float totalDist;
     float timer;
 
-
+    bool isActive;
     Transform m_Transform;
-    Rigidbody m_Rigidbody;
     TrailRenderer m_TrailRenderer;
+    Voxelizer m_Voxelizer;
 
     void Awake()
     {
         m_Transform = GetComponent<Transform>();
-        m_Rigidbody = GetComponent<Rigidbody>();
         m_TrailRenderer = GetComponent<TrailRenderer>();
+        m_Voxelizer = GetComponent<Voxelizer>();
     }
     void OnEnable()
     {
         previousPosition = m_Transform.position;
         totalDist = 0;
     }
+    void OnDisable()
+    {
+        ResetOnImpact();
+    }
+
+
+    void FixedUpdate()
+    {
+        if (!isActive)
+            return;
+
+        timer += Time.deltaTime;
+
+        previousPosition = m_Transform.position;
+
+        float movementAmount = Speed * Time.deltaTime;
+        m_Transform.Translate(Direction * movementAmount, Space.World);
+
+        totalDist += movementAmount;
+
+        if (timer > maxTime || totalDist > maxRange)
+        {
+            m_TrailRenderer.enabled = false;
+            gameObject.SetActive(false);
+        }
+        else
+        {
+            RaycastHit[] hits = Physics.RaycastAll(new Ray(previousPosition, (m_Transform.position - previousPosition).normalized), (m_Transform.position - previousPosition).magnitude, collisionLayer);
+
+            for (int i = 0; i < hits.Length; i++)
+            {
+                if (hits[i].collider.isTrigger)
+                    continue;
+
+                ProcessImpact(hits[i]);
+            }
+        }
+    }
+
 
 
     public void Initialize(Transform newOwner, Team _team, Vector3 dir, int newPower, bool _critical, float newRange)
@@ -53,9 +99,6 @@ public class StandardProjectile : MonoBehaviour, IProjectile {
 
         if (m_Transform == null)
             m_Transform = GetComponent<Transform>();
-
-        if (m_Rigidbody == null)
-            m_Rigidbody = GetComponent<Rigidbody>();
 
         owner = newOwner;
 
@@ -74,8 +117,6 @@ public class StandardProjectile : MonoBehaviour, IProjectile {
         StartCoroutine(ResetTrail());
 
 
-
-        //startPosition = myTransform.position;
         previousPosition = m_Transform.position;
         totalDist = 0;
 
@@ -85,14 +126,18 @@ public class StandardProjectile : MonoBehaviour, IProjectile {
 
         isCritical = _critical;
 
-        m_Rigidbody.velocity = dir.normalized * newSpeed;
+        //m_Rigidbody.velocity = dir.normalized * newSpeed;
+        Direction = dir.normalized;
+
+        Speed = newSpeed;
 
         maxRange = newRange;
         maxTime = Mathf.Abs((float)maxRange / newSpeed) * 1.5f;
         timer = 0f;
 
+        isActive = true;
 
-        Validate();
+        OnValidate();
 
         m_TrailRenderer.enabled = true;
 
@@ -115,8 +160,7 @@ public class StandardProjectile : MonoBehaviour, IProjectile {
     }
     public void Disable(Transform hitTransform)
     {
-
-
+        isActive = false;
 
         if (hitTransform != null)
         {
@@ -128,13 +172,19 @@ public class StandardProjectile : MonoBehaviour, IProjectile {
             }
 
 
-
             Health hitHealth = hitTransform.GetComponent<Health>();
 
             if (hitHealth != null)
+            {
                 ActivateOnImpact(hitHealth);
+            }
+
         }
 
+        if (m_Voxelizer != null)
+        {
+            m_Voxelizer.Activate();
+        }
 
         gameObject.SetActive(false);
     }
@@ -144,31 +194,89 @@ public class StandardProjectile : MonoBehaviour, IProjectile {
     }
 
 
-
-
-
-    void Update()
+    void ProcessImpact(RaycastHit hit)
     {
-        timer += Time.deltaTime;
+        ProcessImpact(hit.collider);
+    }
+    void ProcessImpact(Collider coll)
+    {
+        if (coll.isTrigger)
+            return;
 
-        totalDist += Vector3.Distance(previousPosition, m_Transform.position);
-        previousPosition = m_Transform.position;
+        Team teamMember = coll.gameObject.GetComponent<Team>();
 
-        if (timer > maxTime || totalDist > maxRange)
+        if (!(teamMember != null && m_Team.IsFriendly(teamMember)))
         {
-            m_TrailRenderer.enabled = false;
-            gameObject.SetActive(false);
+            Health otherHealth = coll.gameObject.GetComponent<Health>();
+
+            if (otherHealth != null)
+            {
+                otherHealth.HealthArithmetic(Power, IsCritical, owner, Direction);
+
+
+                /*
+				AudioSource _audio = GetComponent<AudioSource>();
+
+				if(_audio != null && impactSound != null){
+					_audio.PlayOneShot(impactSound);
+				}
+				
+				if(OnImpact != null)
+					OnImpact(otherHealth);
+                */
+
+
+                Disable(coll.gameObject.transform);
+                return;
+            }
+
+        }
+
+        Disable();
+    }
+
+
+
+
+
+    void ActivateOnImpact(Health _health)
+    {
+        for (int i = 0; i < onImpactMethods.Count; i++)
+        {
+            onImpactMethods[i](_health);
+        }
+    }
+    public void SubscribeToOnImpact(Action<Health> alertMethod)
+    {
+        //OnImpact = alertMethod;
+
+        if (!onImpactMethods.Contains(alertMethod))
+            onImpactMethods.Add(alertMethod);
+    }
+    public void UnSubscribeToOnImpact(Action<Health> alertMethod)
+    {
+        for (int i = 0; i < onImpactMethods.Count; i++)
+        {
+            if (onImpactMethods[i] == alertMethod)
+            {
+                onImpactMethods.RemoveAt(i);
+                return;
+            }
         }
 
     }
+    public void ResetOnImpact()
+    {
+        onImpactMethods.Clear();
+    }
 
 
+    #region Accessors
 
     public bool IsCritical
     {
-       get { return isCritical; }
+        get { return isCritical; }
     }
-   
 
     public Transform Owner
     {
@@ -188,7 +296,13 @@ public class StandardProjectile : MonoBehaviour, IProjectile {
     }
     public Vector3 Direction
     {
-        get { return m_Rigidbody.velocity; }
+        get { return direction; }// m_Rigidbody.velocity; }
+        private set { direction = value; }
+    }
+    public float Speed
+    {
+        get { return speed; }
+        private set { speed = value; }
     }
     public GameObject GameObject
     {
@@ -210,90 +324,10 @@ public class StandardProjectile : MonoBehaviour, IProjectile {
 
     }
 
+    #endregion
 
-
-
-    void OnTriggerEnter(Collider coll)
-    {
-        if (coll.isTrigger)
-            return;
-
-        Team teamMember = coll.gameObject.GetComponent<Team>();
-
-        if (!(teamMember != null && m_Team.IsFriendly(teamMember)))
-        {
-            Health otherHealth = coll.gameObject.GetComponent<Health>();
-
-            if (otherHealth != null)
-            {
-                otherHealth.HealthArithmetic(Power, IsCritical, owner, m_Rigidbody.velocity.normalized);
-
-
-                /*
-				AudioSource _audio = GetComponent<AudioSource>();
-
-				if(_audio != null && impactSound != null){
-					_audio.PlayOneShot(impactSound);
-				}
-				
-				if(OnImpact != null)
-					OnImpact(otherHealth);
-                */
-
-
-                Disable(coll.gameObject.GetComponent<Transform>());
-            }
-
-        }
-
-        Disable();
-    }
-
-
-
-
-    void OnDisable()
-    {
-        ResetOnImpact();
-
-        //Debug.Log("Projectile disabled");
-    }
-
-    void Validate()
+    void OnValidate()
     {
         MaxRange = MaxRange;
-    }
-
-   
-
-    void ActivateOnImpact(Health _health)
-    {
-        for (int i = 0; i < onImpactMethods.Count; i++)
-        {
-            onImpactMethods[i](_health);
-        }
-    }
-    public void SubscribeToOnImpact(Action<Health> alertMethod)
-    {
-        //OnImpact = alertMethod;
-
-        if (!onImpactMethods.Contains(alertMethod))
-            onImpactMethods.Add(alertMethod);
-    }
-    public void UnSubscribeToOnImpact(Action<Health> alertMethod)
-    {
-        for(int i = 0;i < onImpactMethods.Count; i++)
-        {
-            if(onImpactMethods[i] == alertMethod)
-            {
-                onImpactMethods.RemoveAt(i);
-                return;
-            }
-        }
-
-    }
-    public void ResetOnImpact()
-    {
-        onImpactMethods.Clear();
     }
 }

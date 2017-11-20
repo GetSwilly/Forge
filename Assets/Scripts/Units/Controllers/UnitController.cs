@@ -58,7 +58,7 @@ public abstract class UnitController : MonoBehaviour, IIdentifier, IMemorable, I
     protected MovementController m_Movement;
 
     Dictionary<StatType, int> statLevelTracker = new Dictionary<StatType, int>();
-    public event Delegates.StatChanged OnLevelChanged;
+    public event Delegates.StatChanged OnStatLevelChanged;
 
     private UnityAction<GameObject> onSightAction;
     private UnityAction<GameObject> onMaintainSightAction;
@@ -85,8 +85,8 @@ public abstract class UnitController : MonoBehaviour, IIdentifier, IMemorable, I
     {
         if (GameManager.Instance != null)
         {
-            //myHealth.OnDamaged += GameManager.Instance.UnitDamaged;
-            //myHealth.OnKilled += GameManager.Instance.UnitKilled;
+            // m_Health.OnDamaged += GameManager.Instance.UnitDamaged;
+            // m_Health.OnKilled += GameManager.Instance.UnitKilled;
         }
 
 
@@ -428,6 +428,12 @@ public abstract class UnitController : MonoBehaviour, IIdentifier, IMemorable, I
 
     #endregion
 
+    public virtual void UpdateUI()
+    {
+        CasualtyAchieved(null);
+        HealthChanged(m_Health);
+        CreditArithmetic(0);
+    }
 
     public virtual void CasualtyAchieved(Health casualtyHealth)
     {
@@ -439,7 +445,7 @@ public abstract class UnitController : MonoBehaviour, IIdentifier, IMemorable, I
     public void KillAchieved(Health casualtyHealth) { }
     public virtual void HealthChanged(Health mHealth)
     {
-        if (OnHealthChange != null)
+        if (mHealth != null && OnHealthChange != null)
         {
             OnHealthChange(mHealth.HealthPercentage, mHealth.LastHealthChange);
         }
@@ -561,8 +567,15 @@ public abstract class UnitController : MonoBehaviour, IIdentifier, IMemorable, I
 
     public virtual void OnValidate()
     {
-        m_Stats.Validate();
-        m_StatSubscriptions.Validate();
+        if (m_Stats != null)
+        {
+            m_Stats.Validate();
+        }
+
+        if (m_StatSubscriptions != null)
+        {
+            m_StatSubscriptions.Validate();
+        }
 
         SightRange = SightRange;
 

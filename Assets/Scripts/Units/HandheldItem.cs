@@ -132,17 +132,13 @@ public abstract class HandheldItem : MonoBehaviour, IIdentifier
     [SerializeField]
     StatSubscriptions m_StatSubscriptions;
 
-
-    public delegate void AlertEvent();
-    public event AlertEvent OnActivatePrimary;
-    public event AlertEvent OnActivateSecondary;
-    public event AlertEvent OnActivateUtility;
-
-    public delegate void WeaponChange(float _percent, bool setImmediate);
-    public event WeaponChange OnWeaponChanged;
-
-    public delegate void WeaponCasualty(Health casualtyHealth);
-    public event WeaponCasualty OnWeaponCasualty;
+    
+    public event Delegates.Alert OnActivatePrimary;
+    public event Delegates.Alert OnActivateSecondary;
+    public event Delegates.Alert OnActivateUtility;
+    
+    public event Delegates.ValueAlertEvent OnWeaponChanged;
+    public event Health.AlertHealthChange OnWeaponCasualty;
 
     protected Transform m_Transform;
     protected Transform m_Owner;
@@ -164,7 +160,7 @@ public abstract class HandheldItem : MonoBehaviour, IIdentifier
 
     public virtual void Initialize(Transform owner, Team team)
     {
-        AlertWeaponChange(GetPercentage(), false);
+        AlertWeaponChange(GetPercentage());
         //SetVolume(1);
 
         m_Owner = owner;
@@ -176,7 +172,7 @@ public abstract class HandheldItem : MonoBehaviour, IIdentifier
         IStat statOwner = m_Owner.GetComponent<IStat>();
         if (statOwner != null)
         {
-            statOwner.OnLevelChanged += UpdateStatEffect;
+            statOwner.OnStatLevelChanged += UpdateStatEffect;
             InitializeStats(statOwner);
         }
 
@@ -203,7 +199,7 @@ public abstract class HandheldItem : MonoBehaviour, IIdentifier
         IStat statOwner = m_Owner.GetComponent<IStat>();
         if (statOwner != null)
         {
-            statOwner.OnLevelChanged -= UpdateStatEffect;
+            statOwner.OnStatLevelChanged -= UpdateStatEffect;
         }
 
         m_Owner = null;
@@ -255,11 +251,11 @@ public abstract class HandheldItem : MonoBehaviour, IIdentifier
         if (OnActivateUtility != null)
             OnActivateUtility();
     }
-    protected void AlertWeaponChange(float _percent, bool setImmediate)
+    protected void AlertWeaponChange(float _percent)
     {
         if (OnWeaponChanged != null)
         {
-            OnWeaponChanged(_percent, setImmediate);
+            OnWeaponChanged(_percent);
         }
     }
     protected void AlertWeaponCasualty(Health casualtyHealth)
@@ -421,7 +417,10 @@ public abstract class HandheldItem : MonoBehaviour, IIdentifier
 
     protected virtual void OnValidate()
     {
-        m_StatSubscriptions.Validate();
+        if (m_StatSubscriptions != null)
+        {
+            m_StatSubscriptions.Validate();
+        }
     }
 
     public override string ToString()

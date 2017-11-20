@@ -3,10 +3,13 @@ using System.Collections.Generic;
 using UnityEngine;
 
 [RequireComponent(typeof(Health))]
-public class DeathDrop : MonoBehaviour {
+public class DeathDrop : MonoBehaviour,IIdentifier {
 
     [SerializeField]
-    ListDefinitionName itemPool = ListDefinitionName.GeneralItems;
+    string myName;
+
+    [SerializeField]
+    ItemPoolDefinition itemPool = ItemPoolDefinition.GeneralItems;
 
     [SerializeField]
     int numberOfDrops = 10;
@@ -16,9 +19,15 @@ public class DeathDrop : MonoBehaviour {
     void Awake()
     {
         m_Health = GetComponent<Health>();
+
+        IIdentifier identifier = GetComponent<IIdentifier>();
+        if(identifier != null)
+        {
+            myName = identifier.Name;
+        }
     }
 	void Start () {
-        m_Health.OnKilled += Drop;	
+        // m_Health.OnKilled += Drop;	
 	}
 
     void Drop(Health h)
@@ -29,6 +38,11 @@ public class DeathDrop : MonoBehaviour {
         GameManager.Instance.DropItems(this.transform, itemPool, NumberOfDrops);
     }
 
+   
+    public string Name
+    {
+        get { return myName; }
+    }
     protected int NumberOfDrops
     {
         get { return numberOfDrops; }
