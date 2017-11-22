@@ -15,26 +15,26 @@
 
 #endif
 
-        [Space(12), Indent(1), HideLabel]
+        [Space(12), HideLabel]
         [Title("Default message", "You can just provide a default message that is always used")]
         [ValidateInput("HasMeshRendererDefaultMessage", "Prefab must have a MeshRenderer component")]
         public GameObject DefaultMessage;
 
-        [Space(12), Indent(1), HideLabel]
+        [Space(12), HideLabel]
         [Title("Dynamic message", "Or the validation method can dynamically provide a custom message")]
         [ValidateInput("HasMeshRendererDynamicMessage", "Prefab must have a MeshRenderer component")]
         public GameObject DynamicMessage;
 
-        [Space(12), Indent(1), HideLabel]
+        [Space(12), HideLabel]
         [Title("Dynamic message type", "The validation method can also control the type of the message")]
         [ValidateInput("HasMeshRendererDynamicMessageAndType", "Prefab must have a MeshRenderer component")]
         public GameObject DynamicMessageAndType;
 
-        [Space(8), Indent(1), HideLabel]
+        [Space(8), HideLabel]
         [InfoBox("Change GameObject value to update message type", InfoMessageType.None)]
         public InfoMessageType MessageType;
 
-        [Space(12), Indent(1), HideLabel]
+        [Space(12), HideLabel]
         [Title("Dynamic default message", "Use $ to indicate a member string as default message")]
         [ValidateInput("AlwaysFalse", "$Message", InfoMessageType.Warning)]
         public string Message = "Dynamic ValidateInput message";

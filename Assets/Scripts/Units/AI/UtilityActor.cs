@@ -221,7 +221,7 @@ public class UtilityActor : UnitController
     Vector3 textUIOffset = Vector3.zero;
 
 
-    GenericUI m_TextUI;
+    UIBase m_TextUI;
     IPathfinder m_Pathfinder;
 
 
@@ -264,17 +264,14 @@ public class UtilityActor : UnitController
 
         // StartCoroutine(CheckNearbyRoutine());
     }
-    public override void OnDisable()
+    public void OnDisable()
     {
-        base.OnDisable();
-
         StopAllCoroutines();
 
         if (m_TextUI != null)
         {
             m_TextUI.enabled = false;
         }
-        //DeflateUtilityUI();
     }
 
     void Update()
@@ -1128,11 +1125,7 @@ public class UtilityActor : UnitController
 
     void InflateUtilityUI()
     {
-        if (m_TextUI != null && m_TextUI.gameObject.activeInHierarchy && m_TextUI.TargetTransform == m_Transform)
-        {
-            m_TextUI.SetFollowOffset(Vector3.zero);
-        }
-        else
+        if (m_TextUI == null || !m_TextUI.gameObject.activeInHierarchy || m_TextUI.Target != m_Transform)
         {
             GameObject uiObj = ObjectPoolerManager.Instance.InteractableUIPooler.GetPooledObject();
 
@@ -1143,38 +1136,17 @@ public class UtilityActor : UnitController
                 m_Transform = GetComponent<Transform>();
 
 
-            m_TextUI = uiObj.GetComponent<GenericUI>();
+            m_TextUI = uiObj.GetComponent<UIBase>();
 
             uiObj.transform.position = transform.position;// + (Vector3.up * UI_START_HEIGHT_OFFSET);
             uiObj.SetActive(true);
-            m_TextUI.Initialize(m_Transform);
 
-
-            GameObject _text = m_TextUI.GetPrefab("ID");
-
-            if (_text != null)
-            {
-                DisplayUI _ui = _text.GetComponent<DisplayUI>();
-                _text.SetActive(true);
-
-
-                m_TextUI.AddAttribute(new GenericUI.DisplayProperties("ID", new Orientation(textUIOffset, Vector3.zero, Vector3.one), _ui));
-                m_TextUI.UpdateAttribute("ID", CurrentBehaviorString);
-            }
-
-
-
-            Transform _transform = m_TextUI.GetParentTransform("Charges");
-
-            if (_transform != null)
-            {
-                _transform.gameObject.SetActive(false);
-            }
+            m_TextUI.Inflate(m_Transform, CurrentBehaviorString);
         }
     }
     public void DeflateUtilityUI()
     {
-        if (m_TextUI == null || !m_TextUI.gameObject.activeInHierarchy || m_TextUI.TargetTransform != m_Transform)
+        if (m_TextUI == null || !m_TextUI.gameObject.activeInHierarchy || m_TextUI.Target != m_Transform)
             return;
 
         //m_TextUI.SetFollowOffset(Vector3.up * UI_START_HEIGHT_OFFSET);
@@ -1214,7 +1186,7 @@ public class UtilityActor : UnitController
             if (showTextUI)
             {
                 InflateUtilityUI();
-                m_TextUI.UpdateAttribute("ID", CurrentBehaviorString);
+                m_TextUI.SetText(CurrentBehaviorString);
             }
             else
             {

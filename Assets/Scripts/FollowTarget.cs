@@ -1,159 +1,137 @@
 ﻿using UnityEngine;
 using System.Collections;
 
-public class FollowTarget : MonoBehaviour {
-
-    static readonly float SNAP_DISTANCE = 0.1f;
-    static readonly float IGNORE_MOVEMENT_DISTANCE = 0.1f;
+public class FollowTarget : MonoBehaviour
+{ 
 
     [SerializeField]
-    Transform targetTransform;
+    Transform m_Target;
 
     [SerializeField]
-    Vector3 targetOffset = Vector3.zero;
-
-
+    UpdateType m_UpdateType = UpdateType.None;
 
     [SerializeField]
-    float movementSpeed;
+    MovementType m_MovementType = MovementType.None;
 
     [SerializeField]
-    float rotationSpeed;
-
-    [SerializeField]
-    [Range(0f, 1f)]
-    float speedDecay = 0.1f;
-
-    Vector3 velocity = Vector3.zero;
-
-
-    public enum RotationType { NONE, SEMI, FULL };
-    public RotationType myRotationType = RotationType.NONE;
-
+    RotationType m_RotationType;
 
 
     [SerializeField]
-    bool disableIfNoTarget = true;
+    float m_MoveSpeed = 10f;
 
-    Vector3 desiredPos = Vector3.zero;
+    [SerializeField]
+    float m_MoveSmoothTime = 1f;
+
+    [SerializeField]
+    float m_TurnSpeed = 10f;
+
+    [SerializeField]
+    float m_TurnSmoothing = 10f;
+
+    private float m_LookAngle;
+    private Vector3 movementVelocity = Vector3.zero;
     Transform m_Transform;
 
-    void Awake()
+    protected virtual void Awake()
     {
-        m_Transform = this.GetComponent<Transform>();
+        m_Transform = GetComponent<Transform>();
+    }
+  
+
+    protected virtual void Update()
+    {
+        if (m_UpdateType == UpdateType.Update) Follow(Time.fixedDeltaTime);
+    }
+    protected virtual void FixedUpdate()
+    {
+        if (m_UpdateType == UpdateType.FixedUpdate) Follow(Time.fixedDeltaTime);
+    }
+
+    protected virtual void LateUpdate()
+    {
+        if (m_UpdateType == UpdateType.LateUpdate) Follow(Time.deltaTime);
     }
 
 
 
-	void LateUpdate ()
+    protected void Follow(float deltaTime)
     {
-        if (targetTransform == null)
-        {
-            if (disableIfNoTarget)
-            {
-                gameObject.SetActive(false);
-            }
-
-
-            return;
-        }
-
-
-        velocity *= (1f - speedDecay) * (1f - Time.deltaTime);
-        
-        Move();
-
-        Rotate();
-	}
-	
-   
-    void Move()
-    {
-       // if (targetTransform != null && targetTransform.gameObject.activeInHierarchy)
-       // {
-            desiredPos = targetTransform.position + targetOffset;
-       // }
-
-        Vector3 moveDir = desiredPos - m_Transform.position;
-
-       // if (moveDir.magnitude <= IGNORE_MOVEMENT_DISTANCE)
-     //       return;
-
-
-        Vector3 moveVector = moveDir.normalized * MovementSpeed * Time.deltaTime;
-
-        
-
-        if(moveVector.magnitude > moveDir.magnitude)
-        {
-            moveVector = moveVector.normalized * moveDir.magnitude;
-        }
-
-        velocity += moveVector;
-
-        m_Transform.position += velocity;
+        FollowMovement(deltaTime);
+        FollowRotation(deltaTime);
     }
-    void Rotate()
+    protected void FollowMovement(float deltaTime)
     {
-        Quaternion desiredQ;
+        if (m_Target == null) return;
 
-        switch (myRotationType)
+        switch (m_MovementType)
         {
-            case RotationType.SEMI:
-                desiredQ = Quaternion.Euler(targetTransform.eulerAngles.x, 0, targetTransform.eulerAngles.z);
+            case MovementType.Lerp:
+                m_Transform.position = Vector3.Lerp(m_Transform.position, m_Target.position, m_MoveSpeed * deltaTime);
                 break;
-            case RotationType.FULL:
-                desiredQ = targetTransform.rotation;
+            case MovementType.MoveTowards:
+                m_Transform.position = Vector3.MoveTowards(m_Transform.position, m_Target.position, m_MoveSpeed * deltaTime);
                 break;
-            default:
-                desiredQ = m_Transform.rotation;
+            case MovementType.SmoothDamp:
+                m_Transform.position = Vector3.SmoothDamp(m_Transform.position, m_Target.position, ref movementVelocity, m_MoveSmoothTime);
                 break;
         }
 
-        m_Transform.rotation = Quaternion.RotateTowards(m_Transform.rotation, desiredQ, RotationSpeed);
+    }
+    public void FollowRotation(float deltaTime)
+    {
+        if (m_Target == null) return;
 
+        switch (m_RotationType)
+        {
+            case RotationType.Slerp:
+                m_Transform.rotation = Quaternion.Slerp(m_Transform.localRotation, m_Target.rotation, m_TurnSmoothing * deltaTime);
+                break;
+            case RotationType.RotateTowards:
+                m_Transform.rotation = Quaternion.RotateTowards(m_Transform.rotation, m_Target.rotation, m_TurnSpeed * deltaTime);
+                break;
+        }
+    }
+
+
+    public virtual void SetTarget(Transform newTransform)
+    {
+        m_Target = newTransform;
     }
 
 
 
+    #region Accessors
 
     public float MovementSpeed
     {
-        get { return movementSpeed; }
-        private set { movementSpeed = Mathf.Clamp(value, 0f, value); }
+        get { return m_MoveSpeed; }
+        set { m_MoveSpeed = Mathf.Clamp(value, 0f, value); }
     }
-    public float RotationSpeed
+    public float MovementSmoothingTime
     {
-        get { return rotationSpeed; }
-        private set { rotationSpeed = Mathf.Clamp(value, 0f, value); }
+        get { return m_MoveSmoothTime; }
+        set { m_MoveSmoothTime = Mathf.Clamp(value, 0f, value); }
+    }
+    public float TurnSmoothing
+    {
+        get { return m_TurnSmoothing; }
+        set { m_TurnSmoothing = Mathf.Clamp(value, 0f, value); }
     }
 
-
-    public Transform TargetTransform
+    public Transform Target
     {
-        get { return targetTransform; }
-        set { targetTransform = value; }
+        get { return m_Target; }
     }
-    public Vector3 TargetOffset
-    {
-        get { return targetOffset; }
-        set
-        {
-            targetOffset = value;
-        }
-    }
-    
-	public Vector3 DesiredPosition
-    {
-		get { return desiredPos; }
-	}
 
-
+    #endregion
 
 
     void OnValidate()
     {
         MovementSpeed = MovementSpeed;
-        RotationSpeed = RotationSpeed;
+        MovementSmoothingTime = MovementSmoothingTime;
+
+        TurnSmoothing = TurnSmoothing;
     }
 }

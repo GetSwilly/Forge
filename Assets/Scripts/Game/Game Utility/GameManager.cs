@@ -14,13 +14,9 @@ public class GameManager : MonoBehaviour
 
     static readonly int START_LIVES_PLAYER = 1;
 
-    static readonly float ENEMY_DEATH_WEIGHT = 1f;
-
     static readonly float _ItemDropLaunchPower = 1.3f;
     static readonly Vector3 _ItemDropOffset = new Vector3(0f, 0.2f, 0f);
     static readonly float _ItemDropDelay = 0.05f;
-
-    static readonly Vector3 HUB_WORLD_PLAYER_SPAWN = new Vector3(0f, .5f, 0f);
 
     #endregion
 
@@ -57,10 +53,6 @@ public class GameManager : MonoBehaviour
     Dictionary<string, GameObject> lootDictionary = new Dictionary<string, GameObject>();
 
     List<string> encounteredItems = new List<string>();
-
-
-    [SerializeField]
-    BalancingProbabilities m_ItemClassProbabilities = new BalancingProbabilities();
 
     FrameRateTracker frameTracker;
     Settings m_Settings;

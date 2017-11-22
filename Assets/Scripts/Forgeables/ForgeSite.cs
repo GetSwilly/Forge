@@ -22,7 +22,7 @@ public class ForgeSite : MonoBehaviour, IMemorable, IStat
     UnitStats m_Stats;
 
     Transform m_Transform;
-    Team m_Team;
+    //Team m_Team;
 
     InteractableObject m_Interactable;
 
@@ -38,7 +38,7 @@ public class ForgeSite : MonoBehaviour, IMemorable, IStat
         m_Transform = GetComponent<Transform>();
 
         m_Interactable = GetComponent<InteractableObject>();
-        m_Team = GetComponent<Team>();
+        //m_Team = GetComponent<Team>();
     }
     void Start()
     {
@@ -50,7 +50,7 @@ public class ForgeSite : MonoBehaviour, IMemorable, IStat
 
     public void Forge(PlayerController forger, ForgeableObject forgeObj)
     {
-        Forge(forger,forgeObj, null);
+        Forge(forger, forgeObj, null);
     }
     public void Forge(PlayerController forger, ForgeableObject forgeObj, Team _team)
     {
@@ -70,14 +70,14 @@ public class ForgeSite : MonoBehaviour, IMemorable, IStat
 
         FollowTarget follow = timerUI.GetComponent<FollowTarget>();
         timerUI.transform.position = m_Transform.position;
-        follow.TargetTransform = m_Transform;
-        
+        follow.SetTarget(m_Transform);
+
         ProgressBarController progress = timerUI.GetComponent<ProgressBarController>();
         progress.SetPercentage(1f, true);
 
         float timer = forgeObj.BuildTime;
 
-        while(timer > 0f)
+        while (timer > 0f)
         {
             yield return null;
             timer -= Time.deltaTime;
@@ -101,7 +101,7 @@ public class ForgeSite : MonoBehaviour, IMemorable, IStat
         if (forgeObj == null)
             return;
 
-        if(activeForge != null)
+        if (activeForge != null)
         {
             activeForge.transform.SetParent(null);
             activeForge.SetActive(false);
@@ -124,11 +124,11 @@ public class ForgeSite : MonoBehaviour, IMemorable, IStat
     {
         StopAllCoroutines();
 
-        if(attemptedForge != null)
+        if (attemptedForge != null)
         {
             ItemPrice forgePrice = attemptedForge.GetComponent<ItemPrice>();
-            
-            if(forgePrice != null && forgingPlayer != null)
+
+            if (forgePrice != null && forgingPlayer != null)
             {
                 forgingPlayer.CreditArithmetic(forgePrice.CreditValue);
             }
@@ -161,7 +161,7 @@ public class ForgeSite : MonoBehaviour, IMemorable, IStat
     {
         return !isLockedIn;
     }
-    
+
     #region Stats
 
     protected Stat GetStat(StatType _type)

@@ -6,7 +6,6 @@ using UnityEngine.Events;
 
 [RequireComponent(typeof(AudioSource))]
 [RequireComponent(typeof(Health))]
-[RequireComponent(typeof(AttributeHandler))]
 [RequireComponent(typeof(Team))]
 public abstract class UnitController : MonoBehaviour, IIdentifier, IMemorable, IStat
 {
@@ -48,8 +47,7 @@ public abstract class UnitController : MonoBehaviour, IIdentifier, IMemorable, I
 
 
     protected bool isOperational = true;
-
-    protected AttributeHandler m_Handler;
+    
     protected Health m_Health;
     protected Transform m_Transform;
     protected AudioSource m_Audio;
@@ -72,8 +70,7 @@ public abstract class UnitController : MonoBehaviour, IIdentifier, IMemorable, I
     public virtual void Awake()
     {
         m_Transform = GetComponent<Transform>();
-
-        m_Handler = GetComponent<AttributeHandler>();
+        
         m_Health = GetComponent<Health>();
         m_Audio = GetComponent<AudioSource>();
         m_Team = GetComponent<Team>();
@@ -153,14 +150,6 @@ public abstract class UnitController : MonoBehaviour, IIdentifier, IMemorable, I
         //    sightNotifier.TriggerStay += SightTriggerStayed;
         //    sightNotifier.TriggerExit += SightTriggerExited;
         //}
-    }
-
-
-    public virtual void OnDisable()
-    {
-        m_Handler.RemoveAllActiveAttributes();
-
-        // m_Handler.HideUI();
     }
 
 

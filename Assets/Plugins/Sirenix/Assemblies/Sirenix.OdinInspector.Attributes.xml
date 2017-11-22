@@ -527,6 +527,11 @@
             By default FilePath enforces forward slashes. Set UseBackslashes to <c>true</c> if you want backslashes instead.
             </summary>
         </member>
+        <member name="P:Sirenix.OdinInspector.FilePathAttribute.ReadOnly">
+            <summary>
+            Whether the path should read only.
+            </summary>
+        </member>
         <member name="T:Sirenix.OdinInspector.FolderPathAttribute">
             <summary>
             <para>FolderPath is used on string properties, and provides an interface for directory paths.</para>
@@ -809,42 +814,42 @@
             <param name="max">The maximum value.</param>
         </member>
         <member name="T:Sirenix.OdinInspector.SuffixLabelAttribute">
-            <summary>
-            <para>The SuffixLabel attribute draws a label at the end of a property.</para>
-            <para>Use this for conveying indend about a property. Is the distance measured in meters, kilometers, or in light years?.
-            Is the angle measured in degrees or radians?
-            Using SuffixLabel, you can place a neat label at the end of a property, to clearly show how the the property is used.</para>
-            </summary>
-            <example>
-            <para>The following examples demonstrates how SuffixLabel is used.</para>
-            <code>
-            public class MyComponent : MonoBehaviour
-            {
-            	[InfoBox(
-            		"The SuffixLabel attribute draws a label at the end of a property. " +
-            		"It's useful for conveying intend about a property." +
-            		"\nFx, is the distance measured in meters, kilometers, or light years, or is the angle measured in degrees, or radians.")]
-            	[SuffixLabel("Prefab")]
-            	public GameObject GameObject;
-            	
-            	// Using the Overlay property, the suffix label will be drawn on top of the property instead of behind it.
-            	// Use this for a neat inline look.
-            	[SuffixLabel("ms", Overlay = true)]
-            	public float Speed;
-            	
-            	[SuffixLabel("radians", Overlay = true)]
-            	public float Angle;
-            	
-            	// The SuffixLabel attribute also supports string member references by using $.
-            	[SuffixLabel("$Suffix", Overlay = true)]
-            	public string Suffix = "Dynamic suffix label";
-            }
-            </code>
-            </example>
-            <seealso cref="T:Sirenix.OdinInspector.LabelTextAttribute"/>
-            <seealso cref="T:Sirenix.OdinInspector.HideLabelAttribute"/>
-            <seealso cref="T:Sirenix.OdinInspector.InlineButtonAttribute"/>
-            <seealso cref="T:Sirenix.OdinInspector.LabelWidthAttribute"/>
+             <summary>
+             <para>The SuffixLabel attribute draws a label at the end of a property.</para>
+             <para>Use this for conveying indend about a property. Is the distance measured in meters, kilometers, or in light years?.
+             Is the angle measured in degrees or radians?
+             Using SuffixLabel, you can place a neat label at the end of a property, to clearly show how the the property is used.</para>
+             </summary>
+             <example>
+             <para>The following examples demonstrates how SuffixLabel is used.</para>
+             <code>
+            	public class MyComponent : MonoBehaviour
+            	{
+            		[InfoBox(
+            			"The SuffixLabel attribute draws a label at the end of a property. " +
+            			"It's useful for conveying intend about a property." +
+            			"\nFx, is the distance measured in meters, kilometers, or light years, or is the angle measured in degrees, or radians.")]
+            		[SuffixLabel("Prefab")]
+            		public GameObject GameObject;
+            
+            		// Using the Overlay property, the suffix label will be drawn on top of the property instead of behind it.
+            		// Use this for a neat inline look.
+            		[SuffixLabel("ms", Overlay = true)]
+            		public float Speed;
+            
+            		[SuffixLabel("radians", Overlay = true)]
+            		public float Angle;
+            
+            		// The SuffixLabel attribute also supports string member references by using $.
+            		[SuffixLabel("$Suffix", Overlay = true)]
+            		public string Suffix = "Dynamic suffix label";
+            	}
+             </code>
+             </example>
+             <seealso cref="T:Sirenix.OdinInspector.LabelTextAttribute"/>
+             <seealso cref="T:Sirenix.OdinInspector.HideLabelAttribute"/>
+             <seealso cref="T:Sirenix.OdinInspector.InlineButtonAttribute"/>
+             <seealso cref="T:Sirenix.OdinInspector.LabelWidthAttribute"/>
         </member>
         <member name="P:Sirenix.OdinInspector.SuffixLabelAttribute.Label">
             <summary>
@@ -856,11 +861,12 @@
             If <c>true</c> the suffix label will be drawn on top of the property, instead of after.
             </summary>
         </member>
-        <member name="M:Sirenix.OdinInspector.SuffixLabelAttribute.#ctor(System.String)">
+        <member name="M:Sirenix.OdinInspector.SuffixLabelAttribute.#ctor(System.String,System.Boolean)">
             <summary>
             Draws a label at the end of the property.
             </summary>
             <param name="label">The text of the label.</param>
+            <param name="overlay">If <c>true</c> the suffix label will be drawn on top of the property, instead of after.</param>
         </member>
         <member name="T:Sirenix.OdinInspector.TableColumnWidthAttribute">
             <summary>
@@ -922,6 +928,21 @@
         <member name="F:Sirenix.OdinInspector.TableMatrixAttribute.RowHeight">
             <summary>
             The height for all rows. 0 = default row height.
+            </summary>
+        </member>
+        <member name="F:Sirenix.OdinInspector.TableMatrixAttribute.SquareCells">
+            <summary>
+            If true, the height of each row will be the same as the width of the first cell.
+            </summary>
+        </member>
+        <member name="F:Sirenix.OdinInspector.TableMatrixAttribute.HideColumnIndices">
+            <summary>
+            If true, no column indicies drawn.
+            </summary>
+        </member>
+        <member name="F:Sirenix.OdinInspector.TableMatrixAttribute.HideRowIndices">
+            <summary>
+            If true, no row indicies drawn.
             </summary>
         </member>
         <member name="T:Sirenix.OdinInspector.VerticalGroupAttribute">
@@ -1321,6 +1342,11 @@
             
             		[DisableIf("DisableProperty")]
             		public int MyInt;
+            		
+            	    public SomeEnum SomeEnumField;
+            		
+            		[DisableIf("SomeEnumField", SomeEnum.SomeEnumMember)]
+            		public string SomeString;
              }
              </code>
              </example>
@@ -1339,7 +1365,7 @@
              }
              </code>
              </example>
-             <seealso cref="T:Sirenix.OdinInspector.DisableIfAttribute"/>
+             <seealso cref="T:Sirenix.OdinInspector.EnableIfAttribute"/>
              <seealso cref="T:Sirenix.OdinInspector.ShowIfAttribute"/>
         </member>
         <member name="P:Sirenix.OdinInspector.DisableIfAttribute.MemberName">
@@ -1347,9 +1373,19 @@
             The name of a bool member field, property or method.
             </summary>
         </member>
+        <member name="P:Sirenix.OdinInspector.DisableIfAttribute.Value">
+            <summary>
+            The optional member value.
+            </summary>
+        </member>
         <member name="M:Sirenix.OdinInspector.DisableIfAttribute.#ctor(System.String)">
             <summary>
             Disables a property in the inspector, based on the state of a member.
+            </summary>
+        </member>
+        <member name="M:Sirenix.OdinInspector.DisableIfAttribute.#ctor(System.String,System.Object)">
+            <summary>
+            Disables a property in the inspector, if the specified member returns the specified value.
             </summary>
         </member>
         <member name="T:Sirenix.OdinInspector.DisableInEditorModeAttribute">
@@ -1590,6 +1626,11 @@
             
             		[EnableIf("EnableProperty")]
             		public int MyInt;
+            		
+            	    public SomeEnum SomeEnumField;
+            		
+            		[EnableIf("SomeEnumField", SomeEnum.SomeEnumMember)]
+            		public string SomeString;
              }
              </code>
              </example>
@@ -1619,9 +1660,19 @@
             The name of a bool member field, property or method.
             </summary>
         </member>
+        <member name="P:Sirenix.OdinInspector.EnableIfAttribute.Value">
+            <summary>
+            The optional member value.
+            </summary>
+        </member>
         <member name="M:Sirenix.OdinInspector.EnableIfAttribute.#ctor(System.String)">
             <summary>
             Enables a property in the inspector, based on the state of a member.
+            </summary>
+        </member>
+        <member name="M:Sirenix.OdinInspector.EnableIfAttribute.#ctor(System.String,System.Object)">
+            <summary>
+            Enables a property in the inspector, if the specified member returns the specified value.
             </summary>
         </member>
         <member name="T:Sirenix.OdinInspector.EnumToggleButtonsAttribute">
@@ -1679,8 +1730,13 @@
             		[HideIf("showProperties")]
             		public int MyInt;
             
-            		[HideIf("showProperties")]
+            		[HideIf("showProperties", false)]
             		public string MyString;
+            		
+            	    public SomeEnum SomeEnumField;
+            		
+            		[HideIf("SomeEnumField", SomeEnum.SomeEnumMember)]
+            		public string SomeString;
              }
              </code>
              </example>
@@ -1708,6 +1764,11 @@
             Name of a bool field, property or function to show or hide the property.
             </summary>
         </member>
+        <member name="P:Sirenix.OdinInspector.HideIfAttribute.Value">
+            <summary>
+            The optional member value.
+            </summary>
+        </member>
         <member name="P:Sirenix.OdinInspector.HideIfAttribute.Animate">
             <summary>
             Whether or not to slide the property in and out when the state changes.
@@ -1715,10 +1776,15 @@
         </member>
         <member name="M:Sirenix.OdinInspector.HideIfAttribute.#ctor(System.String,System.Boolean)">
             <summary>
-            Initializes a new instance of the <see cref="T:Sirenix.OdinInspector.HideIfAttribute"/> class.
+            Hides a property in the inspector, if the specified member returns true.
             </summary>
             <param name="memberName">Name of a bool field, property or function to show or hide the property.</param>
             <param name="animate">Whether or not to slide the property in and out when the state changes.</param>
+        </member>
+        <member name="M:Sirenix.OdinInspector.HideIfAttribute.#ctor(System.String,System.Object,System.Boolean)">
+            <summary>
+            Hides a property in the inspector, if the specified member returns the specified value.
+            </summary>
         </member>
         <member name="T:Sirenix.OdinInspector.HideInPlayModeAttribute">
             <summary>
@@ -1920,6 +1986,11 @@
         <member name="P:Sirenix.OdinInspector.HorizontalGroupAttribute.Title">
             <summary>
             Adds a title above the horizontal group.
+            </summary>
+        </member>
+        <member name="P:Sirenix.OdinInspector.HorizontalGroupAttribute.LabelWidth">
+            <summary>
+            The label width, 0 = auto.
             </summary>
         </member>
         <member name="M:Sirenix.OdinInspector.HorizontalGroupAttribute.#ctor(System.String,System.Single,System.Int32,System.Int32,System.Int32)">
@@ -2539,9 +2610,19 @@
             Override the default setting specified in the Advanced Odin Preferences window and explicitly tell whether or not the list should be expanded or collapsed by default.
             </summary>
         </member>
+        <member name="P:Sirenix.OdinInspector.ListDrawerSettingsAttribute.ShowIndexLabels">
+            <summary>
+            If true, a label is drawn for each element which shows the index of the element.
+            </summary>
+        </member>
         <member name="P:Sirenix.OdinInspector.ListDrawerSettingsAttribute.OnTitleBarGUI">
             <summary>
             Use this to inject custom GUI into the title-bar of the list.
+            </summary>
+        </member>
+        <member name="P:Sirenix.OdinInspector.ListDrawerSettingsAttribute.AlwaysAddDefaultValue">
+            <summary>
+            If true, object/type pickers will never be shown when the list add button is clicked, and default(T) will always be added instantly instead, where T is the element type of the list.
             </summary>
         </member>
         <member name="P:Sirenix.OdinInspector.ListDrawerSettingsAttribute.HideAddButton">
@@ -2551,11 +2632,6 @@
             <value>
               <c>true</c> if [hide add button]; otherwise, <c>false</c>.
             </value>
-        </member>
-        <member name="P:Sirenix.OdinInspector.ListDrawerSettingsAttribute.ShowIndexLabels">
-            <summary>
-            If true, a label is drawn for each element which shows the index of the element.
-            </summary>
         </member>
         <member name="P:Sirenix.OdinInspector.ListDrawerSettingsAttribute.ListElementLabelName">
             <summary>
@@ -2574,32 +2650,37 @@
         </member>
         <member name="P:Sirenix.OdinInspector.ListDrawerSettingsAttribute.PagingHasValue">
             <summary>
-            Not yet documented.
+            Whether the Paging property is set.
             </summary>
         </member>
         <member name="P:Sirenix.OdinInspector.ListDrawerSettingsAttribute.ShowItemCountHasValue">
             <summary>
-            Not yet documented.
+            Whether the ShowItemCount property is set.
             </summary>
         </member>
         <member name="P:Sirenix.OdinInspector.ListDrawerSettingsAttribute.NumberOfItemsPerPageHasValue">
             <summary>
-            Not yet documented.
+            Whether the NumberOfItemsPerPage property is set.
             </summary>
         </member>
         <member name="P:Sirenix.OdinInspector.ListDrawerSettingsAttribute.DraggableHasValue">
             <summary>
-            Not yet documented.
+            Whether the Draggable property is set.
             </summary>
         </member>
         <member name="P:Sirenix.OdinInspector.ListDrawerSettingsAttribute.IsReadOnlyHasValue">
             <summary>
-            Not yet documented.
+            Whether the IsReadOnly property is set.
             </summary>
         </member>
         <member name="P:Sirenix.OdinInspector.ListDrawerSettingsAttribute.ExpandedHasValue">
             <summary>
-            Not yet documented.
+            Whether the Expanded property is set.
+            </summary>
+        </member>
+        <member name="P:Sirenix.OdinInspector.ListDrawerSettingsAttribute.ShowIndexLabelsHasValue">
+            <summary>
+            Whether the ShowIndexLabels property is set.
             </summary>
         </member>
         <member name="T:Sirenix.OdinInspector.MaxValueAttribute">
@@ -2873,8 +2954,10 @@
         </member>
         <member name="T:Sirenix.OdinInspector.OnValueChangedAttribute">
              <summary>
-             <para>OnValueChanged is used on any property, and calls the specified function whenever the value of the property is changed.</para>
-             <para>Use this to do custom logic whenever the property is changed.</para>
+             <para>
+                OnValueChanged works on properties and fields, and calls the specified function 
+                whenever the value has been changed via the inspector.
+             </para>
              </summary>
              <remarks>
              <note type="note">Note that this attribute only works in the editor! Properties changed by script will not call the function.</note>
@@ -3784,8 +3867,13 @@
             		[ShowIf("showProperties")]
             		public int MyInt;
             
-            		[ShowIf("showProperties")]
+            		[ShowIf("showProperties", false)]
             		public string MyString;
+            		
+            	    public SomeEnum SomeEnumField;
+            		
+            		[ShowIf("SomeEnumField", SomeEnum.SomeEnumMember)]
+            		public string SomeString;
              }
              </code>
              </example>
@@ -3818,12 +3906,22 @@
             Whether or not to slide the property in and out when the state changes.
             </summary>
         </member>
+        <member name="P:Sirenix.OdinInspector.ShowIfAttribute.Value">
+            <summary>
+            The optional member value.
+            </summary>
+        </member>
         <member name="M:Sirenix.OdinInspector.ShowIfAttribute.#ctor(System.String,System.Boolean)">
             <summary>
-            Initializes a new instance of the <see cref="T:Sirenix.OdinInspector.ShowIfAttribute"/> class.
+            Shows a property in the inspector, if the specified member returns true.
             </summary>
             <param name="memberName">Name of a bool field, property or function to show or hide the property.</param>
             <param name="animate">Whether or not to slide the property in and out when the state changes.</param>
+        </member>
+        <member name="M:Sirenix.OdinInspector.ShowIfAttribute.#ctor(System.String,System.Object,System.Boolean)">
+            <summary>
+            Shows a property in the inspector, if the specified member returns the specified value.
+            </summary>
         </member>
         <member name="T:Sirenix.OdinInspector.WrapAttribute">
             <summary>

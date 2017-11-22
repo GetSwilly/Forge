@@ -9,10 +9,6 @@ public class ObjectPoolerManager : MonoBehaviour {
 	[HideInInspector]
 	public ObjectPooler DynamicInfoPooler;
     [HideInInspector]
-    public ObjectPooler Unit_UIPooler;
-    [HideInInspector]
-    public ObjectPooler GenericUIPooler;
-    [HideInInspector]
     public ObjectPooler InteractableUIPooler;
     [HideInInspector]
     public ObjectPooler TimerUIPooler;
@@ -23,10 +19,6 @@ public class ObjectPoolerManager : MonoBehaviour {
     
     [SerializeField]
     GameObject DynamicInfoPrefab;
-    [SerializeField]
-    GameObject Unit_UIPrefab;
-    [SerializeField]
-    GameObject GenericUIPrefab;
     [SerializeField]
     GameObject InteractableUIPrefab;
     [SerializeField]
@@ -58,38 +50,7 @@ public class ObjectPoolerManager : MonoBehaviour {
 			go.transform.parent = this.gameObject.transform;
 			DynamicInfoPooler.Initialize();
 		}
-
-        if (Unit_UIPooler == null && Unit_UIPrefab != null)
-        {
-            GameObject go = new GameObject("Unit_UIPooler");
-            Unit_UIPooler = go.AddComponent<ObjectPooler>();
-            Unit_UIPooler.PooledObject = Unit_UIPrefab;
-            Unit_UIPooler.PoolLength = 3;
-
-            GameObject uis = new GameObject("Unit UIs");
-            uis.transform.parent = pools.transform;
-
-            Unit_UIPooler.Parent = uis.transform;
-            go.transform.parent = this.gameObject.transform;
-            Unit_UIPooler.Initialize();
-        }
-
-        if (GenericUIPooler == null && GenericUIPrefab != null)
-        {
-            GameObject go = new GameObject("GenericUIPooler");
-            GenericUIPooler = go.AddComponent<ObjectPooler>();
-            GenericUIPooler.PooledObject = GenericUIPrefab;
-            GenericUIPooler.PoolLength = 3;
-
-
-            GameObject uis = new GameObject("Generic UIs");
-            uis.transform.parent = pools.transform;
-
-            GenericUIPooler.Parent = uis.transform;
-            go.transform.parent = this.gameObject.transform;
-            GenericUIPooler.Initialize();
-        }
-
+        
         if (InteractableUIPooler == null && InteractableUIPrefab != null)
         {
             GameObject go = new GameObject("InteractableUIPooler");

@@ -36,7 +36,7 @@ public abstract class InteractableObject : MonoBehaviour, IIdentifier
     protected List<GameObject> activatingObjects = new List<GameObject>();
 
 
-    GenericUI activeUI;
+    UIBase activeUI;
     protected Transform m_Transform;
     protected AudioSource m_Audio;
 
@@ -72,83 +72,7 @@ public abstract class InteractableObject : MonoBehaviour, IIdentifier
         if (!isActivator)
             return false;
 
-
-
-
-
-        Health playerHealth = controller.GetComponent<Health>();
-
-
-
-        //if(Utilities.HasFlag(m_ActivationCosts.Currency, CurrencyType.Experience))
-        //{
-        //    expSum = m_ActivationCosts.ExperienceCost;
-        //}
-
-        //if (Utilities.HasFlag(m_ActivationCosts.Currency, CurrencyType.Health))
-        //{
-        //    healthSum = m_ActivationCosts.ExperienceCost;
-        //}
-
-        //if (Utilities.HasFlag(m_ActivationCosts.Currency, CurrencyType.LevelPoints))
-        //{
-        //    throw new NotImplementedException();
-        //}
-
-        //if (Utilities.HasFlag(m_ActivationCosts.Currency, CurrencyType.StatLevel))
-        //{
-        //    throw new NotImplementedException();
-        //}
-
-        //int expSum = 0;
-        //int healthSum = 0;
-        //int levelSum = 0;
-        //Dictionary<StatType, int> statSum = new Dictionary<StatType, int>();
-
-
-        //for (int i = 0; i < ActivationCosts.Count; i++)
-        //{
-        //    switch (ActivationCosts[i].Currency)
-        //    {
-        //        case CurrencyType.Experience:
-        //            expSum += ActivationCosts[i].Value;
-        //            break;
-        //        case CurrencyType.Health:
-        //            healthSum += ActivationCosts[i].Value;
-        //            break;
-        //        case CurrencyType.LevelPoints:
-        //            levelSum += ActivationCosts[i].Value;
-        //            break;
-        //        case CurrencyType.StatLevel:
-        //            if (statSum.ContainsKey(ActivationCosts[i].StatType))
-        //            {
-        //                statSum[ActivationCosts[i].StatType] += ActivationCosts[i].Value;
-        //            }
-        //            else
-        //            {
-        //                statSum.Add(ActivationCosts[i].StatType, ActivationCosts[i].Value);
-        //            }
-        //            break;
-        //    }
-
-        //}
-
-
-
-        //bool isSuccess = controller.CanModifyExp(Mathf.RoundToInt(expSum));
-
-        //if (!isSuccess)
-        //   return false;
-
-
-
-        //if (expSum != 0)
-        //    controller.ModifyExp(Mathf.RoundToInt(expSum));
-
-
-        //if (healthSum != 0)
-        //    playerHealth.HealthArithmetic(healthSum, false, transform);
-
+        
         if (!controller.CreditArithmetic(ActivationCost))
         {
             return false;
@@ -196,11 +120,7 @@ public abstract class InteractableObject : MonoBehaviour, IIdentifier
         if (!this.enabled)
             return;
 
-        if (activeUI != null && activeUI.gameObject.activeInHierarchy && activeUI.TargetTransform == m_Transform)
-        {
-            activeUI.SetFollowOffset(Vector3.zero);
-        }
-        else
+        if (activeUI == null || !activeUI.gameObject.activeInHierarchy || activeUI.Target != m_Transform)
         {
             if (ObjectPoolerManager.Instance == null)
                 return;
@@ -217,40 +137,11 @@ public abstract class InteractableObject : MonoBehaviour, IIdentifier
                 m_Transform = GetComponent<Transform>();
 
 
-            activeUI = uiObj.GetComponent<GenericUI>();
+            activeUI = uiObj.GetComponent<UIBase>();
 
             uiObj.transform.position = transform.position;
             uiObj.SetActive(true);
-            activeUI.Initialize(m_Transform);
-
-
-
-            GameObject textUI;// = activeUI.GetPrefab("ID");
-
-            if (!string.IsNullOrEmpty(Name) && (textUI = activeUI.GetPrefab("ID")) != null)
-            {
-                DisplayUI uiDisplay = textUI.GetComponent<DisplayUI>();
-                textUI.SetActive(!string.IsNullOrEmpty(Name));
-
-
-                activeUI.AddAttribute(new GenericUI.DisplayProperties("ID", new Orientation(m_UIOffset, Vector3.zero, Vector3.one), uiDisplay));
-                activeUI.UpdateAttribute("ID", Name);
-
-                hasUIInflated = true;
-            }
-
-
-            Transform tr = activeUI.GetParentTransform("Charges");
-
-            if (tr != null)
-            {
-                tr.gameObject.SetActive(ActivationCost != 0);
-            }
-
-            if (ActivationCost != 0)
-            {
-                AddCostUI("Credits", ActivationCost);
-            }
+            activeUI.Inflate(m_Transform, Name);
 
 
             hasUIInflated = true;
@@ -271,28 +162,10 @@ public abstract class InteractableObject : MonoBehaviour, IIdentifier
     }
     public virtual void DeflateUI()
     {
-        if (activeUI == null || !activeUI.gameObject.activeInHierarchy || activeUI.TargetTransform != m_Transform)
+        if (activeUI == null || !activeUI.gameObject.activeInHierarchy || activeUI.Target != m_Transform)
             return;
 
         activeUI.Deflate();
-    }
-
-
-    private void AddCostUI(string name, int amount)
-    {
-        GameObject costUI = activeUI.GetPrefab("Cost");
-
-        if (costUI == null)
-            return;
-
-        ProgressBarController controller = costUI.GetComponent<ProgressBarController>();
-        controller.SetText(amount.ToString());
-
-        costUI.SetActive(true);
-
-
-        activeUI.AddAttribute(new GenericUI.DisplayProperties(name, new Orientation(Vector3.zero, Vector3.zero, Vector3.one), controller), amount < 0 ? "Cost" : "Reward");
-
     }
 
 

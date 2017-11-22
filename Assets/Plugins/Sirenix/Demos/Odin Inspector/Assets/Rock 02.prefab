@@ -104,7 +104,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Enabled: 1
   SpawnChance: 0.97
-  MinMaxScaleSize: {x: 0.5466667, y: 1.1333333}
+  MinMaxScaleSize: {x: 0, y: 0.2877698}
 --- !u!1001 &100100000
 Prefab:
   m_ObjectHideFlags: 1
@@ -134,11 +134,11 @@ Prefab:
       objectReference: {fileID: 0}
     - target: {fileID: 0}
       propertyPath: MinMaxScaleSize.x
-      value: 0.5466667
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 0}
       propertyPath: MinMaxScaleSize.y
-      value: 1.1333333
+      value: 0.2877698
       objectReference: {fileID: 0}
     - target: {fileID: 0}
       propertyPath: SpawnChance

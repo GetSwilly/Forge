@@ -156,17 +156,8 @@ public class PlayerController : UnitController
             //Pickup(UtilityItem);
         }
     }
-    void OnEnable()
+    public void OnDisable()
     {
-        if (ShowDebug)
-        {
-            Debug.Log(m_Handler.ToString());
-        }
-    }
-    public override void OnDisable()
-    {
-        base.OnDisable();
-
         RemoveInteractable(currentInteractable);
     }
 

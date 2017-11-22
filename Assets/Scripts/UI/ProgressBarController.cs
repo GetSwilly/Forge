@@ -4,10 +4,10 @@ using System.Collections;
 using System.Collections.Generic;
 using System;
 
-public class ProgressBarController : DisplayUI
+public class ProgressBarController : MonoBehaviour
 {
-
-    static readonly float FADE_TIME = 0.7f;
+    [SerializeField]
+    MovementType m_MovementType = MovementType.MoveTowards;
 
     [SerializeField]
     Color m_Color = Color.white;
@@ -18,69 +18,59 @@ public class ProgressBarController : DisplayUI
     public bool showPercentage = false;
 
     [SerializeField]
-    float updateSpeed = 0.4f;
+    float speed = 0.4f;
+
+    [SerializeField]
+    float smoothTime;
 
     float desiredPercentage = 1f;
-    float curPercentage = 1f;
+    float currentPercentage = 1f;
 
 
     [SerializeField]
     Image progessBarImage;
 
-    bool isFading = false;
-
-
-    Camera mainCam;
-
-
-
+    float currentVelocity;
 
     void Start()
     {
-        mainCam = Camera.main;
-
         if (progessBarImage != null)
         {
-            curPercentage = progessBarImage.fillAmount;
+            currentPercentage = progessBarImage.fillAmount;
         }
     }
     void OnEnable()
     {
-        curPercentage = 1f;
+        currentPercentage = 1f;
         progessBarImage.fillAmount = 1f;
     }
 
-    protected override void Update()
+    protected void Update()
     {
-        if (curPercentage != desiredPercentage)
+        switch (m_MovementType)
         {
-            float diff = desiredPercentage - curPercentage;
-
-            if (diff > 0)
-            {
-                curPercentage += UpdateSpeed * Time.deltaTime;
-
-                if (curPercentage > desiredPercentage)
-                    curPercentage = desiredPercentage;
-            }
-            else
-            {
-                curPercentage -= UpdateSpeed * Time.deltaTime;
-
-                if (curPercentage < desiredPercentage)
-                    curPercentage = desiredPercentage;
-            }
-
-            SetFillPercentage(curPercentage);
+            case MovementType.MoveTowards:
+                currentPercentage = Mathf.MoveTowards(currentPercentage, desiredPercentage, Speed * Time.deltaTime);
+                break;
+            case MovementType.Lerp:
+                currentPercentage = Mathf.Lerp(currentPercentage, desiredPercentage, Speed * Time.deltaTime);
+                break;
+            case MovementType.SmoothDamp:
+                currentPercentage = Mathf.SmoothDamp(currentPercentage, desiredPercentage, ref currentVelocity, SmoothTime);
+                break;
         }
 
+        SetFillPercentage(currentPercentage);
+
     }
+
+
 
     public void SetPercentage(float percentage)
     {
         SetPercentage(percentage, false);
     }
-    public override void SetPercentage(float pctg, bool setImmediately)
+    public void SetPercentage(float pctg, bool setImmediately)
     {
         if (setImmediately)
         {
@@ -98,13 +88,13 @@ public class ProgressBarController : DisplayUI
     }
     void SetFillPercentage(float _fill)
     {
-        curPercentage = Mathf.Clamp01(_fill);
+        currentPercentage = Mathf.Clamp01(_fill);
 
         if (progessBarImage == null)
             return;
 
 
-        progessBarImage.fillAmount = curPercentage;
+        progessBarImage.fillAmount = currentPercentage;
 
         int percent = (int)(progessBarImage.fillAmount * 100);
 
@@ -112,7 +102,7 @@ public class ProgressBarController : DisplayUI
             SetText(percent.ToString() + "%");
     }
 
-    public override void SetText(string txt)
+    public void SetText(string txt)
     {
         if (m_Text != null)
             m_Text.text = txt;
@@ -131,16 +121,22 @@ public class ProgressBarController : DisplayUI
             progessBarImage.color = value;
         }
     }
-    protected float UpdateSpeed
+    protected float Speed
     {
-        get { return updateSpeed; }
-        private set { updateSpeed = Mathf.Clamp(value, 0f, value); }
+        get { return speed; }
+        private set { speed = Mathf.Clamp(value, 0f, value); }
     }
-
+    protected float SmoothTime
+    {
+        get { return smoothTime; }
+        private set { smoothTime = Mathf.Clamp(value, 0f, value); }
+    }
 
     void OnValidate()
     {
         Color = Color;
-        UpdateSpeed = UpdateSpeed;
+
+        Speed = Speed;
+        SmoothTime = SmoothTime;
     }
 }

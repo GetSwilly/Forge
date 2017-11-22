@@ -112,9 +112,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8de0121434003694cb2b78d9bd9a499e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  Vector: {x: 0, y: 0, z: 0}
-  First: {fileID: 0}
-  Second: {fileID: 0}
+  First: 0
+  Second: 0
   A: 0
   B: 0
 --- !u!4 &25355503
@@ -3674,13 +3673,16 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ColorOptions: {r: 0.969, g: 0.949, b: 0.831, a: 1}
   UnderwaterColor: {r: 0.2, g: 0.6, b: 0.698, a: 1}
-  WideColorPalette: {r: 1, g: 0.431, b: 0.02, a: 1}
   MyColor: {r: 0, g: 0.71034503, b: 1, a: 1}
+  DynamicPaletteName: Clovers
+  DynamicPaletteColor: {r: 0, g: 0, b: 0, a: 0}
+  WideColorPalette: {r: 1, g: 0.431, b: 0.02, a: 1}
   ColorArray:
   - {r: 0.753, g: 0.824, b: 0.627, a: 1}
   - {r: 0.969, g: 0.949, b: 0.831, a: 1}
   - {r: 0.431, g: 0.549, b: 0.102, a: 1}
   - {r: 0.671, g: 0.714, b: 0.071, a: 1}
+  ColorPalettes: []
 --- !u!4 &1426135836
 Transform:
   m_ObjectHideFlags: 0
@@ -4259,7 +4261,7 @@ MonoBehaviour:
       Data: 2|UnityEngine.GameObject[], UnityEngine
     - Name: 
       Entry: 12
-      Data: 3
+      Data: 4
     - Name: 
       Entry: 10
       Data: 0
@@ -4269,6 +4271,9 @@ MonoBehaviour:
     - Name: 
       Entry: 10
       Data: 0
+    - Name: 
+      Entry: 6
+      Data: 
     - Name: 
       Entry: 13
       Data: 

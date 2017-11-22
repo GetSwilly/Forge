@@ -489,6 +489,24 @@
             Gets a GUIContent object with the highlighted texture.
             </summary>
         </member>
+        <member name="M:Sirenix.Utilities.Editor.EditorIcon.Draw(UnityEngine.Rect)">
+            <summary>
+            Draws the icon in a square rect, with a custom shader that makes the icon look better when down-scaled.
+            This also handles mouseover effects, and linier color spacing.
+            </summary>
+        </member>
+        <member name="M:Sirenix.Utilities.Editor.EditorIcon.Draw(UnityEngine.Rect,System.Single)">
+            <summary>
+            Draws the icon in a square rect, with a custom shader that makes the icon look better when down-scaled.
+            This also handles mouseover effects, and linier color spacing.
+            </summary>
+        </member>
+        <member name="M:Sirenix.Utilities.Editor.EditorIcon.Draw(UnityEngine.Rect,UnityEngine.Texture)">
+            <summary>
+            Draws the icon in a square rect, with a custom shader that makes the icon look better when down-scaled.
+            This also handles mouseover effects, and linier color spacing.
+            </summary>
+        </member>
         <member name="T:Sirenix.Utilities.Editor.EditorIcons">
             <summary>
             Collection of EditorIcons for use in GUI drawing.
@@ -1109,6 +1127,76 @@
             Not yet documented.
             </summary>
         </member>
+        <member name="T:Sirenix.Utilities.Editor.DragAndDropUtilities">
+            <summary>
+            Drag and drop utilities for both Unity and non-unity objects.
+            </summary>
+        </member>
+        <member name="M:Sirenix.Utilities.Editor.DragAndDropUtilities.GetDragAndDropId(UnityEngine.Rect)">
+            <summary>
+            Gets a more percistent id for drag and drop.
+            </summary>
+        </member>
+        <member name="M:Sirenix.Utilities.Editor.DragAndDropUtilities.ObjectPickerZone(UnityEngine.Rect,System.Object,System.Type,System.Boolean,UnityEngine.GUIStyle)">
+            <summary>
+            Draws a objectpicker butter, in the given rect. This one is designed to look good on top of DrawDropZone().
+            </summary>
+        </member>
+        <member name="M:Sirenix.Utilities.Editor.DragAndDropUtilities.ObjectPickerZone``1(UnityEngine.Rect,``0,System.Boolean)">
+            <summary>
+            Draws a objectpicker butter, in the given rect. This one is designed to look good on top of DrawDropZone().
+            </summary>
+        </member>
+        <member name="M:Sirenix.Utilities.Editor.DragAndDropUtilities.DrawDropZone``1(UnityEngine.Rect,``0,UnityEngine.GUIContent,System.Int32)">
+            <summary>
+            Draws the graphics for a DropZone.
+            </summary>
+        </member>
+        <member name="M:Sirenix.Utilities.Editor.DragAndDropUtilities.DropZone(UnityEngine.Rect,System.Object,System.Type,System.Int32)">
+            <summary>
+            A drop zone area for bot Unity and non-unity objects.
+            </summary>
+        </member>
+        <member name="M:Sirenix.Utilities.Editor.DragAndDropUtilities.DragZone(UnityEngine.Rect,System.Object,System.Type,System.Boolean,System.Boolean,System.Int32)">
+            <summary>
+            A draggable zone for both Unity and non-unity objects.
+            </summary>
+        </member>
+        <member name="M:Sirenix.Utilities.Editor.DragAndDropUtilities.DropZone``1(UnityEngine.Rect,``0,System.Int32)">
+            <summary>
+            A drop zone area for bot Unity and non-unity objects.
+            </summary>
+        </member>
+        <member name="M:Sirenix.Utilities.Editor.DragAndDropUtilities.DropZone(UnityEngine.Rect,System.Object,System.Type)">
+            <summary>
+            A drop zone area for bot Unity and non-unity objects.
+            </summary>
+        </member>
+        <member name="M:Sirenix.Utilities.Editor.DragAndDropUtilities.DropZone``1(UnityEngine.Rect,``0)">
+            <summary>
+            A drop zone area for bot Unity and non-unity objects.
+            </summary>
+        </member>
+        <member name="M:Sirenix.Utilities.Editor.DragAndDropUtilities.DragZone``1(UnityEngine.Rect,``0,System.Boolean,System.Boolean,System.Int32)">
+            <summary>
+            A draggable zone for both Unity and non-unity objects.
+            </summary>
+        </member>
+        <member name="M:Sirenix.Utilities.Editor.DragAndDropUtilities.DragZone(UnityEngine.Rect,System.Object,System.Type,System.Boolean,System.Boolean)">
+            <summary>
+            A draggable zone for both Unity and non-unity objects.
+            </summary>
+        </member>
+        <member name="M:Sirenix.Utilities.Editor.DragAndDropUtilities.DragAndDropZone(UnityEngine.Rect,System.Object,System.Type,System.Boolean,System.Boolean)">
+            <summary>
+            A draggable zone for both Unity and non-unity objects.
+            </summary>
+        </member>
+        <member name="M:Sirenix.Utilities.Editor.DragAndDropUtilities.DragZone``1(UnityEngine.Rect,``0,System.Boolean,System.Boolean)">
+            <summary>
+            A draggable zone for both Unity and non-unity objects.
+            </summary>
+        </member>
         <member name="T:Sirenix.Utilities.Editor.EventExtensions">
             <summary>
             Collection of extension methods for <see cref="T:UnityEngine.Event"/>.
@@ -1674,7 +1762,7 @@
         </member>
         <member name="M:Sirenix.Utilities.Editor.GUIPagingHelper.Update(System.Int32)">
             <summary>
-            Updates all values based on <paramref name="elementCount"/> and <see cref="P:Sirenix.Utilities.Editor.GUIPagingHelper.NumberOfItemsPrPage"/>.
+            Updates all values based on <paramref name="elementCount"/> and <see cref="!:NumberOfItemsPrPage"/>.
             </summary>
             <remarks>
             Call update right before using <see cref="P:Sirenix.Utilities.Editor.GUIPagingHelper.StartIndex"/> and <see cref="P:Sirenix.Utilities.Editor.GUIPagingHelper.EndIndex"/> in your for loop.
@@ -1706,14 +1794,6 @@
             </value>
         </member>
         <member name="P:Sirenix.Utilities.Editor.GUIPagingHelper.NumberOfItemsPerPage">
-            <summary>
-            Gets or sets the number of items per page.
-            </summary>
-            <value>
-            The number of items pr page.
-            </value>
-        </member>
-        <member name="P:Sirenix.Utilities.Editor.GUIPagingHelper.NumberOfItemsPrPage">
             <summary>
             Gets or sets the number of items per page.
             </summary>
@@ -2184,6 +2264,11 @@
             The editor screen point offset.
             </value>
         </member>
+        <member name="P:Sirenix.Utilities.Editor.GUIHelper.ContextWidth">
+            <summary>
+            Gets the current editor gui context width.
+            </summary>
+        </member>
         <member name="P:Sirenix.Utilities.Editor.GUIHelper.CurrentIndentAmount">
             <summary>
             Gets the current indent amount.
@@ -2231,6 +2316,11 @@
             <value>
               <c>true</c> if repaint has been requested. Otherwise <c>false</c>.
             </value>
+        </member>
+        <member name="P:Sirenix.Utilities.Editor.GUIHelper.ActualLabelWidth">
+            <summary>
+            Gets or sets the actual EditorGUIUtility.LabelWidth, regardless of the current hierarchy mode or context width.
+            </summary>
         </member>
         <member name="M:Sirenix.Utilities.Editor.GUIHelper.RequestRepaint">
             <summary>
@@ -2593,9 +2683,9 @@
         </member>
         <member name="M:Sirenix.Utilities.Editor.GUIHelper.RepaintIfRequested(UnityEditor.Editor)">
             <summary>
-            Repaints the Editor if a repaint has been requested.
+            Repaints the editor if a repaint has been requested. If the currently rendering window is not an InspectorWindow, Repaint() will be called on the current window as well.
             </summary>
-            <param name="window">The editor to repaint.</param>
+            <param name="editor">The editor to repaint.</param>
         </member>
         <member name="T:Sirenix.Utilities.Editor.QuaternionDrawMode">
             <summary>
@@ -5614,7 +5704,7 @@
         <member name="M:Sirenix.Utilities.Editor.SirenixEditorGUI.DynamicPrimitiveField``1(UnityEngine.GUIContent,``0,UnityEngine.GUILayoutOption[])">
             <summary>
             Draws a field for a value of type T - dynamically choosing an appropriate drawer for the type.
-            Currently supported are: char, string, sbyte, byte, short, ushort, int, uint, long, ulong, float, double and decimal.
+            Currently supported are: char, string, sbyte, byte, short, ushort, int, uint, long, ulong, float, double, decimal, Guid and all enums.
             </summary>
             <typeparam name="T">The type of the value to draw.</typeparam>
             <param name="label">The label of the fields.</param>
@@ -6085,6 +6175,11 @@
             Not yet documented.
             </summary>
         </member>
+        <member name="P:Sirenix.Utilities.Editor.ObjectPicker`1.IsPickerOpen">
+            <summary>
+            Not yet documented.
+            </summary>
+        </member>
         <member name="M:Sirenix.Utilities.Editor.ObjectPicker`1.ClaimObject">
             <summary>
             Not yet documented.
@@ -6111,6 +6206,11 @@
             </summary>
         </member>
         <member name="P:Sirenix.Utilities.Editor.ObjectPicker.IsReadyToClaim">
+            <summary>
+            Not yet documented.
+            </summary>
+        </member>
+        <member name="P:Sirenix.Utilities.Editor.ObjectPicker.IsPickerOpen">
             <summary>
             Not yet documented.
             </summary>

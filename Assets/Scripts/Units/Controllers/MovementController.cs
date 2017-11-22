@@ -70,7 +70,7 @@ public class MovementController : MonoBehaviour, IMovement
         if (moveDir.magnitude == 0)
             return;
 
-        Vector3 originPos = m_Transform.position + (Vector3.up * SLOPE_CHECK_HEIGHT);
+       // Vector3 originPos = m_Transform.position + (Vector3.up * SLOPE_CHECK_HEIGHT);
 
         //if (showDebug)
         //{

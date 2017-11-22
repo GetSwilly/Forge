@@ -4,6 +4,8 @@ using UnityEngine;
 
 public class AutoFaceCamera : MonoBehaviour
 {
+    [SerializeField]
+    RotationType m_RotationType;
 
     [SerializeField]
     float m_RotationSpeed = 1f;
@@ -21,7 +23,17 @@ public class AutoFaceCamera : MonoBehaviour
     {
         if (Camera.main != null)
         {
-            m_Transform.rotation = Camera.main.transform.rotation;
+            switch (m_RotationType)
+            {
+                case RotationType.Slerp:
+                    m_Transform.rotation = Quaternion.Slerp(m_Transform.localRotation, Camera.main.transform.rotation, RotationSpeed * Time.deltaTime);
+                    break;
+                case RotationType.RotateTowards:
+                    m_Transform.rotation = Quaternion.RotateTowards(m_Transform.rotation, Camera.main.transform.rotation, RotationSpeed * Time.deltaTime);
+                    break;
+            }
+
+            //m_Transform.rotation = Camera.main.transform.rotation;
         }
     }
 
@@ -29,13 +41,7 @@ public class AutoFaceCamera : MonoBehaviour
     public float RotationSpeed
     {
         get { return m_RotationSpeed; }
-        set
-        {
-            m_RotationSpeed = value;
-
-            if (m_RotationSpeed < 0f)
-                m_RotationSpeed = 0f;
-        }
+        set { m_RotationSpeed = Mathf.Clamp(value, 0f, value); }
     }
 
 

@@ -17,19 +17,13 @@
 		
 		[HorizontalGroup("Split")]
 		[VerticalGroup("Split/Left")]
-		[LabelWidth(100)]
-		public Vector3 Vector;
+		public InfoMessageType First;
 
 		[VerticalGroup("Split/Left")]
-		[LabelWidth(100)]
-		public GameObject First;
-
-		[VerticalGroup("Split/Left")]
-		[LabelWidth(100)]
-		public GameObject Second;
+		public InfoMessageType Second;
 
 		[HideLabel]
-		[VerticalGroup("Split/Right", PaddingTop = 18f)]
+		[VerticalGroup("Split/Right")]
 		public int A;
 
 		[HideLabel]

@@ -39,14 +39,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e59d4a9cdd5d14d48a2c1284150390dc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  HiddenInPrefabAssets: 0
-  HiddenInPrefabInstances: 0
-  HiddenInPrefabs: 0
-  HiddenInNonPrefabs: 0
-  DisabledInPrefabAssets: 0
-  DisabledInPrefabInstances: 0
-  DisabledInPrefabs: 0
-  DisabledInNonPrefabs: 0
+  HiddenInPrefabAssets: {fileID: 0}
+  HiddenInPrefabInstances: {fileID: 0}
+  HiddenInPrefabs: {fileID: 0}
+  HiddenInNonPrefabs: {fileID: 0}
+  DisabledInPrefabAssets: {fileID: 0}
+  DisabledInPrefabInstances: {fileID: 0}
+  DisabledInPrefabs: {fileID: 0}
+  DisabledInNonPrefabs: {fileID: 0}
 --- !u!1001 &100100000
 Prefab:
   m_ObjectHideFlags: 1

@@ -17,28 +17,27 @@
         public LayerMask B;
 
         // LabelWidth can be helpfull when dealing with HorizontalGroups.
-        [HorizontalGroup("Group 1"), LabelWidth(15)]
+        [HorizontalGroup("Group 1", LabelWidth = 20)]
         public int C;
 
-        [HorizontalGroup("Group 1"), LabelWidth(15)]
+        [HorizontalGroup("Group 1")]
         public int D;
 
-        [HorizontalGroup("Group 1"), LabelWidth(15)]
+        [HorizontalGroup("Group 1")]
         public int E;
 
         // Having multiple properties in a column can be achived using multiple groups. Checkout the "Combining Group Attributes" example.
-        [HorizontalGroup("Split", 0.5f, PaddingRight = 5)]
-        [BoxGroup("Split/Left"), LabelWidth(15)]
+        [HorizontalGroup("Split", 0.5f, LabelWidth = 20)]
+        [BoxGroup("Split/Left")]
         public int L;
 
-        [HorizontalGroup("Split", 0.5f, PaddingLeft = 5)]
-        [BoxGroup("Split/Right"), LabelWidth(15)]
+        [BoxGroup("Split/Right")]
         public int M;
 
-        [BoxGroup("Split/Left"), LabelWidth(15)]
+        [BoxGroup("Split/Left")]
         public int N;
 
-        [BoxGroup("Split/Right"), LabelWidth(15)]
+        [BoxGroup("Split/Right")]
         public int O;
 
         // Horizontal Group also has supprot for: Title, MarginLeft, MarginRight, PaddingLeft, PaddingRight, MinWidth and MaxWidth.
