@@ -125,7 +125,7 @@ public class FireProjectile : BaseUtilityBehavior {
 
     public override void StartBehavior()
     {
-        IsActive = true;
+        base.StartBehavior();
 
         StartCoroutine(Fire());
     }

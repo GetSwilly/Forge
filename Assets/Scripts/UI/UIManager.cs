@@ -88,7 +88,7 @@ public class UIManager : MonoBehaviour
 
     [SerializeField]
     float fadeDelay;
-    
+
 
     [SerializeField]
     SoundClip healthGained;
@@ -116,6 +116,7 @@ public class UIManager : MonoBehaviour
 
 
     UnitController subscribedUnit;
+    GameObject enemyObject;
 
     [HideInInspector]
     public static UIManager Instance { get; private set; }
@@ -143,7 +144,7 @@ public class UIManager : MonoBehaviour
 
         PlayerController p = unit as PlayerController;
 
-        if(p != null)
+        if (p != null)
         {
             p.OnExpChange += ExperienceChanged;
             p.OnLevelChange += LevelChanged;
@@ -157,7 +158,7 @@ public class UIManager : MonoBehaviour
             ExperienceChanged(0f, 0f);
             HandheldChanged(0f);
             NativeAbilityChanged("", 0f);
-            AuxiliaryAbilityChanged("",0f);
+            AuxiliaryAbilityChanged("", 0f);
         }
 
         subscribedUnit = unit;
@@ -198,7 +199,7 @@ public class UIManager : MonoBehaviour
     }
 
     #region UI Events
-    
+
     private void AuxiliaryAbilityChanged(string abilityName, float percentage)
     {
         auxiliaryAbilityUI.SetText(abilityName);
@@ -234,9 +235,12 @@ public class UIManager : MonoBehaviour
             StartCoroutine(EnemyHUDVisibilityDelay());
 
             IIdentifier identifier = casualtyHealth.GetComponent<IIdentifier>();
+            string text = identifier == null ? "" : identifier.Name;
 
-            enemyTitle.text = identifier != null ? identifier.Name : "";
-            enemyHealthBar.SetPercentage(casualtyHealth.HealthPercentage);
+            enemyTitle.text = text;
+            enemyHealthBar.SetPercentage(casualtyHealth.HealthPercentage, enemyObject == null || enemyObject != casualtyHealth.gameObject);
+
+            enemyObject = casualtyHealth.gameObject;
         }
 
 
@@ -359,6 +363,10 @@ public class UIManager : MonoBehaviour
         enemyHUD.SetActive(true);
 
         yield return new WaitForSeconds(fadeDelay);
+
+        enemyTitle.text = "";
+        enemyHealthBar.SetPercentage(1f, true);
+        enemyObject = null;
 
         enemyHUD.SetActive(false);
     }

@@ -270,12 +270,14 @@ public class UtilityActor : UnitController
 
         if (m_TextUI != null)
         {
-            m_TextUI.enabled = false;
+            m_TextUI.gameObject.SetActive(false);
         }
     }
 
-    void Update()
+    protected override void Update()
     {
+        base.Update();
+
         MemoryUpdate(Time.deltaTime);
         m_Psyche.Update(Time.deltaTime);
     }
@@ -315,7 +317,7 @@ public class UtilityActor : UnitController
             {
                 Debug.Log(m_Transform.name + " -- Can't end current behavior. Current Behavior: " + CurrentBehavior.ToString());
             }
-            
+
             return;
         }
 
@@ -348,7 +350,7 @@ public class UtilityActor : UnitController
                 Debug.Log(m_Transform.name + " -- No weighted behaviors available.");
             }
 
-            if(CurrentBehavior != null)
+            if (CurrentBehavior != null)
             {
                 CurrentBehavior.EndBehavior(true, false);
             }
@@ -1227,7 +1229,7 @@ public class UtilityActor : UnitController
         get
         {
             //Should check and possibly retarget?
-            if (TargetTransform != null && TargetTransform.gameObject.activeInHierarchy && !EnemyTraitThresholdCheck(TargetTransform))
+            if (TargetTransform != null && TargetTransform.gameObject.activeInHierarchy)//  && !EnemyTraitThresholdCheck(TargetTransform))
             {
                 //if (UnityEngine.Random.value < retargetChance)
                 //{
@@ -1272,10 +1274,7 @@ public class UtilityActor : UnitController
         get { return targetTransform; }
         set
         {
-            if (value == null)
-            {
-                Debug.Log("Setting TargetTransform to NULL");
-            }
+            Debug.Log("Setting TARGET TRANSFORM: " + (TargetTransform == null ? "NULL" : TargetTransform.ToString()));
             targetTransform = value;
         }
     }
@@ -1838,12 +1837,18 @@ public class UtilityActor : UnitController
     }
     void DrawEnemyGizmo()
     {
-        Gizmos.color = Color.red;
+        Gizmos.color = Color.yellow;
 
         NearbyEnemies.ForEach(a =>
         {
             Gizmos.DrawLine(m_Transform.position, a.Transform.position);
         });
+
+        if (TargetTransform != null)
+        {
+            Gizmos.color = Color.red;
+            Gizmos.DrawLine(m_Transform.position, TargetTransform.position);
+        }
     }
 
 

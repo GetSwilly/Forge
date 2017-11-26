@@ -128,7 +128,7 @@ public class Chase : BaseUtilityBehavior
 
     public override void StartBehavior()
     {
-        IsActive = true;
+        base.StartBehavior();
 
         //originalEndReachedDistance = m_Pathfinder.EndReachedDistance;
         //m_Pathfinder.EndReachedDistance = StopDistance;

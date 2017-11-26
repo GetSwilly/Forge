@@ -24,6 +24,9 @@ public abstract class MenuInflater : InteractableObject
     }
     protected virtual void Update()
     {
+        if (!isInflated)
+            return;
+
         if (Input.GetButtonDown(UserInput._CancelInputString))
         {
             DeflateMenu();

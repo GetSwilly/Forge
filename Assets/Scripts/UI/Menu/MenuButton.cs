@@ -5,117 +5,84 @@ using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 [RequireComponent(typeof(Button))]
-public class MenuButton : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler{
+public class MenuButton : MonoBehaviour
+{
 
     public delegate void ClickAction(MenuButton clickedButton);
-    public ClickAction OnButtonClicked;
+
 
     [SerializeField]
-    protected Text m_MainText;
+    protected Text mainText;
 
     [SerializeField]
-    protected Text m_SecondaryText;
+    protected Text secondaryText;
+
 
     [SerializeField]
-    protected Image m_Image;
+    protected Button mainButton;
+
+    [SerializeField]
+    protected Button secondaryButton;
     
-    protected string title;
-  
+    public ClickAction OnActionMain;
+    public ClickAction OnActionSecondary;
 
-
-    protected Menu m_Menu;
-    protected Button m_Button;
-
-
-    protected virtual void Awake()
+    protected void Start()
     {
-        m_Button = GetComponent<Button>();
+        if (mainButton != null)
+        {
+            mainButton.onClick.AddListener(() =>
+            {
+                if (OnActionMain != null)
+                {
+                    OnActionMain(this);
+                }
+            });
+        }
+
+        if (secondaryButton != null)
+        {
+            secondaryButton.onClick.AddListener(() =>
+            {
+                if (OnActionSecondary != null)
+                {
+                    OnActionSecondary(this);
+                }
+            });
+        }
     }
-
-    public virtual void Initialize(Menu _menu)
+    public void Initialize(string text1)
     {
-        Initialize(_menu, null, "");
+        Initialize(text1, "");
     }
-    public virtual void Initialize(Menu _menu, Sprite _sprite, string _title)
+    public virtual void Initialize(string text1, string text2)
     {
-        m_Menu = _menu;
-
-        SetImage(_sprite);
-        SetTitle(_title);
+        SetMainText(text1);
+        SetSecondaryText(text2);
     }
     public virtual void Activate()
     {
-        m_Button.interactable = true;
+        mainButton.interactable = true;
+        secondaryButton.interactable = true;
     }
     public virtual void Deactivate()
     {
-        m_Button.interactable = false;
+        mainButton.interactable = false;
+        secondaryButton.interactable = false;
     }
 
-    public virtual void SetTitle(string _title)
+    public void SetMainText(string text)
     {
-        if (m_MainText == null || _title == null)
+        if (mainText == null)
             return;
 
-        m_MainText.text = _title;
+        mainText.text = text;
     }
-    public virtual void SetImage(Sprite _sprite)
+    public void SetSecondaryText(string text)
     {
-        if (m_Image == null || _sprite == null)
+        if (secondaryText == null)
             return;
 
-        m_Image.sprite = _sprite;
-    }
-
-    public virtual void ButtonClicked()
-    {
-        if (OnButtonClicked != null)
-            OnButtonClicked.Invoke(this);
-    }
-
-
-    public void OnPointerEnter(PointerEventData eventData)
-    {
-        m_Menu.SelectedButton = this;
-    }
-    public void OnPointerExit(PointerEventData eventData)
-    {
-        m_Menu.SelectedButton = null;
-    }
-
-
-    public string MainText
-    {
-        get
-        {
-            if (m_MainText == null)
-                return "";
-
-            return m_MainText.text;
-        }
-        set
-        {
-            if (m_MainText == null)
-                return;
-
-            m_MainText.text = value;
-        }
-    }
-    public string SecondaryText
-    {
-        get
-        {
-            if (m_SecondaryText == null)
-                return "";
-
-            return m_SecondaryText.text;
-        }
-        set
-        {
-            if (m_SecondaryText == null)
-                return;
-
-            m_SecondaryText.text = value;
-        }
+        secondaryText.text = text;
     }
 }

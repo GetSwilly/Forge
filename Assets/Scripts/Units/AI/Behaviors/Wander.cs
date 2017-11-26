@@ -224,7 +224,7 @@ public class Wander : BaseUtilityBehavior
 
     public override void StartBehavior()
     {
-        IsActive = true;
+        base.StartBehavior();
 
         //m_Movement.AddSpeedMultiplier(wanderMoveSpeedup);
         //m_Movement.AddRotationMultiplier(wanderRotateSpeedup);

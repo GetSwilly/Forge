@@ -45,14 +45,14 @@ public class CharacterSelectInflater : MenuInflater
             _object.transform.localScale = Vector3.one;
             _object.transform.localPosition = Vector3.zero;
 
-            _button.OnButtonClicked += CharacterSelected;
+            _button.OnActionMain += CharacterSelected;
             
 
             m_Buttons.Add(_button);
 
 
 
-            _button.Initialize(m_Menu, null, characterPrefabs[i].GetComponent<PlayerController>().Name);
+            _button.Initialize(characterPrefabs[i].GetComponent<PlayerController>().Name);
 
 
 

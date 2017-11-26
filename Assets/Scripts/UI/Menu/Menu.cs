@@ -10,10 +10,6 @@ public class Menu : UIBase {
 
     [SerializeField]
     Transform buttonParent;
-
-    [SerializeField]
-    Text menuTitle;
-    
     
     [SerializeField]
     [Range(0f, 1f)]
@@ -28,11 +24,9 @@ public class Menu : UIBase {
 
     MenuButton selectedButton;
 
-
-    public delegate void AlertEvent();
     public delegate void ClickEvent(MenuButton clickedButton);
     public ClickEvent OnAccept;
-    public AlertEvent OnCancel;
+    public Delegates.Alert OnCancel;
 
 
     public void OnDisable()
@@ -84,10 +78,9 @@ public class Menu : UIBase {
         buttonObject.SetActive(true);
         buttonObject.transform.SetParent(buttonParent);
 
-        // Vector3 pos = buttonObject.transform.localPosition;
-        //  pos.z = 0;
-        // buttonObject.transform.localPosition = pos
-        buttonObject.transform.localPosition = Vector3.zero;
+        RectTransform rectT = buttonParent as RectTransform;
+
+        buttonObject.transform.localPosition = rectT == null ? Vector3.zero : new Vector3(rectT.rect.center.x, rectT.rect.center.y);
         buttonObject.transform.localRotation = Quaternion.identity;
         buttonObject.transform.localScale = Vector3.one;
     }

@@ -9,6 +9,9 @@ using UnityEngine.Events;
 [RequireComponent(typeof(Team))]
 public abstract class UnitController : MonoBehaviour, IIdentifier, IMemorable, IStat
 {
+    private static readonly float _EmissionMin = 0.4f;
+    private static readonly float _EmissionMax = 2f;
+    private static readonly float _EmissionUpdateSpeed = 2.5f;
 
     protected static readonly float _PickupMovementSpeed = 15f;
     protected static readonly float _PickupRotateSpeed = 10f;
@@ -41,13 +44,21 @@ public abstract class UnitController : MonoBehaviour, IIdentifier, IMemorable, I
     [SerializeField]
     [Range(0, 360)]
     private int fieldOfView = 20;
-
-    [SerializeField]
+    
     private int m_Credits;
 
+    [SerializeField]
+    Renderer m_Renderer;
+
+    [SerializeField]
+    Color emissionColor = Color.white;
+
+    [SerializeField]
+    float desiredEmission;
+    float currentEmission;
 
     protected bool isOperational = true;
-    
+
     protected Health m_Health;
     protected Transform m_Transform;
     protected AudioSource m_Audio;
@@ -70,14 +81,13 @@ public abstract class UnitController : MonoBehaviour, IIdentifier, IMemorable, I
     public virtual void Awake()
     {
         m_Transform = GetComponent<Transform>();
-        
+
         m_Health = GetComponent<Health>();
         m_Audio = GetComponent<AudioSource>();
         m_Team = GetComponent<Team>();
         m_Character = GetComponent<CharacterController>();
         m_Movement = GetComponent<MovementController>();
     }
-
     public virtual void Start()
     {
         if (GameManager.Instance != null)
@@ -99,6 +109,11 @@ public abstract class UnitController : MonoBehaviour, IIdentifier, IMemorable, I
         m_Health.OnHealthChange += HealthChanged;
         m_Health.OnKilled += Died;
     }
+    protected virtual void Update()
+    {
+        UpdateEmission(Time.deltaTime);
+    }
+
     void SubscribeToStats()
     {
         StatType[] sTypes = Enum.GetValues(typeof(StatType)) as StatType[];
@@ -152,7 +167,14 @@ public abstract class UnitController : MonoBehaviour, IIdentifier, IMemorable, I
         //}
     }
 
-
+    public void SetEmissionPercentage(float percentage)
+    {
+        DesiredEmission = _EmissionMin + (Mathf.Clamp01(percentage) * (_EmissionMax - _EmissionMin));
+    }
+    void UpdateEmission(float deltaTime)
+    {
+        CurrentEmission = Mathf.MoveTowards(CurrentEmission, DesiredEmission, _EmissionUpdateSpeed * deltaTime);
+    }
 
 
     /// <summary>
@@ -426,7 +448,7 @@ public abstract class UnitController : MonoBehaviour, IIdentifier, IMemorable, I
 
     public virtual void CasualtyAchieved(Health casualtyHealth)
     {
-        if(OnDamageAchieved != null)
+        if (OnDamageAchieved != null)
         {
             OnDamageAchieved(casualtyHealth);
         }
@@ -457,7 +479,7 @@ public abstract class UnitController : MonoBehaviour, IIdentifier, IMemorable, I
 
     #region Accessors
 
-    public String Name
+    public string Name
     {
         get { return unitName; }
     }
@@ -505,6 +527,34 @@ public abstract class UnitController : MonoBehaviour, IIdentifier, IMemorable, I
         get { return m_Credits; }
         private set { m_Credits = Mathf.Clamp(value, 0, value); }
     }
+
+    private float CurrentEmission
+    {
+        get { return currentEmission; }
+        set
+        {
+            currentEmission = value;
+
+            if (m_Renderer != null)
+            {
+                Material renderMat = m_Renderer.material;
+
+                Color matColor = emissionColor * Mathf.LinearToGammaSpace(currentEmission);
+
+                //Debug.Log("EMISSION COLOR: " + emissionColor);
+                //emissionColor *= Mathf.LinearToGammaSpace(emission);
+
+                renderMat.SetColor("_EmissionColor", matColor);
+            }
+        }
+    }
+
+    protected float DesiredEmission
+    {
+        get { return desiredEmission; }
+        private set { desiredEmission = Mathf.Clamp(value, 0f, value); }
+    }
+
     #endregion
 
 

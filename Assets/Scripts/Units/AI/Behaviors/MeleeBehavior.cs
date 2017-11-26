@@ -72,7 +72,7 @@ public class MeleeBehavior : BaseUtilityBehavior
 
     public override void StartBehavior()
     {
-        IsActive = true;
+        base.StartBehavior();
 
         Strike();
     }

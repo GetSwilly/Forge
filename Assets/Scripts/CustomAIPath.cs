@@ -367,8 +367,11 @@ public class CustomAIPath : AIPath, IPathfinder, IMovement
         return interpolator.remainingDistance;
     }
 
-    public bool CheckClearPath(Vector3 direction)
+    public bool CheckClearPath(Vector3 point)
     {
+        Vector3 direction = point - m_Transform.TransformPoint(rootPosition);
+        direction.y = 0f;
+
         Ray checkRay = new Ray(m_Transform.TransformPoint(rootPosition), direction);
         RaycastHit[] hits = Physics.RaycastAll(checkRay);
 
@@ -380,7 +383,7 @@ public class CustomAIPath : AIPath, IPathfinder, IMovement
             }
         }
 
-        return false;
+        return true;
     }
 
     #endregion

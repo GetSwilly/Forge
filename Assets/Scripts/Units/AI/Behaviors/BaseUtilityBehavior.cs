@@ -16,6 +16,10 @@ public abstract class BaseUtilityBehavior : MonoBehaviour
     [SerializeField]
     bool showDebug = false;
 
+    [SerializeField]
+    [Range(0f, 1f)]
+    float emissionPercentage;
+
     [Tooltip("Can behavior be utilized?")]
     [SerializeField]
     private bool isUsable = true;
@@ -75,6 +79,7 @@ public abstract class BaseUtilityBehavior : MonoBehaviour
     public virtual void StartBehavior()
     {
         IsActive = true;
+        m_Actor.SetEmissionPercentage(emissionPercentage);
     }
     public virtual void StartBehavior(BaseUtilityBehavior _newSuperBehavior)
     {
@@ -148,6 +153,7 @@ public abstract class BaseUtilityBehavior : MonoBehaviour
 
 
         IsActive = false;
+        m_Actor.SetEmissionPercentage(0f);
 
         if (subBehavior != null)
         {

@@ -340,7 +340,6 @@ public class PlayerController : UnitController
             return;
 
         nativeAbility.ActivateAbility();
-
     }
     public void DeactivateNativeAbility()
     {

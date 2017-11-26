@@ -34,7 +34,7 @@ public class UpgradeMenuInflater : MenuInflater {
             _object.transform.localScale = Vector3.one;
 
             StatButtonController _controller = _button as StatButtonController;
-            _controller.Initialize(m_Menu, _types[i], activatingPlayer.GetCurrentStatLevel(_types[i]), activatingPlayer.GetMaxStatLevel(_types[i]));
+            _controller.Initialize(_types[i], activatingPlayer.GetCurrentStatLevel(_types[i]), activatingPlayer.GetMaxStatLevel(_types[i]));
             _controller.OnUpgradeClicked += AttemptStatUpgrade;
 
 
@@ -42,10 +42,7 @@ public class UpgradeMenuInflater : MenuInflater {
         }
     }
 
-
-
-
-
+    
     void AttemptStatUpgrade(StatType _type)
     {
         int availableCurrency = activatingPlayer.LevelPoints;

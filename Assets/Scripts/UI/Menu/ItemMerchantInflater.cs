@@ -91,15 +91,11 @@ public class ItemMerchantInflater : MenuInflater {
                 i--;
                 continue;
             }
-
-
-            //itemSet.Add(_identifier.Name);
+            
+            _button.Initialize(_identifier.Name, m_Prices[i].CreditValue.ToString("N0"));
+            _button.OnActionMain += AttemptPurchase;
 
             m_Menu.AddButton(_buttonObject);
-            
-            _button.OnButtonClicked += AttemptPurchase;
-            _button.Initialize(m_Menu, null, _identifier.Name);
-            
 
             merchandiseToButtonDictionary.Add(m_Prices[i].gameObject.name, _button);
         }

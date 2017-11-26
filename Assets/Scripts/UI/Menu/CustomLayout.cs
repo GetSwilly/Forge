@@ -5,11 +5,16 @@ using UnityEditor;
 using UnityEngine;
 using UnityEngine.UI;
 
-public class CustomLayout : LayoutGroup {
+public class CustomLayout : LayoutGroup
+{
 
 
-    public enum LayoutStyle { Radial, Stack, Scrolling }
-    public enum SubStyle { A, B }
+    public enum LayoutStyle
+    {
+        Vertical,
+        Horizontal,
+        Radial
+    }
 
     [System.Flags]
     public enum LayoutProperties
@@ -19,32 +24,29 @@ public class CustomLayout : LayoutGroup {
         Alphabetize = 4
     }
 
-   
 
 
-
-    [SerializeField]
-    public LayoutStyle m_LayoutStyle = LayoutStyle.Radial;
 
 
     [SerializeField]
-    public SubStyle m_SubStyle = SubStyle.A;
-
+    public LayoutStyle m_LayoutStyle = LayoutStyle.Vertical;
 
     [SerializeField]
     [EnumFlags]
     public LayoutProperties m_Properties;
 
     [SerializeField]
-    [Range(0f, 1f)]
-    float movementSmoothing = 0.5f;
+    MovementType m_MovementType = MovementType.Lerp;
 
     [SerializeField]
-    [Range(0f, 1f)]
-    float rotationSmoothing = 0.5f;
+    float smoothing;
 
     [SerializeField]
-    Vector3 anchorPosition = Vector3.zero;
+    float speed;
+  
+
+    [SerializeField]
+    Vector3 originPosition = Vector3.zero;
 
     [SerializeField]
     List<Transform> ignoreList = new List<Transform>();
@@ -65,26 +67,18 @@ public class CustomLayout : LayoutGroup {
     [Range(0f, 360f)]
     float maxAngle = 360f;
 
-
-    //Stack Variables
-    [SerializeField]
-    Vector3 selectedLocalOffset = Vector3.zero;
-
-    [SerializeField]
-    Vector3 stackLocalOffset = Vector3.zero;
-
-    [SerializeField]
-    Vector3 stackDirection = new Vector3(-1, 0, 1);
-
-    [SerializeField]
-    Vector3 stackRotation = Vector3.zero;
-
-    [SerializeField]
-    float stackPadding = 5;
-
     [SerializeField]
     bool shouldIsolateSelected = true;
 
+    [SerializeField]
+    float spacing;
+
+    [SerializeField]
+    [Range(0f, 1f)]
+    float percentage = 0.5f;
+
+    [SerializeField]
+    bool reverseOrder = false;
 
     //Scrolling Variables
     [SerializeField]
@@ -95,9 +89,7 @@ public class CustomLayout : LayoutGroup {
     float scrollPadding = 1f;
 
 
-
-    
-    Dictionary<Transform, Orientation> desiredOrientations = new Dictionary<Transform, Orientation>();
+    Dictionary<Transform, Vector3> desiredPositions = new Dictionary<Transform, Vector3>();
 
     List<Transform> activeTransforms = new List<Transform>();
 
@@ -131,23 +123,29 @@ public class CustomLayout : LayoutGroup {
         {
             for (int i = 0; i < activeTransforms.Count; i++)
             {
-                if (activeTransforms[i] != null && desiredOrientations.ContainsKey(activeTransforms[i]))
+                if (activeTransforms[i] != null && desiredPositions.ContainsKey(activeTransforms[i]))
                 {
-                    activeTransforms[i].localPosition = Vector3.Lerp(activeTransforms[i].localPosition, desiredOrientations[activeTransforms[i]].LocalPosition, movementSmoothing);
-                    //activeTransforms[i].rotation = Quaternion.Lerp(activeTransforms[i].rotation, Quaternion.Euler(desiredOrientations[activeTransforms[i]].Euler), rotationSmoothing);
-                    activeTransforms[i].localEulerAngles = Vector3.Lerp(activeTransforms[i].localEulerAngles, desiredOrientations[activeTransforms[i]].LocalEuler, rotationSmoothing);
+                    switch (m_MovementType)
+                    {
+                        case MovementType.Lerp:
+                            activeTransforms[i].localPosition = Vector3.Lerp(activeTransforms[i].localPosition, desiredPositions[activeTransforms[i]], Smoothing * Time.deltaTime);
+                            break;
+                        case MovementType.MoveTowards:
+                            activeTransforms[i].localPosition = Vector3.MoveTowards(activeTransforms[i].localPosition, desiredPositions[activeTransforms[i]], Speed * Time.deltaTime);
+                            break;
+                    }
                 }
             }
         }
     }
+
     public void SetImmediateLayout()
     {
         for (int i = 0; i < activeTransforms.Count; i++)
         {
-            if (activeTransforms[i] != null && desiredOrientations.ContainsKey(activeTransforms[i]))
+            if (activeTransforms[i] != null && desiredPositions.ContainsKey(activeTransforms[i]))
             {
-                activeTransforms[i].localPosition = desiredOrientations[activeTransforms[i]].LocalPosition;
-                activeTransforms[i].localEulerAngles = desiredOrientations[activeTransforms[i]].LocalEuler;
+                activeTransforms[i].localPosition = desiredPositions[activeTransforms[i]];
             }
         }
     }
@@ -170,19 +168,18 @@ public class CustomLayout : LayoutGroup {
     }
 
 
-
-#if UNITY_EDITOR
     protected override void OnValidate()
     {
         base.OnValidate();
 
-        StackDirection = StackDirection;
-        StackPadding = StackPadding;
         ScrollPadding = ScrollPadding;
+        Spacing = Spacing;
+
+        Smoothing = Smoothing;
+        Speed = Speed;
 
         CalculateLayout();
     }
-#endif
 
 
 
@@ -200,9 +197,12 @@ public class CustomLayout : LayoutGroup {
                 activeTransforms.Add(child);
             }
         }
+
+        if (reverseOrder)
+        {
+            activeTransforms.Reverse();
+        }
     }
-
-
 
     void CalculateLayout()
     {
@@ -236,11 +236,11 @@ public class CustomLayout : LayoutGroup {
             case LayoutStyle.Radial:
                 CalculateRadial();
                 break;
-            case LayoutStyle.Stack:
-                CalculateStack();
+            case LayoutStyle.Horizontal:
+                CalculateStackHorizontal();
                 break;
-            case LayoutStyle.Scrolling:
-                CalculateScrolling();
+            case LayoutStyle.Vertical:
+                CalculateStackVertical();
                 break;
         }
     }
@@ -255,220 +255,240 @@ public class CustomLayout : LayoutGroup {
             Vector3 vPos = Vector3.zero;
             Vector3 rotationEuler = Vector3.zero;
 
-
-            switch (m_SubStyle)
-            {
-                case SubStyle.A:
-                    vPos = new Vector3(Mathf.Cos(fAngle * Mathf.Deg2Rad), Mathf.Sin(fAngle * Mathf.Deg2Rad), 0);
-                    vPos.x *= placementCircle.x;
-                    vPos.y *= placementCircle.y;
-                    break;
-                case SubStyle.B:
-                    vPos = new Vector3(Mathf.Cos(fAngle * Mathf.Deg2Rad), 0, Mathf.Sin(fAngle * Mathf.Deg2Rad));
-                    vPos.x *= placementCircle.x;
-                    vPos.z *= placementCircle.y;
-                    break;
-            }
-
-            // Debug.Log(string.Format("{0} : {1}", m_PositioningStyle ,vPos));
+            vPos = new Vector3(Mathf.Cos(fAngle * Mathf.Deg2Rad), Mathf.Sin(fAngle * Mathf.Deg2Rad), 0);
+            vPos.x *= placementCircle.x;
+            vPos.y *= placementCircle.y;
 
 
-            Vector3 newPos = transform.InverseTransformPoint(transform.position + anchorPosition) +  vPos;
+            //switch (m_SubStyle)
+            //{
+            //    case SubStyle.A:
+            //        vPos = new Vector3(Mathf.Cos(fAngle * Mathf.Deg2Rad), Mathf.Sin(fAngle * Mathf.Deg2Rad), 0);
+            //        vPos.x *= placementCircle.x;
+            //        vPos.y *= placementCircle.y;
+            //        break;
+            //    case SubStyle.B:
+            //        vPos = new Vector3(Mathf.Cos(fAngle * Mathf.Deg2Rad), 0, Mathf.Sin(fAngle * Mathf.Deg2Rad));
+            //        vPos.x *= placementCircle.x;
+            //        vPos.z *= placementCircle.y;
+            //        break;
+            //}
+
+
+            Vector3 newPos = transform.InverseTransformPoint(transform.position + originPosition) + vPos;
             newPos.Scale(new Vector3(1f / transform.localScale.x, 1f / transform.localScale.y, 1f / transform.localScale.z));
-            //newPos.Scale(transform.localScale);
-            // transform.TransformPoint(anchorPosition) + (transform.TransformDirection(vPos).normalized * vPos.magnitude);
-            // newPos += transform.right * vPos.x;
-            // newPos += transform.up * vPos.y;
-            // newPos += transform.forward * vPos.z;
 
-
-            // Vector3 newPos2 = transform.TransformPoint(anchorPosition) + transform.TransformPoint(vPos);
-
-
-
-            if (desiredOrientations.ContainsKey(activeTransforms[i]))
-            {
-                Orientation _orientation = desiredOrientations[activeTransforms[i]];
-                _orientation.LocalPosition = newPos;
-                _orientation.LocalEuler = rotationEuler;
-                desiredOrientations[activeTransforms[i]] = _orientation;
-            }
-            else
-            {
-                desiredOrientations.Add(activeTransforms[i], new Orientation(newPos, rotationEuler, Vector3.one));
-            }
-
-
-           // Debug.Log(string.Format("VPos: {0}. NewPos -- World: {1}. Local: {2}", vPos, newPos, transform.InverseTransformDirection(newPos)));
-
+            SetDesiredPositon(activeTransforms[i], newPos);
 
             fAngle += fOffsetAngle;
         }
     }
 
 
-    void CalculateStack() 
-    {
+    //void CalculateStack() 
+    //{
+    //    if (activeTransforms.Count == 0)
+    //        return;
 
+    //    Vector3 currentPosition = Vector3.zero;
+
+    //    //for(int i = activeTransforms.Count - 1 ; i >= 0; i--)
+    //    //{
+
+    //    //    pos = transform.InverseTransformPoint(transform.position + originPosition) + stackLocalOffset + (StackDirection * stackPadding * stackCount);
+    //    //    pos.Scale(new Vector3(1f / transform.localScale.x, 1f / transform.localScale.y, 1f / transform.localScale.z));
+    //    //    //pos += transform.TransformPoint(anchorPosition) + transform.TransformPoint(pos);
+
+    //    //    rotationEuler = stackRotation;
+
+
+
+    //    //    if (desiredOrientations.ContainsKey(activeTransforms[i]))
+    //    //    {
+    //    //        Orientation _orientation = desiredOrientations[activeTransforms[i]];
+
+    //    //        _orientation.LocalPosition = pos;
+    //    //        _orientation.LocalEuler = rotationEuler;
+    //    //        desiredOrientations[activeTransforms[i]] = _orientation;
+    //    //    }
+    //    //    else
+    //    //    {
+    //    //        desiredOrientations.Add(activeTransforms[i], new Orientation(pos, rotationEuler, Vector3.one));
+    //    //    }
+
+
+    //    //    stackCount++;
+    //    //}
+    //}
+    void CalculateStackHorizontal()
+    {
         if (activeTransforms.Count == 0)
             return;
 
-       
-        Vector3 pos;
-        Vector3 rotationEuler;
-
-
-        pos = transform.InverseTransformPoint(transform.position + anchorPosition) + selectedLocalOffset;
-        pos.Scale(new Vector3(1f / transform.localScale.x, 1f / transform.localScale.y, 1f / transform.localScale.z));
-
-        // pos.Scale(transform.localScale);
-
-
-        rotationEuler = Vector3.zero;
-
-        int startIndex = activeTransforms.Count - (shouldIsolateSelected ? 2 : 1);
-
-
-        if (shouldIsolateSelected)
+        float adjustmentValue = 0f;
+        for (int i = 0; i < activeTransforms.Count; i++)
         {
-            if (desiredOrientations.ContainsKey(activeTransforms[activeTransforms.Count - 1]))
+            RectTransform rectT = activeTransforms[i] as RectTransform;
+
+            adjustmentValue += rectT.rect.width;
+
+            if (i < activeTransforms.Count - 1)
             {
-                Orientation _orientation = desiredOrientations[activeTransforms[activeTransforms.Count - 1]];
-                _orientation.LocalPosition = pos;
-                _orientation.LocalEuler = rotationEuler;
-                desiredOrientations[activeTransforms[activeTransforms.Count - 1]] = _orientation;
-            }
-            else
-            {
-                desiredOrientations.Add(activeTransforms[activeTransforms.Count - 1], new Orientation(selectedLocalOffset, rotationEuler, Vector3.one));
+                adjustmentValue += Spacing;
             }
         }
+        Vector3 adjustmentVector = new Vector3(adjustmentValue * percentage, 0f);
 
 
-
-        int stackCount = 0;
-        for(int i = startIndex; i >= 0; i--)
-        {
-
-            pos = transform.InverseTransformPoint(transform.position + anchorPosition) + stackLocalOffset + (StackDirection * stackPadding * stackCount);
-            pos.Scale(new Vector3(1f / transform.localScale.x, 1f / transform.localScale.y, 1f / transform.localScale.z));
-            //pos += transform.TransformPoint(anchorPosition) + transform.TransformPoint(pos);
-
-            rotationEuler = stackRotation;
-
-
-
-            if (desiredOrientations.ContainsKey(activeTransforms[i]))
-            {
-                Orientation _orientation = desiredOrientations[activeTransforms[i]];
-
-                _orientation.LocalPosition = pos;
-                _orientation.LocalEuler = rotationEuler;
-                desiredOrientations[activeTransforms[i]] = _orientation;
-            }
-            else
-            {
-                desiredOrientations.Add(activeTransforms[i], new Orientation(pos, rotationEuler, Vector3.one));
-            }
-
-
-            stackCount++;
-        }
-    }
-    void CalculateScrolling()
-    {
-        switch (m_SubStyle) {
-            case SubStyle.A:
-                CalculateHorizontalScroll();
-                break;
-            case SubStyle.B:
-                CalculateVerticalScroll();
-                break;
-        }
-    }
-    void CalculateHorizontalScroll()
-    {
-        float totalLength = 0;
-
-        for(int i = 0; i < activeTransforms.Count; i++)
-        {
-            RectTransform _rect = activeTransforms[i] as RectTransform;
-
-            totalLength += _rect.rect.width;
-        }
-
-        totalLength += (activeTransforms.Count - 1) * scrollPadding;
-
-        Vector3 pos = Vector3.right * totalLength * scrollValue * -1;
-
-
-        for(int i = 0; i < activeTransforms.Count; i++)
-        {
-            RectTransform _rect = activeTransforms[i] as RectTransform;
-
-            pos += Vector3.right * (_rect.rect.width / 2f);
-            //Vector3 pos = offset + (Vector3.right * _rect.rect.width) + (Vector3.right * scrollPadding);
-            Vector3 rotationEuler = Vector3.zero;
-
-
-            if (desiredOrientations.ContainsKey(activeTransforms[i]))
-            {
-                Orientation _orientation = desiredOrientations[activeTransforms[i]];
-
-                _orientation.LocalPosition = pos;
-                _orientation.LocalEuler = rotationEuler;
-                desiredOrientations[activeTransforms[i]] = _orientation;
-            }
-            else
-            {
-                desiredOrientations.Add(activeTransforms[i], new Orientation(pos, rotationEuler, Vector3.one));
-            }
-
-            pos += Vector3.right * (_rect.rect.width / 2f);
-            pos += Vector3.right * scrollPadding;
-        }
-    }
-    void CalculateVerticalScroll()
-    {
-        float totalLength = 0;
+        Vector3 currentPosition = originPosition;
 
         for (int i = 0; i < activeTransforms.Count; i++)
         {
-            RectTransform _rect = activeTransforms[i] as RectTransform;
+            RectTransform rectT = activeTransforms[i] as RectTransform;
 
-            totalLength += _rect.rect.height;
+            float width = rectT.rect.width;
+
+            currentPosition += Vector3.right * (width / 2f);
+
+            SetDesiredPositon(activeTransforms[i], currentPosition - adjustmentVector);
+
+            currentPosition += Vector3.right * (width / 2f);
+            currentPosition += Vector3.right * Spacing;
         }
+    }
+    void CalculateStackVertical()
+    {
+        if (activeTransforms.Count == 0)
+            return;
 
-        totalLength += (activeTransforms.Count - 1) * scrollPadding;
+        float adjustmentValue = 0f;
+        for (int i = 0; i < activeTransforms.Count; i++)
+        {
+            RectTransform rectT = activeTransforms[i] as RectTransform;
 
-        Vector3 pos = Vector3.up * totalLength * scrollValue * -1;
+            adjustmentValue += rectT.rect.height;
 
+            if (i < activeTransforms.Count - 1)
+            {
+                adjustmentValue += Spacing;
+            }
+        }
+        Vector3 adjustmentVector = new Vector3(0f, adjustmentValue * percentage);
+
+        // Debug.DrawLine(this.transform.position, this.transform.TransformPoint(adjustmentVector), Color.magenta, 3f);
+
+        Vector3 currentPosition = originPosition;
 
         for (int i = 0; i < activeTransforms.Count; i++)
         {
-            RectTransform _rect = activeTransforms[i] as RectTransform;
+            RectTransform rectT = activeTransforms[i] as RectTransform;
 
-            pos += Vector3.up * (_rect.rect.height / 2f);
-            Vector3 rotationEuler = Vector3.zero;
+            float height = rectT.rect.height;
 
+            currentPosition += Vector3.up * (height / 2f);
 
-            if (desiredOrientations.ContainsKey(activeTransforms[i]))
-            {
-                Orientation _orientation = desiredOrientations[activeTransforms[i]];
+            SetDesiredPositon(activeTransforms[i], currentPosition - adjustmentVector);
 
-                _orientation.LocalPosition = pos;
-                _orientation.LocalEuler = rotationEuler;
-                desiredOrientations[activeTransforms[i]] = _orientation;
-            }
-            else
-            {
-                desiredOrientations.Add(activeTransforms[i], new Orientation(pos, rotationEuler, Vector3.one));
-            }
-
-            pos += Vector3.up * (_rect.rect.width / 2f);
-            pos += Vector3.up * scrollPadding;
+            currentPosition += Vector3.up * (height / 2f);
+            currentPosition += Vector3.up * Spacing;
         }
     }
+
+
+    //void CalculateScrolling()
+    //{
+    //    switch (m_SubStyle) {
+    //        case SubStyle.A:
+    //            CalculateHorizontalScroll();
+    //            break;
+    //        case SubStyle.B:
+    //            CalculateVerticalScroll();
+    //            break;
+    //    }
+    //}
+    //void CalculateHorizontalScroll()
+    //{
+    //    float totalLength = 0;
+
+    //    for (int i = 0; i < activeTransforms.Count; i++)
+    //    {
+    //        RectTransform _rect = activeTransforms[i] as RectTransform;
+
+    //        totalLength += _rect.rect.width;
+    //    }
+
+    //    totalLength += (activeTransforms.Count - 1) * scrollPadding;
+
+    //    Vector3 pos = Vector3.right * totalLength * scrollValue * -1;
+
+
+    //    for (int i = 0; i < activeTransforms.Count; i++)
+    //    {
+    //        RectTransform _rect = activeTransforms[i] as RectTransform;
+
+    //        pos += Vector3.right * (_rect.rect.width / 2f);
+    //        //Vector3 pos = offset + (Vector3.right * _rect.rect.width) + (Vector3.right * scrollPadding);
+    //        Vector3 rotationEuler = Vector3.zero;
+
+
+    //        if (desiredOrientations.ContainsKey(activeTransforms[i]))
+    //        {
+    //            Orientation _orientation = desiredOrientations[activeTransforms[i]];
+
+    //            _orientation.LocalPosition = pos;
+    //            _orientation.LocalEuler = rotationEuler;
+    //            desiredOrientations[activeTransforms[i]] = _orientation;
+    //        }
+    //        else
+    //        {
+    //            desiredOrientations.Add(activeTransforms[i], new Orientation(pos, rotationEuler, Vector3.one));
+    //        }
+
+    //        pos += Vector3.right * (_rect.rect.width / 2f);
+    //        pos += Vector3.right * scrollPadding;
+    //    }
+    //}
+    //void CalculateVerticalScroll()
+    //{
+    //    float totalLength = 0;
+
+    //    for (int i = 0; i < activeTransforms.Count; i++)
+    //    {
+    //        RectTransform _rect = activeTransforms[i] as RectTransform;
+
+    //        totalLength += _rect.rect.height;
+    //    }
+
+    //    totalLength += (activeTransforms.Count - 1) * scrollPadding;
+
+    //    Vector3 pos = Vector3.up * totalLength * scrollValue * -1;
+
+
+    //    for (int i = 0; i < activeTransforms.Count; i++)
+    //    {
+    //        RectTransform _rect = activeTransforms[i] as RectTransform;
+
+    //        pos += Vector3.up * (_rect.rect.height / 2f);
+    //        Vector3 rotationEuler = Vector3.zero;
+
+
+    //        if (desiredOrientations.ContainsKey(activeTransforms[i]))
+    //        {
+    //            Orientation _orientation = desiredOrientations[activeTransforms[i]];
+
+    //            _orientation.LocalPosition = pos;
+    //            _orientation.LocalEuler = rotationEuler;
+    //            desiredOrientations[activeTransforms[i]] = _orientation;
+    //        }
+    //        else
+    //        {
+    //            desiredOrientations.Add(activeTransforms[i], new Orientation(pos, rotationEuler, Vector3.one));
+    //        }
+
+    //        pos += Vector3.up * (_rect.rect.width / 2f);
+    //        pos += Vector3.up * scrollPadding;
+    //    }
+    //}
     /*
     public void RotateClockwise()
     {
@@ -498,14 +518,26 @@ public class CustomLayout : LayoutGroup {
         CalculateRadial();
         *
     }
-*/
+    */
+
+    void SetDesiredPositon(Transform t, Vector3 localPosition)
+    {
+        if (desiredPositions.ContainsKey(t))
+        {
+            desiredPositions[t] = localPosition;
+        }
+        else
+        {
+            desiredPositions.Add(t, localPosition);
+        }
+    }
 
     public void Next()
     {
         if (activeTransforms.Count <= 1)
             return;
 
-        activeTransforms[activeTransforms.Count-1].SetAsFirstSibling();
+        activeTransforms[activeTransforms.Count - 1].SetAsFirstSibling();
         CalculateLayout();
     }
     public void Previous()
@@ -533,39 +565,39 @@ public class CustomLayout : LayoutGroup {
 
 
 
-    #region Getters / Setters
+    #region Accessors
 
-    public LayoutStyle MyLayoutStyle
+    public LayoutStyle Style
     {
         get { return m_LayoutStyle; }
         set { m_LayoutStyle = value; }
     }
-    public SubStyle MySubStyle
-    {
-        get { return m_SubStyle; }
-        set { m_SubStyle = value; }
-    }
-    public LayoutProperties MyLayoutProperties
+    public LayoutProperties Properties
     {
         get { return m_Properties; }
         set { m_Properties = value; }
     }
 
-
-    public Vector3 StackDirection
-    {
-        get { return stackDirection; }
-        set { stackDirection = value.normalized; }
-    }
-    public float StackPadding
-    {
-        get { return stackPadding; }
-        set { stackPadding = value; }// Mathf.Max(0f, stackPadding); }
-    }
     public float ScrollPadding
     {
         get { return scrollPadding; }
         set { scrollPadding = Mathf.Max(0f, scrollPadding); }
+    }
+    public float Spacing
+    {
+        get { return spacing; }
+        private set { spacing = Mathf.Clamp(value, 0f, value); }
+    }
+
+    public float Smoothing
+    {
+        get { return smoothing; }
+        private set { smoothing = Mathf.Clamp(value, 0f, value); }
+    }
+    public float Speed
+    {
+        get { return speed; }
+        private set { speed = Mathf.Clamp(value, 0f, value); }
     }
     #endregion
 }

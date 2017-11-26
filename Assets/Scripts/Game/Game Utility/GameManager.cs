@@ -71,8 +71,6 @@ public class GameManager : MonoBehaviour
             Destroy(this);
 
         Instance = this;
-
-        Application.targetFrameRate = -1;
     }
     void Start()
     {

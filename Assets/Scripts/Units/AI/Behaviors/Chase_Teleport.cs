@@ -166,7 +166,7 @@ public class Chase_Teleport : BaseUtilityBehavior {
 
     public override void StartBehavior()
     {
-        IsActive = true;
+        base.StartBehavior();
 
         AttemptTeleport();
     }

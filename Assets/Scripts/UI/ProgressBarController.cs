@@ -76,10 +76,8 @@ public class ProgressBarController : MonoBehaviour
         {
             SetFillPercentage(pctg);
         }
-        else
-        {
-            SetDesiredPercentage(pctg);
-        }
+
+        SetDesiredPercentage(pctg);
     }
 
     void SetDesiredPercentage(float _desired)

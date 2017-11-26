@@ -128,7 +128,7 @@ public class Flee : BaseUtilityBehavior
 
     public override void StartBehavior()
     {
-        IsActive = true;
+        base.StartBehavior();
 
         // m_Movement.AddSpeedMultiplier(fleeSpeedup);
         AttemptFlee();

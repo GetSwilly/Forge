@@ -167,7 +167,10 @@ public class CameraShake : MonoBehaviour
 
     void OnValidate()
     {
-        m_Properties.Validate();
+        if (m_Properties != null)
+        {
+            m_Properties.Validate();
+        }
     }
 
     [System.Serializable]

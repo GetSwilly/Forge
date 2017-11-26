@@ -80,6 +80,15 @@ public class Strafe : BaseUtilityBehavior {
                 position = targetObject.LastKnownBasePosition + (position - targetObject.LastKnownBasePosition).normalized * desiredRadius;
             }
 
+            if (!m_Pathfinder.CheckClearPath(position))
+            {
+                if (ShowDebug)
+                {
+                    //Debug.Log("")
+                }
+                break;
+            }
+            
             // m_Pathfinder.SetTarget(position);
             Vector3 originalPosition = m_Transform.position;
 
@@ -106,7 +115,7 @@ public class Strafe : BaseUtilityBehavior {
 
     public override void StartBehavior()
     {
-        IsActive = true;
+        base.StartBehavior();
 
         currentStrafeValue = 0f;
         StartCoroutine(StrafeBehavior());

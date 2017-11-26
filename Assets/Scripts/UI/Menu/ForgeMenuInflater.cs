@@ -50,14 +50,13 @@ public class ForgeMenuInflater : MenuInflater
             GameObject _buttonObject = Instantiate(buttonPrefab) as GameObject;
             MenuButton _button = _buttonObject.GetComponent<MenuButton>();
 
-            _button.OnButtonClicked += AttemptForge;
-            m_Menu.AddButton(_buttonObject);
-            
-            _button.Initialize(m_Menu, null, f.Name);
-
             ItemPrice _price = f.gameObject.GetComponent<ItemPrice>();
 
-            _button.SecondaryText = "Credits: " + _price.CreditValue;
+            _button.Initialize(f.Name, _price.CreditValue.ToString());
+            _button.OnActionMain += AttemptForge;
+
+           
+            m_Menu.AddButton(_buttonObject);
 
             buttonToForgeDictionary.Add(_button, f);
         });

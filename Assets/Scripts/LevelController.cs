@@ -91,7 +91,10 @@ namespace TestRealm
 
         void OnValidate()
         {
-            m_Waves.ForEach(w => w.Validate());
+            if (m_Waves != null)
+            {
+                m_Waves.ForEach(w => w.Validate());
+            }
         }
     }
 }
