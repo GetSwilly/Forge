@@ -1,136 +1,192 @@
 ﻿using UnityEngine;
 using System.Collections;
-using System.Collections.Generic;
 
-[RequireComponent(typeof(Collider))]
-[RequireComponent(typeof(Rigidbody))]
-[RequireComponent(typeof(TrailRenderer))]
-public class Grenade : UtilityItem {
+[RequireComponent(typeof(Team))]
+public class Grenade : UtilityItem
+{
+    [SerializeField]
+    LayerMask collisionMask;
 
     [SerializeField]
-    LayerMask ignoreMask;
+    Vector3 rootPosition;
 
-	[SerializeField] float fuseTime;
-	[SerializeField] float radius;
-	[SerializeField] int power;
-	[SerializeField] [Range(0f,1f)] float criticalChance;
-	[SerializeField] [Range(0f,3f)] float criticalMultiplier;
+    [SerializeField]
+    float fuseTime;
 
-	[SerializeField] bool ignoreObstacles = false;
+    [SerializeField]
+    float radius;
 
-	[SerializeField] AnimationCurve damageFallOff = AnimationCurve.Linear(0f,1f,1f,1f);
-	TrailRenderer m_TrailRenderer;
+    [SerializeField]
+    float power;
+
+    [SerializeField]
+    [Range(0f, 1f)]
+    float criticalChance;
+
+    [SerializeField]
+    float criticalMultiplier;
+
+    [SerializeField]
+    bool ignoreObstacles = false;
+
+    [SerializeField]
+    AnimationCurve damageFallOff = AnimationCurve.Linear(0f, 1f, 1f, 1f);
+
+    [SerializeField]
+    GameObject effect;
 
 
-	public override void Awake()
+    public override void Activate(Transform _owner, Vector3 launchVector)
     {
-        base.Awake();
+        StartCoroutine(FuseDelay());
+    }
 
-		m_TrailRenderer = GetComponent<TrailRenderer>();
-	}
 
-	public override void Activate(Transform _owner, List<Stat> stats)
+    IEnumerator FuseDelay()
     {
-		owner = _owner;
+        yield return new WaitForSeconds(fuseTime);
 
-		StartCoroutine(ResetTrail());
+        Explode();
+    }
 
-		StartCoroutine(FuseDelay());
-	}
-
-	IEnumerator ResetTrail()
+    void Explode()
     {
-		
-		float trailTime = m_TrailRenderer.time;
-		m_TrailRenderer.time = 0;
-		
-		yield return new WaitForSeconds(0f);
-		
-		m_TrailRenderer.time = trailTime;   
-	}
-	
+        StopAllCoroutines();
+        
 
-	IEnumerator FuseDelay()
-    {
-		yield return new WaitForSeconds(fuseTime);
+        //Get all colliders within range
+        Collider[] hitColls = Physics.OverlapSphere(m_Transform.TransformPoint(rootPosition), radius, collisionMask);
+        
+        for (int i = 0; i < hitColls.Length; i++)
+        {
+            if (hitColls[i].transform == this)
+                continue;
 
-		Explode();
-	}
+            Health hitHealth = hitColls[i].GetComponent<Health>();
+            Team hitTeam = hitColls[i].GetComponent<Team>();
 
-	void Explode()
-    {
-		StopAllCoroutines();
+            //Ignore triggers, objects without health, and friendly objects
+            if (hitColls[i].isTrigger || hitHealth == null || (hitTeam != null && m_Team.IsFriendly(hitTeam)))
+            {
+                if (showDebug)
+                {
+                    Debug.DrawLine(m_Transform.TransformPoint(rootPosition), hitColls[i].transform.position, Color.white, 5f);
+                }
 
-		//Get all colliders within range
-		Collider[] hitColls = Physics.OverlapSphere(myTransform.position, radius);
+                continue;
+            }
 
-		Health hitHealth;
-		for(int i = 0; i < hitColls.Length; i++){
-			hitHealth = hitColls[i].GetComponent<Health>();
+            //If ignoring blocking obstacles
+            if (!ignoreObstacles)
+            {
 
-			//Ignore triggers, objects without health, and objects in ignore mask
-			if(hitColls[i].isTrigger || hitHealth == null || Utilities.IsInLayerMask(hitColls[i].gameObject.layer, ignoreMask))
-				continue;
-		
-			//If ignoring blocking obstacles
-			if(!ignoreObstacles){
+                //Check if an object is between the grenade and intended object
 
-				//Check if an object is between the grenade and intended object
+                Vector3 toVector = hitColls[i].transform.position - m_Transform.TransformPoint(rootPosition);
 
-				Vector3 toVector = hitColls[i].transform.position - myTransform.position;
+                RaycastHit[] rayHits = Physics.RaycastAll(m_Transform.TransformPoint(rootPosition), toVector, toVector.magnitude, collisionMask);
+                bool validHit = true;
 
-				RaycastHit[] rayHits = Physics.RaycastAll(myTransform.position, toVector, toVector.magnitude);
-				bool validHit = true;
+                for (int j = 0; j < rayHits.Length; j++)
+                {
+                    if (rayHits[j].collider != hitColls[i])
+                    {
+                        validHit = false;
+                        break;
+                    }
+                }
 
-				for(int j = 0; j < rayHits.Length; j++){
-					if(!Utilities.IsInLayerMask(rayHits[j].collider.gameObject.layer, ignoreMask) && rayHits[j].collider != hitColls[i]){
-						validHit = false;
-						break;
-					}
-				}
+                if (!validHit)
+                {
+                    if (showDebug)
+                    {
+                        Debug.Log("DIDNT HIT: " + hitColls[i].name);
+                        Debug.DrawLine(m_Transform.TransformPoint(rootPosition), hitColls[i].transform.position, Color.white, 5f);
+                    }
 
-				if(!validHit)
-					continue;
-			}
+                    continue;
+                }
+            }
 
-			//Check if critical hit
-			bool isCrit = Random.value <= criticalChance;
+            //Check if critical hit
+            bool isCrit = Random.value <= criticalChance;
             float dmg = power;
-            
-            if(isCrit)
+
+            if (isCrit)
                 dmg *= criticalMultiplier;
 
-			//Check distance from grenade and apply damage falloff
-			float distPercent = Mathf.Clamp01(Vector3.Distance(hitColls[i].transform.position, myTransform.position) / radius);
+            //Check distance from grenade and apply damage falloff
+            float distPercent = Mathf.Clamp01(Vector3.Distance(hitColls[i].transform.position, m_Transform.TransformPoint(rootPosition)) / radius);
 
-			if(distPercent > 1f || distPercent < 0)
-				continue;
+            if (distPercent > 1f || distPercent < 0)
+                continue;
 
-			dmg *= damageFallOff.Evaluate(distPercent);
+            dmg *= damageFallOff.Evaluate(distPercent);
 
-			hitHealth.HealthArithmetic(-(int)dmg, isCrit, owner);
-		}
+            hitHealth.HealthArithmetic(-(int)dmg, isCrit, m_Owner);
 
-		Deactivate();
-	}
+            if (showDebug)
+            {
+                Debug.DrawLine(m_Transform.TransformPoint(rootPosition), hitColls[i].transform.position, Color.red, 5f);
+            }
+        }
 
+        if (effect != null)
+        {
+            GameObject obj = Instantiate(effect) as GameObject;
+            obj.transform.position = m_Transform.TransformPoint(rootPosition);
+            obj.SetActive(true);
+        }
+
+        Deactivate();
+    }
 
     void Deactivate()
     {
         gameObject.SetActive(false);
     }
 
+    #region Accessors
 
+    public float FuseTime
+    {
+        get { return fuseTime; }
+        private set { fuseTime = Mathf.Clamp(value, 0f, value); }
+    }
+    public float Radius
+    {
+        get { return radius; }
+        private set { radius = Mathf.Clamp(value, 0f, value); }
+    }
+    public float Power
+    {
+        get { return power; }
+        private set { power = Mathf.Clamp(value, 0f, value); }
+    }
+    public float CriticalMultiplier
+    {
+        get { return criticalMultiplier; }
+        private set { criticalMultiplier = Mathf.Clamp(value, 0f, value); }
+    }
+
+    #endregion
 
     void OnValidate()
     {
+        FuseTime = FuseTime;
+        Radius = Radius;
+        Power = Power;
+        CriticalMultiplier = CriticalMultiplier;
+
         Utilities.ValidateCurve_Times(damageFallOff, 0f, 1f);
     }
 
-	/*
-	void OnDrawGizmos(){
-		Gizmos.color = Color.yellow;
+    void OnDrawGizmos()
+    {
+        if (!showDebug)
+            return;
 
-		Gizmos.DrawWireSphere(transform.position, range);
-	}*/
+        Gizmos.color = Color.red;
+        Gizmos.DrawWireSphere(m_Transform.TransformPoint(rootPosition), Radius);
+    }
 }

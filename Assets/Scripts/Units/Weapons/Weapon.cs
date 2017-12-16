@@ -89,7 +89,7 @@ public abstract class Weapon : HandheldItem {
 
 
 
-    public override void Awake()
+    protected override void Awake()
     {
         base.Awake();
 

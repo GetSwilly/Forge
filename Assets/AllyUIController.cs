@@ -27,7 +27,7 @@ public class AllyUIController : MonoBehaviour {
 
         AllyUI ui = panel.GetComponent<AllyUI>();
 
-        IIdentifier identifier = obj.GetComponent<IIdentifier>();
+        Identifier identifier = obj.GetComponent<Identifier>();
         ui.text.text = identifier != null ? identifier.Name : "NULL";
 
         Health health = obj.GetComponent<Health>();

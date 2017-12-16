@@ -5,16 +5,13 @@ using System;
 
 [RequireComponent(typeof(AudioSource))]
 [RequireComponent(typeof(Rigidbody))]
+[RequireComponent(typeof(Identifier))]
 [RequireComponent(typeof(Team))]
-public abstract class HandheldItem : MonoBehaviour, IIdentifier
+public abstract class HandheldItem : MonoBehaviour
 {
-
     protected static readonly float DEBUG_DRAW_TIME = 2f;
 
-
-    [SerializeField]
-    string m_ItemName = "Handheld Item";
-
+    
     [SerializeField]
     protected bool showDebug = false;
 
@@ -137,8 +134,8 @@ public abstract class HandheldItem : MonoBehaviour, IIdentifier
     public event Delegates.Alert OnActivateSecondary;
     public event Delegates.Alert OnActivateUtility;
     
-    public event Delegates.ValueAlertEvent OnWeaponChanged;
-    public event Health.AlertHealthChange OnWeaponCasualty;
+    public event Delegates.ValueAlertEvent OnHandheldUpdate;
+    public event Health.AlertHealthChange OnCauseHealthChange;
 
     protected Transform m_Transform;
     protected Transform m_Owner;
@@ -149,7 +146,7 @@ public abstract class HandheldItem : MonoBehaviour, IIdentifier
 
     Dictionary<StatType, int> statLevelTracker = new Dictionary<StatType, int>();
 
-    public virtual void Awake()
+    protected virtual void Awake()
     {
         m_Transform = GetComponent<Transform>();
         m_Audio = GetComponent<AudioSource>();
@@ -157,15 +154,14 @@ public abstract class HandheldItem : MonoBehaviour, IIdentifier
     }
 
 
-
     public virtual void Initialize(Transform owner, Team team)
     {
-        AlertWeaponChange(GetPercentage());
+        AlertHandheldUpdate(GetPercentage());
         //SetVolume(1);
 
         m_Owner = owner;
 
-        SetTeam(team);
+        m_Team.Copy(team);
 
         statLevelTracker.Clear();
 
@@ -192,14 +188,16 @@ public abstract class HandheldItem : MonoBehaviour, IIdentifier
         OnActivateSecondary = null;
         OnActivateUtility = null;
 
-        OnWeaponChanged = null;
-        OnWeaponCasualty = null;
+        OnHandheldUpdate = null;
+        OnCauseHealthChange = null;
 
-
-        IStat statOwner = m_Owner.GetComponent<IStat>();
-        if (statOwner != null)
+        if (m_Owner != null)
         {
-            statOwner.OnStatLevelChanged -= UpdateStatEffect;
+            IStat statOwner = m_Owner.GetComponent<IStat>();
+            if (statOwner != null)
+            {
+                statOwner.OnStatLevelChanged -= UpdateStatEffect;
+            }
         }
 
         m_Owner = null;
@@ -211,7 +209,7 @@ public abstract class HandheldItem : MonoBehaviour, IIdentifier
         }
         m_Movement = null;
 
-        ResetTeam();
+        m_Team.ResetTeam();
     }
 
     public abstract void ActivatePrimary();
@@ -226,16 +224,8 @@ public abstract class HandheldItem : MonoBehaviour, IIdentifier
     public abstract void DeactivateTertiary();
     public abstract bool CanActivateTertiary();
 
-
-
-    public abstract void EnableEffects();
-    public abstract void DisableEffects();
-
     public abstract float GetPercentage();
-
-
-
-
+    
     protected void AlertPrimaryActivation()
     {
         if (OnActivatePrimary != null)
@@ -251,17 +241,17 @@ public abstract class HandheldItem : MonoBehaviour, IIdentifier
         if (OnActivateUtility != null)
             OnActivateUtility();
     }
-    protected void AlertWeaponChange(float _percent)
+    protected void AlertHandheldUpdate(float _percent)
     {
-        if (OnWeaponChanged != null)
+        if (OnHandheldUpdate != null)
         {
-            OnWeaponChanged(_percent);
+            OnHandheldUpdate(_percent);
         }
     }
-    protected void AlertWeaponCasualty(Health casualtyHealth)
+    protected void AlertHealthChangeCaused(Health casualtyHealth)
     {
-        if (OnWeaponCasualty != null)
-            OnWeaponCasualty(casualtyHealth);
+        if (OnCauseHealthChange != null)
+            OnCauseHealthChange(casualtyHealth);
     }
 
 
@@ -295,29 +285,6 @@ public abstract class HandheldItem : MonoBehaviour, IIdentifier
         //}
     }
 
-    #region Team
-
-    public void SetTeam(Team team)
-    {
-        if (team == null)
-        {
-            return;
-        }
-
-
-        m_Team.TeamType = team.TeamType;
-        m_Team.FriendlyTeams = team.FriendlyTeams;
-        m_Team.FriendlyTeams.Add(Team.GetTeam(m_Team.TeamType));
-        m_Team.EnemyTeams = team.EnemyTeams;
-    }
-    public void ResetTeam()
-    {
-        m_Team.TeamType = Team.Type.All;
-        m_Team.FriendlyTeams.Clear();
-        m_Team.EnemyTeams.Clear();
-    }
-
-    #endregion
 
     #region Stats
 
@@ -357,10 +324,8 @@ public abstract class HandheldItem : MonoBehaviour, IIdentifier
 
     public string Name
     {
-        get { return m_ItemName; }
-        set { m_ItemName = value; }
+        get { return GetComponent<Identifier>().Name; }
     }
-
     public GameObject GameObject
     {
         get { return this.gameObject; }
@@ -422,10 +387,4 @@ public abstract class HandheldItem : MonoBehaviour, IIdentifier
             m_StatSubscriptions.Validate();
         }
     }
-
-    public override string ToString()
-    {
-        return m_ItemName;
-    }
-
 }

@@ -27,11 +27,9 @@ public class ItemPickup : InteractableObject
                 m_Ability = GetComponent<Ability>();
                 break;
         }
-
-        Name = myType == PickupType.Handheld ? m_Handheld.ToString() : m_Ability.ToString();
     }
 
-    public override bool Interact(PlayerController player)
+    public override bool Interact1(PlayerController player)
     {
         pController = player;
 

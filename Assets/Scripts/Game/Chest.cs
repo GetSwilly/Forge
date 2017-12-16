@@ -43,7 +43,7 @@ public class Chest : InteractableObject
 
 
 
-    public override bool Interact(PlayerController player)
+    public override bool Interact1(PlayerController player)
     {
         if (!isUsable)
             return false;

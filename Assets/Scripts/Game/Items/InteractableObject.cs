@@ -3,14 +3,13 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-
-
 [RequireComponent(typeof(AudioSource))]
-public abstract class InteractableObject : MonoBehaviour, IIdentifier
+[RequireComponent(typeof(Identifier))]
+public abstract class InteractableObject : MonoBehaviour
 {
     [SerializeField]
-    string m_ObjectName = "Interactable Object";
-
+    bool isInteractable = true;
+    
     [SerializeField]
     Vector3 m_UIOffset = new Vector3(0, 1, 2);
     
@@ -38,6 +37,7 @@ public abstract class InteractableObject : MonoBehaviour, IIdentifier
 
     UIBase activeUI;
     protected Transform m_Transform;
+    protected Identifier m_Identifier;
     protected AudioSource m_Audio;
 
 
@@ -45,6 +45,7 @@ public abstract class InteractableObject : MonoBehaviour, IIdentifier
     protected virtual void Awake()
     {
         m_Transform = GetComponent<Transform>();
+        m_Identifier = GetComponent<Identifier>();
         m_Audio = GetComponent<AudioSource>();
         m_Audio.loop = false;
         m_Audio.playOnAwake = false;
@@ -55,7 +56,7 @@ public abstract class InteractableObject : MonoBehaviour, IIdentifier
     }
 
 
-    public virtual bool Interact(PlayerController controller)
+    public virtual bool Interact1(PlayerController controller)
     {
         if (activatingObjects.Count == 0)
             return false;
@@ -83,6 +84,10 @@ public abstract class InteractableObject : MonoBehaviour, IIdentifier
         PlaySound(activationSound);
 
         return true;
+    }
+    public virtual bool Interact2(PlayerController controller)
+    {
+        throw new NotImplementedException();
     }
     public abstract void Drop();
 
@@ -141,7 +146,7 @@ public abstract class InteractableObject : MonoBehaviour, IIdentifier
 
             uiObj.transform.position = transform.position;
             uiObj.SetActive(true);
-            activeUI.Inflate(m_Transform, Name);
+            activeUI.Inflate(m_Transform, m_Identifier.Name);
 
 
             hasUIInflated = true;
@@ -238,15 +243,10 @@ public abstract class InteractableObject : MonoBehaviour, IIdentifier
 
     #region Accessors
 
-    public string Name
+    public virtual bool IsInteractable
     {
-        get { return m_ObjectName; }
-        set { m_ObjectName = value; }
-    }
-
-    public virtual bool IsUsable
-    {
-        get { return gameObject.activeInHierarchy; }
+        get { return isInteractable; }
+        protected set { isInteractable = value; }
     }
     public abstract bool IsUsableOutsideFOV { get; }
 

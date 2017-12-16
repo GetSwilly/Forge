@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using System.Collections.Generic;
 
+[RequireComponent(typeof(Team))]
 public abstract class UtilityItem : MonoBehaviour {
 
     [SerializeField]
@@ -10,19 +11,33 @@ public abstract class UtilityItem : MonoBehaviour {
     [SerializeField]
     bool shouldBeThrown = true;
 
-    protected LayerMask friendlyMask;
-    protected Transform owner;
+    [SerializeField]
+    protected bool showDebug = false;
 
+    protected Transform m_Owner;
+    
+    protected Transform m_Transform;
+    protected Team m_Team;
 
-    protected Transform myTransform;
-
-    public virtual void Awake()
+    protected virtual void Awake()
     {
-        myTransform = GetComponent<Transform>();
+        m_Transform = GetComponent<Transform>();
+        m_Team = GetComponent<Team>();
     }
 
 
-    public abstract void Activate(Transform owner, List<Stat> stats);
+    public void Activate(Transform owner)
+    {
+        Activate(owner, Vector3.zero);
+    }
+    public virtual void Activate(Transform owner, Vector3 launchVector)
+    {
+        m_Owner = owner;
+
+        Team team = m_Owner.GetComponent<Team>();
+        m_Team.Copy(team);
+        // m_Rigid.AddForce(launchVector, ForceMode.Impulse);
+    }
 
 
 

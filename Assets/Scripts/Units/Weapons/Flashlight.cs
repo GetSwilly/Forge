@@ -22,7 +22,7 @@ public class Flashlight : Weapons.Tool
     [SerializeField]
     bool isActive = false;
 
-    public override void Awake()
+    protected override void Awake()
     {
         base.Awake();
 
@@ -56,8 +56,6 @@ public class Flashlight : Weapons.Tool
         StartCoroutine(DelayUsability());
     }
     
-
-    public override void DisableEffects() { }
     
     public override float GetPercentage()
     {
@@ -100,10 +98,7 @@ public class Flashlight : Weapons.Tool
         return false;
     }
 
-    public override void EnableEffects()
-    {
-        throw new NotImplementedException();
-    }
+
    
 
     IEnumerator DelayUsability()

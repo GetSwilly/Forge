@@ -83,9 +83,9 @@ public class SacrificialAltar : InteractableObject
 
     
 
-	public override bool Interact(PlayerController player)
+	public override bool Interact1(PlayerController player)
     {
-        if (!isUsable || !base.Interact(player))
+        if (!isUsable || !base.Interact1(player))
         {
             return false;
         }
@@ -307,9 +307,9 @@ public class SacrificialAltar : InteractableObject
 
 
 
-    public override bool IsUsable
+    public override bool IsInteractable
     {
-        get { return base.IsUsable && isUsable && activatingObjects.Count > 0; ; }
+        get { return base.IsInteractable && isUsable && activatingObjects.Count > 0; ; }
     }
     public override bool IsUsableOutsideFOV
     { 

@@ -11,7 +11,7 @@ public class ObjectPoolerManager : MonoBehaviour {
     [HideInInspector]
     public ObjectPooler InteractableUIPooler;
     [HideInInspector]
-    public ObjectPooler TimerUIPooler;
+    public ObjectPooler DialUIPooler;
     [HideInInspector]
     public ObjectPooler AudioRemnantPooler;
     [HideInInspector]
@@ -22,7 +22,7 @@ public class ObjectPoolerManager : MonoBehaviour {
     [SerializeField]
     GameObject InteractableUIPrefab;
     [SerializeField]
-    GameObject TimerUIPrefab;
+    GameObject DialUIPrefab;
     [SerializeField]
     GameObject AudioRemnantPrefab;
     [SerializeField]
@@ -67,20 +67,20 @@ public class ObjectPoolerManager : MonoBehaviour {
             InteractableUIPooler.Initialize();
         }
 
-        if (TimerUIPooler == null && TimerUIPrefab != null)
+        if (DialUIPooler == null && DialUIPrefab != null)
         {
-            GameObject go = new GameObject("TimerUIPooler");
-            TimerUIPooler = go.AddComponent<ObjectPooler>();
-            TimerUIPooler.PooledObject = TimerUIPrefab;
-            TimerUIPooler.PoolLength = 3;
+            GameObject go = new GameObject("DialUIPooler");
+            DialUIPooler = go.AddComponent<ObjectPooler>();
+            DialUIPooler.PooledObject = DialUIPrefab;
+            DialUIPooler.PoolLength = 3;
 
 
-            GameObject uis = new GameObject("Timer UIs");
+            GameObject uis = new GameObject("Dial UIs");
             uis.transform.parent = pools.transform;
 
-            TimerUIPooler.Parent = uis.transform;
+            DialUIPooler.Parent = uis.transform;
             go.transform.parent = this.gameObject.transform;
-            TimerUIPooler.Initialize();
+            DialUIPooler.Initialize();
         }
 
         if (AudioRemnantPooler == null && AudioRemnantPrefab != null)

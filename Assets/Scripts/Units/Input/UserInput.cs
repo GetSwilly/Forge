@@ -10,7 +10,8 @@ public class UserInput : MonoBehaviour
     public static readonly string _HandheldPrimaryInputString = "Primary";
     public static readonly string _HandheldSecondaryInputString = "Secondary";
     public static readonly string _HandheldTertiaryInputString = "Tertiary";
-    public static readonly string _InteractionInputString = "Interact";
+    public static readonly string _Action1InputString = "Action1";
+    public static readonly string _Action2InputString = "Action2";
     public static readonly string _CancelInputString = "Cancel";
     public static readonly string _ThrowInputString = "Throw";
 
@@ -69,9 +70,13 @@ public class UserInput : MonoBehaviour
 
     void CheckEngagementInput()
     {
-        if (Input.GetButtonDown(_InteractionInputString))
+        if (Input.GetButtonDown(_Action1InputString))
         {
-            player.Interact();
+            player.Interact1();
+        }
+        else if (Input.GetButton(_Action2InputString))
+        {
+            player.Interact2();
         }
         else if (canEngage)
         {

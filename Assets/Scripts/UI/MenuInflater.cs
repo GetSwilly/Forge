@@ -34,7 +34,7 @@ public abstract class MenuInflater : InteractableObject
     }
 
 
-    public override bool Interact(PlayerController _player)
+    public override bool Interact1(PlayerController _player)
     {
         if (!CanInflateMenu())
             return false;
@@ -81,9 +81,6 @@ public abstract class MenuInflater : InteractableObject
 
         IsInflated = false;
 
-
-        StopAllCoroutines();
-
         m_Menu.Deflate();
 
         UserInput _input = activatingPlayer.GetComponent<UserInput>();
@@ -107,9 +104,9 @@ public abstract class MenuInflater : InteractableObject
 
     #region Accessors
 
-    public override bool IsUsable
+    public override bool IsInteractable
     {
-        get { return base.IsUsable && (m_Menu == null || !m_Menu.gameObject.activeInHierarchy); }
+        get { return base.IsInteractable && (m_Menu == null || !m_Menu.gameObject.activeInHierarchy); }
     }
     public override bool IsUsableOutsideFOV
     {

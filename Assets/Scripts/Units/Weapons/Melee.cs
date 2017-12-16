@@ -17,7 +17,7 @@ public class Melee : Weapon {
 
 
 
-    public override void Awake()
+    protected override void Awake()
     {
         base.Awake();
 
@@ -55,8 +55,6 @@ public class Melee : Weapon {
 
     public override void ActivatePrimary()
     {
-		DisableEffects();
-
         EnableDetectors();
 
 
@@ -135,13 +133,7 @@ public class Melee : Weapon {
     public override void ActivateTertiary() { }
 
 
-    public override void EnableEffects() { }
-
-    public override void DisableEffects() { }
-
-
-
-	public override float GetPercentage()
+ 	public override float GetPercentage()
     {
         float temp = Mathf.Clamp(attackTimerPrimary, 0f, AttackRatePrimary);
         temp /= AttackRatePrimary;

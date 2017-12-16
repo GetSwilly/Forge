@@ -2,14 +2,13 @@
 using System.Collections;
 
 [RequireComponent(typeof(AudioSource))]
-public abstract class Ability : MonoBehaviour, IIdentifier
+[RequireComponent(typeof(Identifier))]
+public abstract class Ability : MonoBehaviour
 {
 
     [SerializeField]
     protected bool showDebug = false;
-
-    [SerializeField]
-    string m_AbilityName = "Ability";
+    
 
     public enum ChargeType { Time, Damage, Kill };
     public ChargeType abilityCharger;
@@ -58,15 +57,17 @@ public abstract class Ability : MonoBehaviour, IIdentifier
     float chargeMultiplier = 1f;
     protected bool isAbilityActive = false;
     
-    public event Delegates.AbilityChangeEvent OnAbilityChanged;
+    public event Delegates.NamedValueChangeEvent OnAbilityChanged;
 
     protected Transform m_Transform;
+    protected Identifier m_Identifier;
     AudioSource m_Audio;
 
     protected virtual void Awake()
     {
         m_Transform = GetComponent<Transform>();
         m_Audio = GetComponent<AudioSource>();
+        m_Identifier = GetComponent<Identifier>();
     }
     protected virtual void OnEnable()
     {
@@ -170,19 +171,24 @@ public abstract class Ability : MonoBehaviour, IIdentifier
             }
         }
     }
+
     #region Accessors
+
+    public string Name
+    {
+        get { if (m_Identifier == null)
+            {
+                Debug.Log("NULL IDENTIFIER");
+                Debug.Log(this.gameObject.name);
+            }
+            return m_Identifier.Name; }
+    }
 
     public InputType InputType
     {
         get { return activateInputType; }
     }
-
-    public string Name
-    {
-        get { return m_AbilityName; }
-        set { m_AbilityName = value; }
-    }
-
+    
     public bool IsAbilityActive
     {
         get { return isAbilityActive; }
@@ -198,7 +204,7 @@ public abstract class Ability : MonoBehaviour, IIdentifier
 
             if (OnAbilityChanged != null)
             {
-                OnAbilityChanged(Name, GetChargePercentage());
+                OnAbilityChanged(m_Identifier.Name, GetChargePercentage());
             }
         }
     }
@@ -247,9 +253,5 @@ public abstract class Ability : MonoBehaviour, IIdentifier
     {
         MaxCharge = MaxCharge;
         ActivationCost = ActivationCost;
-    }
-    public override string ToString()
-    {
-        return m_AbilityName;
     }
 }

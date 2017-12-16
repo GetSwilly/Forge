@@ -14,13 +14,13 @@ public class UtilityActor : UnitController
 
     BaseUtilityBehavior currentActiveBehavior;
 
-    [Tooltip("String representation of current behavior heirarchy. For DEBUG purposes.")]
+    [Tooltip("String representation of current behavior hierarchy. For DEBUG purposes.")]
     [SerializeField]
     string currentBehaviorString;
 
-    [Tooltip("Allowable amount of time to pass before checking for a new behavior")]
+    [Tooltip("Allowable amount of time to pass before updating AI")]
     [SerializeField]
-    float updateBehaviorTime = 0.5f;
+    float updateAITime = 0.5f;
 
     bool recentlyUpdatedBehaviorFlag = false;
 
@@ -34,6 +34,8 @@ public class UtilityActor : UnitController
     AnimationCurve poorDecisionCurve = AnimationCurve.Linear(0f, 0f, 100f, 100f);
 
 
+    [SerializeField]
+    float minimumTargetScoreDifferential;
 
     float stupidityLevel = 0f;
 
@@ -49,24 +51,6 @@ public class UtilityActor : UnitController
     [Tooltip("Amount of time between seeing an object and reacting to it")]
     [SerializeField]
     float reactionTime = 0f;
-
-    [Flags]
-    public enum TargetingMethod { Random, MostHealth, LeastHealth, ShortestDistance, Custom, OnSight, OnSound, OnDamage }
-
-    [Tooltip("TargetingMethod for targeting a NEW Enemy")]
-    [SerializeField]
-    [EnumFlags]
-    TargetingMethod initialTargetingMethod;
-
-    [Tooltip("TargetingMethod for targeting ANOTHER Enemy")]
-    [SerializeField]
-    [EnumFlags]
-    TargetingMethod reTargetingMethod;
-
-    [Tooltip("Chance to attempt targeting ANOTHER Enemy")]
-    [SerializeField]
-    [Range(0f, 1f)]
-    float retargetChance = 0.5f;
 
     List<IMemorable> nearbyAllies = new List<IMemorable>();
     List<IMemorable> nearbyEnemies = new List<IMemorable>();
@@ -91,8 +75,7 @@ public class UtilityActor : UnitController
 
 
     Transform targetTransform;
-    Transform followTransform;
-
+    float latestTargetScore;
 
 
     [Tooltip("Base Attack Power")]
@@ -259,10 +242,7 @@ public class UtilityActor : UnitController
         GatherAllBehaviors();
 
 
-        StartCoroutine(UpdateBehavior());
-        StartCoroutine(UpdateInfluencers());
-
-        // StartCoroutine(CheckNearbyRoutine());
+        StartCoroutine(UpdateAI());
     }
     public void OnDisable()
     {
@@ -280,6 +260,18 @@ public class UtilityActor : UnitController
 
         MemoryUpdate(Time.deltaTime);
         m_Psyche.Update(Time.deltaTime);
+    }
+
+    IEnumerator UpdateAI()
+    {
+        while (true)
+        {
+            yield return new WaitForSeconds(UpdateAITime);
+
+            UpdateBehavior();
+            UpdateInfluencers();
+            ChooseBestTarget();
+        }
     }
 
     #region Behavior Stuff
@@ -524,19 +516,12 @@ public class UtilityActor : UnitController
     /// <summary>
     /// Check for new behavior consistently
     /// </summary>
-    IEnumerator UpdateBehavior()
+    void UpdateBehavior()
     {
-        while (true)
-        {
-            yield return new WaitForSeconds(updateBehaviorTime);
+        if (!recentlyUpdatedBehaviorFlag)
+            ChooseNewBehavior();
 
-
-            if (!recentlyUpdatedBehaviorFlag)
-                ChooseNewBehavior();
-
-
-            recentlyUpdatedBehaviorFlag = false;
-        }
+        recentlyUpdatedBehaviorFlag = false;
     }
 
     #endregion
@@ -712,15 +697,7 @@ public class UtilityActor : UnitController
             }
         }
 
-
-        if (TargetTransform == null && Utilities.HasFlag(initialTargetingMethod, TargetingMethod.OnDamage))
-        {
-            CheckTarget(m_Health.LastAttacker);
-        }
-        else if (TargetTransform != null && Utilities.HasFlag(reTargetingMethod, TargetingMethod.OnDamage))
-        {
-            CheckRetarget(m_Health.LastAttacker);
-        }
+        AlertObject(m_Health.LastAttacker);
     }
 
     /// <summary>
@@ -740,6 +717,64 @@ public class UtilityActor : UnitController
 
 
     #region Target Selection
+
+    void ChooseBestTarget()
+    {
+        List<CustomTuple2<float, Transform>> targetScores = new List<CustomTuple2<float, Transform>>();
+        latestTargetScore = 0f;
+
+        //Score all nearby enemies
+        NearbyEnemies.ForEach(e =>
+        {
+            float s = ScoreTarget(e.Transform);
+
+            if (s >= 0)
+            {
+                if(TargetTransform != null && TargetTransform== e.Transform)
+                {
+                    latestTargetScore = s;
+                }
+
+                targetScores.Add(new CustomTuple2<float, Transform>(s, e.Transform));
+            }
+        });
+
+        //Return if no target scores
+        if (targetScores.Count == 0)
+        {
+            TargetTransform = null;
+            return;
+        }
+
+        //Sort target scores
+        targetScores.Sort(delegate (CustomTuple2<float, Transform> a, CustomTuple2<float, Transform> b)
+        {
+            if (a.Item1 < b.Item1)
+            {
+                return -1;
+            }
+            else if (a.Item1 > b.Item1)
+            {
+                return 1;
+            }
+            else
+            {
+                return 0;
+            }
+        });
+
+        //If TargetTransform already exists, check if it meets requirement for minimum score differential
+        if (TargetTransform != null)
+        {
+            float scoreDifferential = targetScores[0].Item1 - latestTargetScore;
+
+            if(scoreDifferential < MinimumTargetScoreDifferential)
+            {
+                return;
+            }
+        }
+        TargetTransform = targetScores[0].Item2;
+    }
 
     public Transform TargetEnemy_Random()
     {
@@ -926,63 +961,10 @@ public class UtilityActor : UnitController
     }
 
 
-
-    public Transform ChooseTarget(TargetingMethod _method)
+    public float ScoreTarget(Transform target)
     {
-        List<Transform> possibleTargets = new List<Transform>();
-        Transform t;
-
-
-        if (Utilities.HasFlag(_method, TargetingMethod.LeastHealth))
-        {
-            t = TargetEnemy_LeastHealth();
-
-            if (t != null)
-            {
-                possibleTargets.Add(t);
-            }
-        }
-
-        if (Utilities.HasFlag(_method, TargetingMethod.MostHealth))
-        {
-            t = TargetEnemy_MostHealth();
-
-            if (t != null)
-            {
-                possibleTargets.Add(t);
-            }
-        }
-
-        if (Utilities.HasFlag(_method, TargetingMethod.Random))
-        {
-            t = TargetEnemy_Random();
-
-            if (t != null)
-            {
-                possibleTargets.Add(t);
-            }
-        }
-
-        //if (Utilities.HasFlag(_method, TargetingMethod.ShortestDistance))
-        //{
-        //    t = TargetEnemy_ShortestDistance();
-
-        //    if (t != null)
-        //    {
-        //        possibleTargets.Add(t);
-        //    }
-        //}
-
-
-        if (possibleTargets.Count == 0)
-        {
-            return null;
-        }
-
-
-        return possibleTargets[UnityEngine.Random.Range(0, possibleTargets.Count)];
+        throw new NotImplementedException();
     }
-
 
     private void CheckTarget(Transform t)
     {
@@ -997,14 +979,6 @@ public class UtilityActor : UnitController
 
         TargetTransform = t;
     }
-    private void CheckRetarget(Transform t)
-    {
-        if (UnityEngine.Random.value > retargetChance)
-            return;
-
-        CheckTarget(t);
-    }
-
 
     bool EnemyTraitThresholdCheck(Transform _enemy)
     {
@@ -1201,7 +1175,11 @@ public class UtilityActor : UnitController
         get { return currentBehaviorString; }
     }
 
-
+    public float UpdateAITime
+    {
+        get { return updateAITime; }
+        private set { updateAITime = Mathf.Clamp(value, 0f, value); }
+    }
     public float MemoryTime
     {
         get { return memoryTime; }
@@ -1224,46 +1202,19 @@ public class UtilityActor : UnitController
         get { return minimumBehaviorScoreThreshold; }
     }
 
+    public float MinimumTargetScoreDifferential
+    {
+        get { return minimumTargetScoreDifferential; }
+       private set { minimumTargetScoreDifferential = Mathf.Clamp(value, 0f, value); }
+    }
     public SightedObject TargetObject
     {
         get
         {
-            //Should check and possibly retarget?
-            if (TargetTransform != null && TargetTransform.gameObject.activeInHierarchy)//  && !EnemyTraitThresholdCheck(TargetTransform))
+            if (TargetTransform == null || !TargetTransform.gameObject.activeInHierarchy || !objectsInSight.ContainsKey(TargetTransform))//  && !EnemyTraitThresholdCheck(TargetTransform))
             {
-                //if (UnityEngine.Random.value < retargetChance)
-                //{
-                //    Transform t = ChooseTarget(reTargetingMethod);
-
-                //    if (t != null)
-                //    {
-                //        TargetTransform = t;
-                //    }
-                //}
-            }
-            //Initial target
-            else
-            {
-                Transform t = ChooseTarget(initialTargetingMethod);
-
-                if (t != null)
-                {
-                    TargetTransform = t;
-                }
-            }
-
-            //if (TargetTransform == null)
-            //{
-            //    Transform t = ChooseTarget(initialTargetingMethod);
-
-            //    if (t != null)
-            //    {
-            //        TargetTransform = t;
-            //    }
-            //}
-
-            if (TargetTransform == null || !objectsInSight.ContainsKey(TargetTransform))
                 return null;
+            }
 
             return objectsInSight[TargetTransform];
         }
@@ -1278,24 +1229,6 @@ public class UtilityActor : UnitController
             targetTransform = value;
         }
     }
-
-
-    public SightedObject FollowTarget
-    {
-        get
-        {
-            if (followTransform == null || !objectsInSight.ContainsKey(followTransform))
-                return null;
-
-            return objectsInSight[followTransform];
-        }
-        //set { followTransform = value; }
-    }
-    public Transform FollowTransform
-    {
-        set { followTransform = value; }
-    }
-
 
     public List<IMemorable> NearbyAllies
     {
@@ -1410,8 +1343,6 @@ public class UtilityActor : UnitController
         }
     }
 
-
-
     public float StupidityLevel
     {
         get { return stupidityLevel; }
@@ -1421,63 +1352,56 @@ public class UtilityActor : UnitController
 
 
 
-    IEnumerator UpdateInfluencers()
+    void UpdateInfluencers()
     {
-        while (true)
+        //Allies
+        for (int i = 0; i < nearbyAllies.Count; i++)
         {
-            yield return null;
 
+            float distPercentage = Vector3.Distance(m_Transform.position, objectsInSight[nearbyAllies[i].Transform].LastKnownBasePosition) / SightRange;
 
-            //Allies
-            for (int i = 0; i < nearbyAllies.Count; i++)
+            if (distPercentage > 1f)
+                continue;
+
+            for (int k = 0; k < allyTraitReactions.Count; k++)
             {
+                float traitDelta = allyTraitReactions[k].sightCurve.Evaluate(distPercentage) * Time.deltaTime;
 
-                float distPercentage = Vector3.Distance(m_Transform.position, objectsInSight[nearbyAllies[i].Transform].LastKnownBasePosition) / SightRange;
-
-                if (distPercentage > 1f)
-                    continue;
-
-                for (int k = 0; k < allyTraitReactions.Count; k++)
-                {
-                    float traitDelta = allyTraitReactions[k].sightCurve.Evaluate(distPercentage) * Time.deltaTime;
-
-                    ChangeTrait(allyTraitReactions[k].traitType, traitDelta, nearbyAllies[i].Transform);
-                }
+                ChangeTrait(allyTraitReactions[k].traitType, traitDelta, nearbyAllies[i].Transform);
             }
+        }
 
-            //Enemies
-            for (int i = 0; i < nearbyEnemies.Count; i++)
+        //Enemies
+        for (int i = 0; i < nearbyEnemies.Count; i++)
+        {
+            float distPercentage = Vector3.Distance(m_Transform.position, objectsInSight[nearbyEnemies[i].Transform].LastKnownBasePosition) / SightRange;
+
+            if (distPercentage > 1f)
+                continue;
+
+            for (int k = 0; k < enemyTraitReactions.Count; k++)
             {
-                float distPercentage = Vector3.Distance(m_Transform.position, objectsInSight[nearbyEnemies[i].Transform].LastKnownBasePosition) / SightRange;
+                float traitDelta = enemyTraitReactions[k].sightCurve.Evaluate(distPercentage) * Time.deltaTime;
 
-                if (distPercentage > 1f)
-                    continue;
-
-                for (int k = 0; k < enemyTraitReactions.Count; k++)
-                {
-                    float traitDelta = enemyTraitReactions[k].sightCurve.Evaluate(distPercentage) * Time.deltaTime;
-
-                    ChangeTrait(enemyTraitReactions[k].traitType, traitDelta, nearbyEnemies[i].Transform);
-                }
+                ChangeTrait(enemyTraitReactions[k].traitType, traitDelta, nearbyEnemies[i].Transform);
             }
+        }
 
-            //Projectiles
-            for (int i = 0; i < nearbyProjectiles.Count; i++)
+        //Projectiles
+        for (int i = 0; i < nearbyProjectiles.Count; i++)
+        {
+            float distPercentage = Vector3.Distance(m_Transform.position, nearbyProjectiles[i].Position) / SightRange;
+
+            if (distPercentage > 1f)
+                continue;
+
+
+            for (int k = 0; k < projectileTraitReactions.Count; k++)
             {
-                float distPercentage = Vector3.Distance(m_Transform.position, nearbyProjectiles[i].Position) / SightRange;
+                float traitDelta = projectileTraitReactions[k].sightCurve.Evaluate(distPercentage) * Time.deltaTime;
 
-                if (distPercentage > 1f)
-                    continue;
-
-
-                for (int k = 0; k < projectileTraitReactions.Count; k++)
-                {
-                    float traitDelta = projectileTraitReactions[k].sightCurve.Evaluate(distPercentage) * Time.deltaTime;
-
-                    ChangeTrait(projectileTraitReactions[k].traitType, traitDelta, nearbyProjectiles[i].Owner);
-                }
+                ChangeTrait(projectileTraitReactions[k].traitType, traitDelta, nearbyProjectiles[i].Owner);
             }
-
         }
     }
 
@@ -1502,6 +1426,11 @@ public class UtilityActor : UnitController
     public void AlertObjects(List<IMemorable> objects, bool areForgetable)
     {
         objects.ForEach(o => AlertObject(o, areForgetable));
+    }
+
+    public void AlertObject(Transform transform)
+    {
+        AlertObject(transform.GetComponent<IMemorable>());
     }
     public void AlertObject(IMemorable memObj)
     {
@@ -1563,15 +1492,6 @@ public class UtilityActor : UnitController
             if (!hasSeenBefore)
             {
                 nearbyEnemies.Add(memObj);
-            }
-
-            if (TargetTransform == null && Utilities.HasFlag(initialTargetingMethod, TargetingMethod.OnSight))
-            {
-                CheckTarget(obj.transform);
-            }
-            else if (TargetTransform != null && Utilities.HasFlag(reTargetingMethod, TargetingMethod.OnSight))
-            {
-                CheckRetarget(obj.transform);
             }
 
             shouldAddToSight = true;
@@ -1657,115 +1577,6 @@ public class UtilityActor : UnitController
         return nearbyTags.ContainsKey(tag) ? nearbyTags[tag] : new List<Transform>();
     }
 
-
-
-    ///// <summary>
-    ///// Check for nearby objects consistently
-    ///// </summary>
-    //IEnumerator CheckNearbyRoutine()
-    //{
-    //    while (true)
-    //    {
-    //        yield return new WaitForSeconds(checkNearbyTime);
-
-    //        CheckNearby();
-    //    }
-    //}
-    ///// <summary>
-    ///// Perform actual check for nearby objects
-    ///// </summary>
-    //void CheckNearby()
-    //{
-    //    Collider[] nearbyColliders = Physics.OverlapSphere(m_Transform.position, SightRange);
-
-    //    //Get set of objects within sight
-    //    HashSet<GameObject> noticedSet = new HashSet<GameObject>();
-
-    //    List<Transform> sightList = new List<Transform>(objectsInSight.Keys);
-    //    sightList.ForEach(o =>
-    //    {
-    //        if (o != null && o.gameObject.activeInHierarchy)
-    //        {
-    //            noticedSet.Add(o.gameObject);
-    //        }
-    //    });
-
-
-
-    //    for (int i = 0; i < nearbyColliders.Length; i++)
-    //    {
-    //        IMemorable memObj = nearbyColliders[i].GetComponent<IMemorable>();
-
-    //        if (memObj == null)
-    //            continue;
-
-    //        //Have we seen this object before?
-    //        if (noticedSet.Contains(nearbyColliders[i].gameObject))
-    //            noticedSet.Remove(nearbyColliders[i].gameObject);
-
-    //        CheckNearbyObject(memObj);
-    //    }
-    //}
-    ///// <summary>
-    ///// Check an object to see if it's in sight and/or needs to be forgotten
-    ///// </summary>
-    //void CheckNearbyObject(IMemorable mem)
-    //{
-    //    GameObject memObj = mem.GameObject;
-
-    //    Vector3 toVector = memObj.transform.position - m_Transform.position;
-
-    //    bool isInSight = true;
-
-    //    //Is transform within FOV?
-    //    isInSight = Vector3.Angle(m_Transform.forward, toVector) < (FOV / 2f);
-
-    //    if (!canSeeThroughObjects)
-    //    {
-    //        //Check if a non-trigger collider is blocking vision
-    //        RaycastHit[] _hits = Physics.RaycastAll(m_Transform.position, toVector, toVector.magnitude);
-    //        for (int i = 0; i < _hits.Length; i++)
-    //        {
-    //            if (_hits[i].collider.isTrigger)
-    //                continue;
-
-    //            if (Vector3.Distance(_hits[i].point, m_Transform.position) < toVector.magnitude && _hits[i].collider.gameObject != memObj)
-    //                isInSight = false;
-    //        }
-    //    }
-
-    //    //React if can see the object
-    //    if (isInSight)
-    //    {
-    //        StartCoroutine(ReactionDelay(mem));
-    //    }
-
-    //    //Update last known info for object
-    //    if (objectsInSight.ContainsKey(mem.Transform))
-    //    {
-    //        SightedObject _sightedObj = objectsInSight[memObj.transform];
-    //        // _sightedObj.SightedTransform = coll.transform;
-    //        _sightedObj.InSight = isInSight;
-
-    //        if (isInSight)
-    //        {
-    //            _sightedObj.LastKnownBasePosition = memObj.transform.position;
-
-    //            List<LOS_Target> losTargets = new List<LOS_Target>(memObj.GetComponentsInChildren<LOS_Target>());
-    //            List<Vector3> losPositions = new List<Vector3>();
-    //            losTargets.ForEach(t => losPositions.Add(t.transform.position));
-
-    //            _sightedObj.LastKnownPositions = losPositions;
-
-    //            _sightedObj.LastTimeSeen = Time.time;
-
-    //            Rigidbody _rigid = memObj.GetComponent<Rigidbody>();
-    //            if (_rigid != null)
-    //                _sightedObj.LastKnownDirection = _rigid.velocity;
-    //        }
-    //    }
-
-    //}
 
     protected override void SightGained(GameObject obj)
     {
@@ -1856,7 +1667,9 @@ public class UtilityActor : UnitController
     {
         base.OnValidate();
 
+        UpdateAITime = UpdateAITime;
         MemoryTime = MemoryTime;
+        MinimumTargetScoreDifferential = MinimumTargetScoreDifferential;
 
         Utilities.ValidateCurve_Times(poorDecisionCurve, 0f, 100f);
         Utilities.ValidateCurve_Times(fovLevelUp, 0f, 1f);

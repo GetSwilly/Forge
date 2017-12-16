@@ -6,8 +6,9 @@ using UnityEngine.Events;
 
 [RequireComponent(typeof(AudioSource))]
 [RequireComponent(typeof(Health))]
+[RequireComponent(typeof(Identifier))]
 [RequireComponent(typeof(Team))]
-public abstract class UnitController : MonoBehaviour, IIdentifier, IMemorable, IStat
+public abstract class UnitController : MonoBehaviour, IMemorable, IStat
 {
     private static readonly float _EmissionMin = 0.4f;
     private static readonly float _EmissionMax = 2f;
@@ -16,9 +17,6 @@ public abstract class UnitController : MonoBehaviour, IIdentifier, IMemorable, I
     protected static readonly float _PickupMovementSpeed = 15f;
     protected static readonly float _PickupRotateSpeed = 10f;
     protected static readonly float _PickupDropForce = 2f;
-
-    [SerializeField]
-    string unitName;
 
     [Tooltip("Should show debug information?")]
     [SerializeField]
@@ -44,6 +42,9 @@ public abstract class UnitController : MonoBehaviour, IIdentifier, IMemorable, I
     [SerializeField]
     [Range(0, 360)]
     private int fieldOfView = 20;
+
+    [SerializeField]
+    float repairSpeed = 1f;
     
     private int m_Credits;
 
@@ -62,6 +63,7 @@ public abstract class UnitController : MonoBehaviour, IIdentifier, IMemorable, I
     protected Health m_Health;
     protected Transform m_Transform;
     protected AudioSource m_Audio;
+    protected Identifier m_Identifier;
     protected Team m_Team;
     protected CharacterController m_Character;
     protected MovementController m_Movement;
@@ -84,6 +86,7 @@ public abstract class UnitController : MonoBehaviour, IIdentifier, IMemorable, I
 
         m_Health = GetComponent<Health>();
         m_Audio = GetComponent<AudioSource>();
+        m_Identifier = GetComponent<Identifier>();
         m_Team = GetComponent<Team>();
         m_Character = GetComponent<CharacterController>();
         m_Movement = GetComponent<MovementController>();
@@ -441,12 +444,12 @@ public abstract class UnitController : MonoBehaviour, IIdentifier, IMemorable, I
 
     public virtual void UpdateUI()
     {
-        CasualtyAchieved(null);
+        CausedHealthChange(null);
         HealthChanged(m_Health);
         CreditArithmetic(0);
     }
 
-    public virtual void CasualtyAchieved(Health casualtyHealth)
+    public virtual void CausedHealthChange(Health casualtyHealth)
     {
         if (OnDamageAchieved != null)
         {
@@ -478,10 +481,10 @@ public abstract class UnitController : MonoBehaviour, IIdentifier, IMemorable, I
     protected virtual void SightLost(GameObject obj) { }
 
     #region Accessors
-
+    
     public string Name
     {
-        get { return unitName; }
+        get { return m_Identifier.Name; }
     }
     public GameObject GameObject
     {
@@ -526,6 +529,12 @@ public abstract class UnitController : MonoBehaviour, IIdentifier, IMemorable, I
     {
         get { return m_Credits; }
         private set { m_Credits = Mathf.Clamp(value, 0, value); }
+    }
+
+    public float RepairSpeed
+    {
+        get { return repairSpeed; }
+        private set { repairSpeed = Mathf.Clamp(value, 0f, value); }
     }
 
     private float CurrentEmission
@@ -619,6 +628,8 @@ public abstract class UnitController : MonoBehaviour, IIdentifier, IMemorable, I
         SightRange = SightRange;
 
         Credits = Credits;
+
+        RepairSpeed = RepairSpeed;
     }
 
 

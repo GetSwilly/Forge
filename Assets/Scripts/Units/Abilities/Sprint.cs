@@ -2,7 +2,6 @@
 using System.Collections;
 using System;
 
-[RequireComponent(typeof(TrailRenderer))]
 public class Sprint : Ability, IMovementAffector {
 
     static readonly float MINIMUM_ACTIVATION_DELAY = .1f;
@@ -27,17 +26,18 @@ public class Sprint : Ability, IMovementAffector {
     [Range(0f, 1f)]
     float rotationMultiplier = 1f;
 
+    [SerializeField]
+    TrailRenderer m_TrailRenderer;
 
     bool canSprint = true;
     
     MovementController unitMovement;
-    TrailRenderer m_TrailRenderer;
+  
      
     protected override void Awake()
     {
         base.Awake();
-
-        m_TrailRenderer = GetComponent<TrailRenderer>();
+        
         m_TrailRenderer.enabled = false;
     }
 
@@ -112,7 +112,6 @@ public class Sprint : Ability, IMovementAffector {
     public void EnableMovementEffects()
     {
         m_TrailRenderer.enabled = true;
-        StartCoroutine(ResetTrail());
 
         unitMovement.AddSpeedMultiplier(this, speedMultiplier);
         unitMovement.AddRotationMultiplier(this, rotationMultiplier);
@@ -121,18 +120,9 @@ public class Sprint : Ability, IMovementAffector {
     public void DisableMovementEffects()
     {
         m_TrailRenderer.enabled = false;
+
         unitMovement.RemoveSpeedMultiplier(this);
         unitMovement.RemoveRotationMultiplier(this);
-    }
-    IEnumerator ResetTrail()
-    {
-
-        float trailTime = m_TrailRenderer.time;
-        m_TrailRenderer.time = 0;
-
-        yield return new WaitForSeconds(0f);
-
-        m_TrailRenderer.time = trailTime;
     }
 
 

@@ -12,13 +12,13 @@ public class TrailResetter : MonoBehaviour {
 
     IEnumerator ResetTrail()
     {
-        TrailRenderer myTrail = GetComponent<TrailRenderer>();
+        TrailRenderer m_Trail = GetComponent<TrailRenderer>();
 
-        float trailTime = myTrail.time;
-        myTrail.time = 0;
+        float trailTime = m_Trail.time;
+        m_Trail.time = 0;
 
         yield return new WaitForSeconds(0f);
 
-        myTrail.time = trailTime;
+        m_Trail.time = trailTime;
     }
 }

@@ -2,12 +2,10 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class CollectibleItem : MonoBehaviour, IIdentifier{
+public class CollectibleItem : MonoBehaviour{
 
     public enum Type { Health, Experience, Credit }
 
-    [SerializeField]
-    string myName;
 
     [SerializeField]
     Type m_Type;
@@ -88,10 +86,6 @@ public class CollectibleItem : MonoBehaviour, IIdentifier{
 
     #region Accessors
 
-    public string Name
-    {
-        get { return myName; }
-    }
     public Type ItemType
     {
         get { return m_Type; }

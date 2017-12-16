@@ -2,7 +2,8 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class SpawnArea : MonoBehaviour {
+public class SpawnArea : MonoBehaviour
+{
 
     private static readonly float MinimumAreaDimension = 1f;
 
@@ -20,7 +21,7 @@ public class SpawnArea : MonoBehaviour {
     public Vector3 GetSpawnPoint()
     {
         Vector3 offsetVector = Vector3.zero;
-        offsetVector.x += Random.Range(-area.x, area.x) /2f;
+        offsetVector.x += Random.Range(-area.x, area.x) / 2f;
         offsetVector.y += Random.Range(-area.y, area.y) / 2f;
         offsetVector.z += Random.Range(-area.z, area.z) / 2f;
 
@@ -46,18 +47,14 @@ public class SpawnArea : MonoBehaviour {
         area.x = Mathf.Clamp(area.x, MinimumAreaDimension, area.x);
         area.y = Mathf.Clamp(area.y, MinimumAreaDimension, area.y);
         area.z = Mathf.Clamp(area.z, MinimumAreaDimension, area.z);
-
-        BoxCollider box = GetComponent<BoxCollider>();
-        if(box != null)
-        {
-            box.size = area;
-        }
     }
 
-    //void OnDrawGizmos()
-    //{
-    //    Matrix4x4 rotationMatrix = Matrix4x4.TRS(transform.position, transform.rotation, transform.lossyScale);
-    //   Gizmos.matrix *= rotationMatrix;
-    //    Gizmos.DrawWireCube(transform.position, transform.localScale);
-    //}
+    void OnDrawGizmos()
+    {
+        Matrix4x4 rotationMatrix = Matrix4x4.TRS(transform.position + (transform.up * area.y / 2f), transform.rotation, transform.lossyScale);
+        Gizmos.matrix *= rotationMatrix;
+        Gizmos.DrawWireCube(Vector3.zero, area);
+
+        Gizmos.matrix = Matrix4x4.identity;
+    }
 }

@@ -52,12 +52,11 @@ public class PlayerController : UnitController
 
     [Tooltip("Time to achieve full throw power")]
     [SerializeField]
-    [Range(0.1f, 4f)]
     float throwTime;
 
     [Tooltip("Throw direction")]
     [SerializeField]
-    Vector3 throwVector = new Vector3(0f, 1f, 0f);
+    Vector3 throwDirection = new Vector3(0f, 1f, 0f);
 
     float currentThrowTime = 0f;
 
@@ -98,14 +97,19 @@ public class PlayerController : UnitController
     public event Delegates.ValueAlertEvent OnLevelChange;
     public event Delegates.ValueAlertEvent OnLevelPointsChange;
 
-    public event Delegates.ValueAlertEvent OnHandheldChange;
-    public event Delegates.AbilityChangeEvent OnNativeAbilityChange;
-    public event Delegates.AbilityChangeEvent OnAuxiliaryAbilityChange;
+    public event Delegates.NamedValueChangeEvent OnHandheldChange;
+    public event Delegates.NamedValueChangeEvent OnNativeAbilityChange;
+    public event Delegates.NamedValueChangeEvent OnAuxiliaryAbilityChange;
     public event Delegates.ValueChangeEvent OnExpChange;
 
 
 
+    public override void Awake()
+    {
+        base.Awake();
 
+        GetStartingObjects();
+    }
     public override void Start()
     {
         base.Start();
@@ -118,8 +122,10 @@ public class PlayerController : UnitController
 
         //m_Handler.ShowUI(true);
         //m_Handler.UpdateUI(Attribute.Experience, CurrentExperienceLevelProgress, false);
-
-
+        
+    }
+    void GetStartingObjects()
+    {
         if (NativeAbility != null)
         {
             GameObject obj = Instantiate(NativeAbility.gameObject) as GameObject;
@@ -167,13 +173,21 @@ public class PlayerController : UnitController
 
     #region Interactable Stuff
 
-    public void Interact()
+    public void Interact1()
+    {
+        Interact(true);
+    }
+    public void Interact2()
+    {
+        Interact(false);
+    }
+    void Interact(bool isInteract1)
     {
         if (currentInteractable == null)
             return;
 
 
-        if (!currentInteractable.IsUsable)
+        if (!currentInteractable.IsInteractable)
         {
             return;
         }
@@ -181,7 +195,15 @@ public class PlayerController : UnitController
         Vector3 toVector = currentInteractable.transform.position - m_Transform.position;
         if (toVector.magnitude <= InteractDistance) // && (currentInteractable.IsUsableOutsideFOV || CanSee(currentInteractable.transform)))
         {
-            currentInteractable.Interact(this);
+            if (isInteract1)
+            {
+                currentInteractable.Interact1(this);
+            }
+            else
+            {
+                currentInteractable.Interact2(this);
+            }
+           
         }
 
         RemoveInteractable(currentInteractable);
@@ -200,12 +222,12 @@ public class PlayerController : UnitController
     }
     void AddInteractable(InteractableObject tempInteractable)
     {
-        if (tempInteractable == null || !tempInteractable.IsUsable || tempInteractable == currentInteractable)
+        if (tempInteractable == null || !tempInteractable.IsInteractable || tempInteractable == currentInteractable)
             return;
 
 
 
-        if (currentInteractable == null || !currentInteractable.IsUsable || (!currentInteractable.IsUsableOutsideFOV && !CanSee(currentInteractable.transform) && CanSee(tempInteractable.transform))) //Vector3.Angle(tempInteractable.transform.position - myInteractable.transform.position, myTransform.forward) > FOV/2f))
+        if (currentInteractable == null || !currentInteractable.IsInteractable || (!currentInteractable.IsUsableOutsideFOV && !CanSee(currentInteractable.transform) && CanSee(tempInteractable.transform))) //Vector3.Angle(tempInteractable.transform.position - myInteractable.transform.position, myTransform.forward) > FOV/2f))
         {
             RemoveInteractable(currentInteractable);
             currentInteractable = tempInteractable;
@@ -266,34 +288,32 @@ public class PlayerController : UnitController
         }
 
         isUsingUtility = false;
+        currentThrowTime = 0f;
     }
 
     void UseUtilityItem()
     {
-        float percentage = Mathf.Clamp01(currentThrowTime / throwTime);
+        float percentage = Mathf.Clamp01(currentThrowTime / ThrowTime);
 
-        GameObject _obj = (GameObject)Instantiate(m_UtilityItem.gameObject, HandheldHolderPosition, m_Transform.rotation);
-        UtilityItem _uScript = _obj.GetComponent<UtilityItem>();
+        GameObject obj = (GameObject)Instantiate(m_UtilityItem.gameObject, HandheldHolderPosition, m_Transform.rotation);
+        UtilityItem _uScript = obj.GetComponent<UtilityItem>();
 
 
         if (m_UtilityItem.ShouldBeThrown)
         {
-            Vector3 launchVector = m_Transform.TransformDirection(throwVector).normalized * ThrowPower * percentage;
+            Vector3 launchVector = m_Transform.TransformDirection(throwDirection).normalized * ThrowPower * percentage;
 
 
-            Rigidbody _rigidbody = _obj.GetComponent<Rigidbody>();
+            Rigidbody rigid = obj.GetComponent<Rigidbody>();
 
-            _obj.SetActive(true);
-            _rigidbody.velocity = Vector3.zero;
-            _rigidbody.AddForce(launchVector);
+            obj.SetActive(true);
+            rigid.velocity = Vector3.zero;
+            rigid.AddForce(launchVector, ForceMode.Impulse);
         }
 
 
-        _uScript.Activate(m_Transform, CurrentStats);
-
-
-        currentThrowTime = 0f;
-        utilityItemCount--;
+        _uScript.Activate(m_Transform);
+        UtilityItemCount--;
     }
     public void CancelUtilityThrow()
     {
@@ -444,6 +464,8 @@ public class PlayerController : UnitController
 
         DropAbility();
 
+        newAbility.gameObject.SetActive(true);
+
         auxiliaryAbility = newAbility;
         auxiliaryAbility.transform.parent = m_Transform;
         abilityPickupRoutine = StartCoroutine(PickupObject(AuxiliaryAbility.transform, rootPosition, Quaternion.identity));
@@ -514,11 +536,12 @@ public class PlayerController : UnitController
 
     public void Pickup(HandheldItem newHandheld)
     {
-
         if (newHandheld == null)
             return;
 
         DropHandheld();
+
+        newHandheld.gameObject.SetActive(true);
 
         m_HandheldItem = newHandheld;
         m_HandheldItem.transform.parent = handheldHolder;
@@ -535,21 +558,8 @@ public class PlayerController : UnitController
         Collider[] _colliders = m_HandheldItem.GetComponentsInChildren<Collider>();
         for (int i = 0; i < _colliders.Length; i++) { _colliders[i].enabled = false; }
 
-
-        //m_HandheldItem.OnActivatePrimary += HandheldActivationPrimary;
-        //m_HandheldItem.OnActivateSecondary += HandheldActivationSecondary;
-        //m_HandheldItem.OnActivateUtility += HandheldActivationUtility;
-        m_HandheldItem.OnWeaponChanged += HandheldChanged;
-        m_HandheldItem.OnWeaponCasualty += CasualtyAchieved;
-
-        if (m_HandheldItem is Weapon)
-        {
-            Weapon _weapon = (Weapon)m_HandheldItem;
-
-            //_weapon.BonusAttackPower = GetStatValue(StatType.Damage);
-            //_weapon.BonusCriticalHitChance = GetStatValue(StatType.Luck);
-            //_weapon.BonusCriticalHitMultiplier = GetStatValue(StatType.CriticalDamage);
-        }
+        m_HandheldItem.OnHandheldUpdate += HandheldChanged;
+        m_HandheldItem.OnCauseHealthChange += CausedHealthChange;
 
         m_HandheldItem.Initialize(m_Transform, m_Team);
         //m_HandheldItem.SetVolume(currentLevel);
@@ -805,7 +815,7 @@ public class PlayerController : UnitController
     {
         if (OnHandheldChange != null)
         {
-            OnHandheldChange(percentage);
+            OnHandheldChange(HandheldItem ? HandheldItem.Name : "",percentage);
         }
     }
 
@@ -940,6 +950,16 @@ public class PlayerController : UnitController
         get { return throwPower; }
         private set { throwPower = Mathf.Clamp(value, 0f, value); }
     }
+    public float ThrowTime
+    {
+        get { return throwTime; }
+        private set { throwTime = Mathf.Clamp(value, 0f, value); }
+    }
+    public int UtilityItemCount
+    {
+        get { return utilityItemCount; }
+        private set { utilityItemCount = Mathf.Clamp(value, 0, value); }
+    }
 
     public bool HasNativeAbility
     {
@@ -979,7 +999,7 @@ public class PlayerController : UnitController
 
     public bool HasUtilityItem
     {
-        get { return m_UtilityItem != null && utilityItemCount > 0; }
+        get { return m_UtilityItem != null && UtilityItemCount > 0; }
     }
     public UtilityItem UtilityItem
     {
@@ -1059,7 +1079,7 @@ public class PlayerController : UnitController
 
         InteractableObject _interactable = obj.GetComponent<InteractableObject>();
 
-        if (_interactable != null && _interactable.IsUsable)
+        if (_interactable != null && _interactable.IsInteractable)
         {
             if (directionVector.magnitude <= InteractDistance && (_interactable.IsUsableOutsideFOV || Vector3.Angle(directionVector, m_Transform.forward) <= FOV / 2f))
             {
@@ -1242,8 +1262,10 @@ public class PlayerController : UnitController
         CollectRange = CollectRange;
 
         InteractDistance = InteractDistance;
+        
         ThrowPower = ThrowPower;
-
+        ThrowTime = ThrowTime;
+        UtilityItemCount = UtilityItemCount;
     }
 }
 

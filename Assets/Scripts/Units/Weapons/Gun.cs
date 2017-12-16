@@ -4,26 +4,21 @@ using System.Collections;
 using System.Collections.Generic;
 
 [RequireComponent(typeof(AmmoSystem))]
-public class Gun : Weapon {
+public class Gun : Weapon
+{
 
     static readonly float MINIMUM_FIRE_RATE = 0.1f;
-	static readonly float MUZZLE_FLASH_TIME = 0.1f;
-    
-   
+    static readonly float MUZZLE_FLASH_TIME = 0.1f;
+
+
     [Header("Shots")]
 
     [SerializeField]
-    ShotContainer primaryShot;
+    ShotContainer m_Shot;
 
-    [SerializeField]
-    ShotContainer secondaryShot;
-
-
-    ObjectPooler primaryPool, secondaryPool;
-    GameObject primaryProjector, secondaryProjector;
-    IProjectile primaryProjectorScript, secondaryProjectorScript;
-
-    bool lastUsedIsPrimary = true;
+    ObjectPooler primaryPool;
+    GameObject primaryProjector;
+    IProjectile primaryProjectorScript;
 
     /*
     *******************************************************************************************************************************
@@ -38,17 +33,17 @@ public class Gun : Weapon {
     float shotSpeed = 25f;
     [SerializeField]
     float reloadTime = 1f;
-    
+
+    //[SerializeField]
+    //[Range(0f, 100f)]
+    //float reloadCriticalSize = 10f;
 
     bool isFiring = false;
-	bool isReloading = false;
-	float curReloadTime = 0f;
-
-	protected GameObject curMuzzleFlash;
-   
+    bool isReloading = false;
+    float curReloadTime = 0f;
 
     [SerializeField]
-    protected List<WeightedObjectOfGameObject> muzzleFlashes = new List<WeightedObjectOfGameObject>();
+    GameObject muzzleFlash;
 
 
     List<GameObject> bulletParents = new List<GameObject>();
@@ -56,16 +51,19 @@ public class Gun : Weapon {
     /*
     *******************************************************************************************************************************
     */
-    [Header("Attack Deterioration")]
-
-
-    //[SerializeField]
-    //float deteriorationOnFire = 0f;
+    [Header("Attack Charge")]
 
     [SerializeField]
-    float passiveDeteriorationRate = 0f;
+    [Range(0f, 100f)]
+    float requiredCharge = 0f;
 
-    float currentDeterioration = 0f;
+    [SerializeField]
+    float primaryChargeRate;
+
+    [SerializeField]
+    float passiveChargeRate = 0f;
+
+    float currentCharge = 0f;
 
 
     [SerializeField]
@@ -92,85 +90,33 @@ public class Gun : Weapon {
     [SerializeField]
     AnimationCurve criticalMultiplierCurve = AnimationCurve.Linear(0f, 0f, 100f, 0f);
 
-    
 
-    void Start()
-    {
-        InitializeProjectors();
-    }
 
-    void InitializeProjectors()
-    {
-        if (primaryShot.Type == ShotContainer.ShotType.Projector && primaryShot.ProjectorObject != null)
-        {
-            primaryProjector = GameObject.Instantiate(primaryShot.ProjectorObject);
-            primaryProjector.transform.SetParent(m_Transform);
-            primaryProjector.transform.position = GunBarrelPosition;
-            primaryProjector.transform.localRotation = Quaternion.identity;
-
-            primaryProjectorScript = primaryProjector.GetComponent<IProjectile>();
-            primaryProjectorScript.SubscribeToOnImpact(AlertWeaponCasualty);
-        }
-
-        if (secondaryShot.Type == ShotContainer.ShotType.Projector && secondaryShot.ProjectorObject != null)
-        {
-            secondaryProjector = GameObject.Instantiate(secondaryShot.ProjectorObject);
-            secondaryProjector.transform.SetParent(m_Transform);
-            secondaryProjector.transform.position = GunBarrelPosition;
-            secondaryProjector.transform.localRotation = Quaternion.identity;
-
-            secondaryProjectorScript = secondaryProjector.GetComponent<IProjectile>();
-            secondaryProjectorScript.SubscribeToOnImpact(AlertWeaponCasualty);
-        }
-    }
     void InitializeObjectPools()
     {
         GameObject p;
         GameObject poolsObj = GameObject.Find("Pools");
 
 
-        if (primaryShot.Type == ShotContainer.ShotType.Projectile)
+        if (primaryPool == null)
+            primaryPool = gameObject.AddComponent<ObjectPooler>();
+
+
+        p = new GameObject(m_Transform.parent.name + " Projectile Pooler -- Primary");
+
+
+        if (poolsObj != null)
         {
-            if (primaryPool == null)
-                primaryPool = gameObject.AddComponent<ObjectPooler>();
-
-
-            p = new GameObject(m_Transform.parent.name + " Projectile Pooler -- Primary");
-
-
-            if (poolsObj != null)
-            {
-                p.transform.parent = poolsObj.transform;
-            }
-
-            primaryPool.Parent = p.transform;
-            primaryPool.PooledObject = primaryShot.ProjectileObject;
-            primaryPool.Initialize();
-            bulletParents.Add(p);
-
-            if (primaryShot.Ammo != null)
-                primaryShot.Ammo.OnAmmoChanged += UpdateAmmo;
+            p.transform.parent = poolsObj.transform;
         }
 
-        if (secondaryShot.Type == ShotContainer.ShotType.Projectile)
-        {
-            if (secondaryPool == null)
-                secondaryPool = gameObject.AddComponent<ObjectPooler>();
+        primaryPool.Parent = p.transform;
+        primaryPool.PooledObject = m_Shot.ProjectileObject;
+        primaryPool.Initialize();
+        bulletParents.Add(p);
 
-
-            p = new GameObject(m_Transform.parent.name + " Bullet Pooler -- Secondary");
-            bulletParents.Add(p);
-
-
-            if (poolsObj != null)
-            {
-                p.transform.parent = poolsObj.transform;
-            }
-
-            secondaryPool.Parent = p.transform;
-            secondaryPool.PooledObject = secondaryShot.ProjectileObject;
-            secondaryPool.Initialize();
-        }
+        if (m_Shot.Ammo != null)
+            m_Shot.Ammo.OnAmmoChanged += UpdateAmmo;
     }
 
     public override void Update()
@@ -179,26 +125,9 @@ public class Gun : Weapon {
 
 
         //if (!isFiring)
-       // {
-            CurrentDeterioration += PassiveDeteriorationRate * Time.deltaTime * (GetStatValue(StatType.Speed) + 1);
-       // }
-    }
-
-    void UpdateProjectors()
-    {
-        UpdateProjector(primaryShot, primaryProjectorScript);
-        UpdateProjector(secondaryShot, secondaryProjectorScript);
-    }
-    void UpdateProjector(ShotContainer _container, IProjectile _script)
-    {
-        if (_container == null || _script == null)
-            return;
-
-
-        if (_container.Type != ShotContainer.ShotType.Projector)
-            return;
-
-        _script.MaxRange = AttackRange;
+        // {
+        CurrentCharge += PassiveChargeRate * Time.deltaTime * (GetStatValue(StatType.Speed) + 1);
+        // }
     }
 
 
@@ -209,26 +138,35 @@ public class Gun : Weapon {
 
         DestroyBulletObjects();
         isReloading = false;
-        
-        InitializeObjectPools();
-        
-         CurrentDeterioration = 0f;
-    }
-	public override void Terminate()
-    {
 
+        InitializeObjectPools();
+
+        CurrentCharge = 0f;
+
+        if (muzzleFlash != null)
+        {
+            muzzleFlash.SetActive(false);
+        }
+    }
+    public override void Terminate()
+    {
         base.Terminate();
 
 
-		DestroyBulletObjects();
+        DestroyBulletObjects();
 
-        primaryShot.Ammo.OnAmmoChanged -= UpdateAmmo;
+        m_Shot.Ammo.OnAmmoChanged -= UpdateAmmo;
         //secondaryAmmo.OnAmmoChanged -= UpdateAmmo;
 
         StopAllCoroutines();
-	}
 
-	void DestroyBulletObjects()
+        if(muzzleFlash != null)
+        {
+            muzzleFlash.SetActive(false);
+        }
+    }
+
+    void DestroyBulletObjects()
     {
 
         for (int i = 0; i < bulletParents.Count; i++)
@@ -237,15 +175,15 @@ public class Gun : Weapon {
         }
 
         bulletParents = new List<GameObject>();
-	}
-    
+    }
+
 
     Vector3? RaycastSweep(Vector3 aimDir)
     {
         //transform.rotation = Quaternion.Euler(0, 0, 0);
         Vector3 startPos = m_Transform.position;
         Vector3 targetPos = Vector3.zero;
-       // Transform targetTransform = null;
+        // Transform targetTransform = null;
 
         float startAngle = -maxSlope;
         float endAngle = maxSlope;
@@ -253,7 +191,7 @@ public class Gun : Weapon {
 
         // the gap between each ray (increment)
         float incrementAmount = (maxSlope * 2) / NUMBER_RAYSWEEP_INCREMENTS;
-        
+
         RaycastHit targetHit = new RaycastHit();
         float targetDistance = 0;
         //Quaternion targetRotation;
@@ -263,24 +201,24 @@ public class Gun : Weapon {
 
 
 
-        for (float i = startAngle; i < endAngle; i += incrementAmount) 
-         {
+        for (float i = startAngle; i < endAngle; i += incrementAmount)
+        {
             targetPos = GunBarrelPosition + (Quaternion.AngleAxis(i, perpendicularVector) * aimDir * AttackRange);  //Quaternion.(Quaternion.Euler(i, 0, 0) * aimDir).normalized * AttackRange;
             Ray _sweepRay = new Ray(startPos, targetPos - startPos);
 
 
             bool isHit = true;
 
-            
+
             float nearestTargetDistance = float.MaxValue;
             RaycastHit tempHit = new RaycastHit();
 
             //Raycast to check for objects in targetMask
             RaycastHit[] hits = Physics.RaycastAll(_sweepRay, AttackRange, targetMask);   //startPos, targetPos - startPos, AttackRange, targetMask);//, out hit, targetMask)
-           
+
 
             //Ignore colliders that are triggers and choose nearest hit
-            for(int k = 0; k < hits.Length; k++)
+            for (int k = 0; k < hits.Length; k++)
             {
                 if (hits[k].collider.isTrigger)
                     continue;
@@ -376,7 +314,7 @@ public class Gun : Weapon {
 
         return targetHit.collider == null ? null : (Vector3?)targetHit.point;
     }
-    
+
 
     IEnumerator FireProjectile(ShotContainer _container, ObjectPooler _pool, bool isPrimary)
     {
@@ -442,7 +380,7 @@ public class Gun : Weapon {
                 float _range = AttackRange * _shots[i].RangeModifier;
 
                 bScript.Initialize(m_Owner, m_Team, fireDir, (int)-_power, isCrit, _speed, _range);
-                bScript.SubscribeToOnImpact(AlertWeaponCasualty);
+                bScript.SubscribeToOnImpact(AlertHealthChangeCaused);
 
                 EnableEffects();
 
@@ -481,93 +419,17 @@ public class Gun : Weapon {
             attackTimerSecondary = AttackRateSecondary;
         }
 
-
-
-        CurrentDeterioration += _container.DeteriorationEffect;
-    }
-    IEnumerator FireProjector(ShotContainer _shot, IProjectile _script, bool isPrimary)
-    {
-        if (_shot != null && _script != null)
-        {
-            isFiring = true;
-
-            if (_shot.ProjectorShot.Delay > 0)
-            {
-                yield return new WaitForSeconds(_shot.ProjectorShot.Delay);
-            }
-
-            float error = 1f - Accuracy;
-
-            if (error != 0f)
-                error = UnityEngine.Random.Range(0f, error);
-
-            Vector3 localDir = m_Transform.TransformDirection(_shot.ProjectorShot.LocalDirection);
-
-            Vector3 shotError = new Vector3(-localDir.z, 0, localDir.x);
-            shotError *= UnityEngine.Random.value <= 0.5f ? 1f : -1f;
-
-            Vector3 fireDir = (localDir.normalized * (1f - error)) + (shotError * error);
-            fireDir.Normalize();
-
-
-            _script.GameObject.SetActive(true);
-
-            bool isCrit = IsCritical();
-
-            float _power = isCrit ? (int)(AttackPower * CriticalMultiplier) : AttackPower;
-            _power *= _shot.ProjectorShot.PowerModifier;
-
-            float _speed = ShotSpeed * _shot.ProjectorShot.SpeedModifier;
-
-            float _range = AttackRange * _shot.ProjectorShot.RangeModifier;
-
-            _script.Initialize(m_Transform.parent, m_Team, fireDir, (int)-_power, isCrit, _speed, _range);
-
-
-            EnableEffects();
-
-
-            if (isCrit)
-            {
-                //	PlaySound(criticalShotSound);
-            }
-
-            float _cost = _shot.ProjectorShot.AmmoCost * Time.deltaTime;
-            _shot.Ammo.UseAmmo(_cost);
-
-
-
-
-
-
-
-            isFiring = false;
-
-            if (isPrimary)
-            {
-                attackTimerPrimary = AttackRatePrimary;
-            }
-            else
-            {
-                attackTimerSecondary = AttackRateSecondary;
-            }
-
-
-
-            //ChangeAccuracy(-accuracyDeteriorationRate);
-
-            CurrentDeterioration += _shot.DeteriorationEffect * Time.deltaTime;
-        }
+        
+        CurrentCharge += _container.ChargeEffect;
     }
 
-    
+
 
     public override void ActivatePrimary()
     {
-        lastUsedIsPrimary = true;
+        CurrentCharge += primaryChargeRate * Time.deltaTime;
         
-
-        if (primaryShot.CanShoot())
+        if (m_Shot.CanShoot() && CurrentCharge >= RequiredCharge)
         {
             DisableEffects();
 
@@ -575,71 +437,27 @@ public class Gun : Weapon {
             {
                 StopAllCoroutines();
                 isReloading = false;
-                AlertWeaponChange(GetPercentage());
+                AlertHandheldUpdate(GetPercentage());
             }
 
             //myAudio.pitch = pitchCurve.Evaluate(currentDeterioration);
-            switch (primaryShot.Type)
-            {
-                case ShotContainer.ShotType.Projectile:
-                    StartCoroutine(FireProjectile(primaryShot, primaryPool, true));
-                    break;
-                case ShotContainer.ShotType.Projector:
-                    StartCoroutine(FireProjector(primaryShot, primaryProjectorScript,true));
-                    break;
-            }
-         
-
+            StartCoroutine(FireProjectile(m_Shot, primaryPool, true));
+        
             AlertPrimaryActivation();
 
         }
         else
         {
-            ReloadPrimary();
+            Reload();
         }
-	}
+    }
     public override bool CanActivatePrimary()
     {
         return base.CanActivatePrimary() && !isFiring;
     }
 
 
-    public override void ActivateSecondary()
-    {
-        lastUsedIsPrimary = false;
-
-
-        if (secondaryShot.CanShoot())
-        {
-            DisableEffects();
-
-            if (isReloading)
-            {
-                StopAllCoroutines();
-                isReloading = false;
-                AlertWeaponChange(GetPercentage());
-            }
-
-            //myAudio.pitch = pitchCurve.Evaluate(currentDeterioration);
-            switch (secondaryShot.Type)
-            {
-                case ShotContainer.ShotType.Projectile:
-                    StartCoroutine(FireProjectile(secondaryShot, secondaryPool, false));
-                    break;
-                case ShotContainer.ShotType.Projector:
-                    StartCoroutine(FireProjector(secondaryShot, secondaryProjectorScript, false));
-                    break;
-            }
-
-
-            AlertSecondaryActivation();
-
-        }
-        else
-        {
-            ReloadSecondary();
-        }
-    }
+    public override void ActivateSecondary() { }
     public override bool CanActivateSecondary()
     {
         return base.CanActivateSecondary() && !isFiring;
@@ -648,31 +466,12 @@ public class Gun : Weapon {
 
     public override void ActivateTertiary()
     {
-        if (lastUsedIsPrimary)
-        {
-            ReloadPrimary();
-        }
-        else
-        {
-            ReloadSecondary();
-        }
-        
+        Reload();
     }
 
-
-    public void ReloadPrimary()
+    void Reload()
     {
-        Reload(primaryShot);
-    }
-    public void ReloadSecondary()
-    {
-        Reload(secondaryShot);
-    }
-
-
-    void Reload(ShotContainer _container)
-    {
-        AmmoSystem _ammo = primaryShot.Ammo;
+        AmmoSystem _ammo = m_Shot.Ammo;
 
         if (_ammo.CanReload() && !isReloading)
         {
@@ -684,87 +483,77 @@ public class Gun : Weapon {
 
     IEnumerator ReloadWait(AmmoSystem a)
     {
-		isReloading = true;
-		curReloadTime = 0f;
+        isReloading = true;
+        curReloadTime = 0f;
 
-		AlertWeaponChange(0f);
-		
-		while(curReloadTime < reloadTime)
+        AlertHandheldUpdate(0f);
+
+        while (curReloadTime < reloadTime)
         {
-			curReloadTime += Time.deltaTime;
+            curReloadTime += Time.deltaTime;
 
 
-			AlertWeaponChange(GetPercentage());
+            AlertHandheldUpdate(GetPercentage());
 
-			yield return null;
-		}
-		
-		curReloadTime = reloadTime;
-	
-		if(a.CanReload())
+            yield return null;
+        }
+
+        curReloadTime = reloadTime;
+
+        if (a.CanReload())
         {
-			a.Reload();
-		}
+            a.Reload();
+        }
 
-		isReloading = false;
-	}
+        isReloading = false;
+    }
 
 
 
-	public override void EnableEffects()
+   protected void EnableEffects()
     {
         bool isCriticalHit = false;
 
-		SoundClip _sound;//isCriticalHit ? criticalShotSound : normalShotSound;   //Utilities.WeightedSelection( shotSounds.ToArray(), shotSoundProbabilities.ToArray());
+        SoundClip _sound;//isCriticalHit ? criticalShotSound : normalShotSound;   //Utilities.WeightedSelection( shotSounds.ToArray(), shotSoundProbabilities.ToArray());
 
-		if(isCriticalHit)
+        if (isCriticalHit)
         {
-			_sound = Utilities.WeightedSelection(criticalAttackSounds.ToArray(), 0f);
-		}
+            _sound = Utilities.WeightedSelection(criticalAttackSounds.ToArray(), 0f);
+        }
         else
         {
             _sound = Utilities.WeightedSelection(primaryActionSounds.ToArray(), 0f);
-		}
-        
-		//if(_sound.Sound != null)
-  //      {
-		//	myAudio.Stop();
+        }
 
-  //          myAudio.volume = _sound.Volume;
-  //          myAudio.pitch = _sound.Pitch;
-		//	myAudio.PlayOneShot(_sound.Sound);
-		//}
+        PlaySound(_sound);
 
-		curMuzzleFlash = Utilities.WeightedSelection( muzzleFlashes.ToArray(), 0f);
-
-		if(curMuzzleFlash != null)
+        if (muzzleFlash != null)
         {
-			curMuzzleFlash.transform.position = GunBarrelPosition;
-			curMuzzleFlash.transform.rotation = m_Transform.parent.rotation;
+            muzzleFlash.SetActive(false);
+            muzzleFlash.SetActive(true);
+        }
 
-			curMuzzleFlash.SetActive(true);
-		}
-
-		StartCoroutine(DelayDisableEffects());
-	}
-	public override void DisableEffects()
+        StartCoroutine(DelayDisableEffects());
+    }
+    protected void DisableEffects()
     {
-		//myAudio.Stop();
+        //myAudio.Stop();
 
-		if(curMuzzleFlash != null){
-			curMuzzleFlash.SetActive(false);
-		}
-	}
-	IEnumerator DelayDisableEffects()
+        if (muzzleFlash != null)
+        {
+            muzzleFlash.SetActive(false);
+        }
+    }
+    IEnumerator DelayDisableEffects()
     {
 
-		yield return new WaitForSeconds(MUZZLE_FLASH_TIME);
+        yield return new WaitForSeconds(MUZZLE_FLASH_TIME);
 
-		DisableEffects();
-	}
+        DisableEffects();
+    }
 
 
-	public override float GetPercentage()
+    public override float GetPercentage()
     {
         if (isReloading)
         {
@@ -772,50 +561,28 @@ public class Gun : Weapon {
         }
 
 
-        return primaryShot.Ammo == null ? 0f : primaryShot.Ammo.GetAmmoPercentage();
-	}
+        return m_Shot.Ammo == null ? 0f : m_Shot.Ammo.GetAmmoPercentage();
+    }
 
-	/*
+    /*
 	void OnDestroy(){
 		Destroy(bulletPooler.Parent.gameObject);
 		Destroy(this.gameObject);
 	}*/
 
 
-	void UpdateAmmo(float _percent)
+    void UpdateAmmo(float _percent)
     {
-		AlertWeaponChange(_percent);
-	}
-
-
-
-
-    void DeactivateProjector(ShotContainer _container, IProjectile _script)
-    {
-        if (_container == null || _script == null)
-            return;
-
-        if (_container.Type != ShotContainer.ShotType.Projector)
-            return;
-
-        //Debug.Log("Deactivating Projector");
-        //_script.Disable();
+        AlertHandheldUpdate(_percent);
     }
 
-    public override void DeactivatePrimary()
-    {
-        DeactivateProjector(primaryShot, primaryProjectorScript);
-    }
-    public override void DeactivateSecondary()
-    {
-        DeactivateProjector(secondaryShot, secondaryProjectorScript);
-    }
-
+    public override void DeactivatePrimary() { }
+    public override void DeactivateSecondary() { }
     public override void DeactivateTertiary() { }
 
     public override bool CanActivateTertiary()
     {
-        return primaryShot.Ammo != null && primaryShot.Ammo.GetAmmoPercentage() < 100f;
+        return m_Shot.Ammo != null && m_Shot.Ammo.GetAmmoPercentage() < 100f;
     }
 
 
@@ -825,16 +592,17 @@ public class Gun : Weapon {
 
     public override int AttackPower
     {
-        get { return (int)(base.AttackPower + powerCurve.Evaluate(CurrentDeterioration)); }
+        get { return (int)(powerCurve.Evaluate(CurrentCharge)); }
     }
     public override float AttackRange
     {
-        get { return base.AttackRange + rangeCurve.Evaluate(CurrentDeterioration); }
+        get { return rangeCurve.Evaluate(CurrentCharge); }
     }
     public override float AttackRatePrimary
     {
-        get {
-            float val = base.AttackRatePrimary + rateCurve.Evaluate(CurrentDeterioration);
+        get
+        {
+            float val = rateCurve.Evaluate(CurrentCharge);
             return val > MINIMUM_FIRE_RATE ? val : MINIMUM_FIRE_RATE;
         }
     }
@@ -842,29 +610,28 @@ public class Gun : Weapon {
     {
         get
         {
-            float val = base.AttackRateSecondary + rateCurve.Evaluate(CurrentDeterioration);
+            float val = rateCurve.Evaluate(CurrentCharge);
             return val > MINIMUM_FIRE_RATE ? val : MINIMUM_FIRE_RATE;
         }
     }
 
-
     public override float CriticalChance
     {
-        get { return base.CriticalChance + criticalChanceCurve.Evaluate(CurrentDeterioration); }
+        get { return criticalChanceCurve.Evaluate(CurrentCharge); }
     }
     public override float CriticalMultiplier
     {
-        get { return base.CriticalMultiplier + criticalMultiplierCurve.Evaluate(CurrentDeterioration); }
+        get { return criticalMultiplierCurve.Evaluate(CurrentCharge); }
     }
 
 
     public float Accuracy
     {
-        get { return accuracyCurve.Evaluate(CurrentDeterioration); }
+        get { return accuracyCurve.Evaluate(CurrentCharge); }
     }
     public float ShotSpeed
     {
-        get { return shotSpeed + shotSpeedCurve.Evaluate(CurrentDeterioration); }
+        get { return shotSpeedCurve.Evaluate(CurrentCharge); }
         protected set
         {
             shotSpeed = value;
@@ -877,61 +644,63 @@ public class Gun : Weapon {
     }
 
 
-
     //protected float DeteriorationOnFire
     //{
     //    get { return deteriorationOnFire; }
     //    set { deteriorationOnFire = value; }
     //}
-    protected float PassiveDeteriorationRate
+    protected float RequiredCharge
     {
-        get { return passiveDeteriorationRate; }
-        set { passiveDeteriorationRate = value; }
+        get { return requiredCharge; }
+        private set { requiredCharge = Mathf.Clamp(value, 0f, 100f); }
     }
-    protected float CurrentDeterioration
+    protected float PassiveChargeRate
     {
-        get { return currentDeterioration; }
+        get { return passiveChargeRate; }
+        set { passiveChargeRate = value; }
+    }
+    protected float CurrentCharge
+    {
+        get { return currentCharge; }
         set
         {
-            currentDeterioration = Mathf.Clamp(value, 0f, 100f);
-            
-            UpdateProjectors();
+            currentCharge = Mathf.Clamp(value, 0f, 100f);
         }
     }
 
-
-
-    public float ReloadTime {
-		get { return reloadTime; }
-		set
+    public float ReloadTime
+    {
+        get { return reloadTime; }
+        set
         {
             reloadTime = value;
 
-            if(reloadTime <= 0f)
+            if (reloadTime <= 0f)
             {
                 reloadTime = 0.001f;
             }
         }
-	}
-	public bool IsReloading{
-		get { return isReloading; }
-	}
-    
+    }
+    public bool IsReloading
+    {
+        get { return isReloading; }
+    }
 
 
     protected Vector3 GunBarrelPosition
     {
         get { return gunBarrelTransform == null ? m_Transform.position : gunBarrelTransform.position; }
     }
-	#endregion
 
-    
+    #endregion
+
+
     protected override void OnValidate()
     {
         base.OnValidate();
 
         ShotSpeed = ShotSpeed;
-        
+
         Utilities.ValidateCurve_Times(accuracyCurve, 0f, 100f);
         Utilities.ValidateCurve_Times(pitchCurve, 0f, 1f);
         Utilities.ValidateCurve_Times(powerCurve, 0f, 100f);

@@ -196,12 +196,17 @@ public class StandardProjectile : MonoBehaviour, IProjectile
 
     void ProcessImpact(RaycastHit hit)
     {
-        ProcessImpact(hit.collider);
+        ProcessImpact(hit.collider, hit.point);
     }
-    void ProcessImpact(Collider coll)
+    void ProcessImpact(Collider coll, Vector3 impactPoint)
     {
         if (coll.isTrigger)
             return;
+
+        if (impactPoint != null)
+        {
+            m_Transform.position = impactPoint;
+        }
 
         Team teamMember = coll.gameObject.GetComponent<Team>();
 

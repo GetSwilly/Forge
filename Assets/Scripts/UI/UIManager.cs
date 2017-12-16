@@ -156,7 +156,7 @@ public class UIManager : MonoBehaviour
         else
         {
             ExperienceChanged(0f, 0f);
-            HandheldChanged(0f);
+            HandheldChanged("",0f);
             NativeAbilityChanged("", 0f);
             AuxiliaryAbilityChanged("", 0f);
         }
@@ -193,7 +193,7 @@ public class UIManager : MonoBehaviour
         CasualtyAchieved(null);
 
         ExperienceChanged(0f, 0f);
-        HandheldChanged(0f);
+        HandheldChanged("",0f);
         NativeAbilityChanged("", 0f);
         AuxiliaryAbilityChanged("", 0f);
     }
@@ -212,8 +212,9 @@ public class UIManager : MonoBehaviour
         nativeAbilityUI.SetPercentage(percentage);
     }
 
-    private void HandheldChanged(float percentage)
+    private void HandheldChanged(string handheldName, float percentage)
     {
+        handheldUI.SetText(handheldName);
         handheldUI.SetPercentage(percentage);
     }
 
@@ -234,7 +235,7 @@ public class UIManager : MonoBehaviour
         {
             StartCoroutine(EnemyHUDVisibilityDelay());
 
-            IIdentifier identifier = casualtyHealth.GetComponent<IIdentifier>();
+            Identifier identifier = casualtyHealth.GetComponent<Identifier>();
             string text = identifier == null ? "" : identifier.Name;
 
             enemyTitle.text = text;

@@ -46,9 +46,9 @@ public class ItemMerchantInflater : MenuInflater {
     }
 
 
-    public override bool Interact(PlayerController _player)
+    public override bool Interact1(PlayerController _player)
     {
-        if (!base.Interact(_player))
+        if (!base.Interact1(_player))
         {
             return false;
         }
@@ -76,7 +76,7 @@ public class ItemMerchantInflater : MenuInflater {
            if (merchandiseToButtonDictionary.ContainsKey(m_Prices[i].gameObject.name))
                continue;
 
-            IIdentifier _identifier = m_Prices[i].GetComponent<IIdentifier>();
+            Identifier _identifier = m_Prices[i].GetComponent<Identifier>();
 
 
             GameObject _buttonObject = Instantiate(buttonPrefab) as GameObject;
@@ -122,7 +122,7 @@ public class ItemMerchantInflater : MenuInflater {
             _item.transform.SetParent(this.transform);
             _item.transform.localPosition = Vector3.zero;
 
-            IIdentifier _identifier = _item.GetComponent<IIdentifier>();
+            Identifier _identifier = _item.GetComponent<Identifier>();
             ItemPrice _price = _item.GetComponent<ItemPrice>();
 
 

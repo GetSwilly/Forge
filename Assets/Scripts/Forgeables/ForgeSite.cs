@@ -2,9 +2,11 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+[RequireComponent(typeof(Health))]
 [RequireComponent(typeof(Team))]
-public class ForgeSite : MonoBehaviour, IMemorable, IStat
+public class ForgeSite : MenuInflater, IMemorable, IStat
 {
+    [Header("Forge")]
     [SerializeField]
     List<GameObject> m_PossibleForges = new List<GameObject>();
 
@@ -21,24 +23,20 @@ public class ForgeSite : MonoBehaviour, IMemorable, IStat
     [SerializeField]
     UnitStats m_Stats;
 
-    Transform m_Transform;
-    //Team m_Team;
 
-    InteractableObject m_Interactable;
-
+    Health m_Health;
     PlayerController forgingPlayer;
-    ForgeableObject attemptedForge;
+    ForgeableObject processingForge;
     GameObject timerUI;
+    Dictionary<MenuButton, ForgeableObject> buttonToForgeDictionary;
 
     public event Delegates.StatChanged OnStatLevelChanged;
 
-
-    void Awake()
+    protected override void Awake()
     {
-        m_Transform = GetComponent<Transform>();
+        base.Awake();
 
-        m_Interactable = GetComponent<InteractableObject>();
-        //m_Team = GetComponent<Team>();
+        m_Health = GetComponent<Health>();
     }
     void Start()
     {
@@ -46,7 +44,102 @@ public class ForgeSite : MonoBehaviour, IMemorable, IStat
         {
             Forge(null, activeForge.GetComponent<ForgeableObject>());
         }
+
+        buttonToForgeDictionary = new Dictionary<MenuButton, ForgeableObject>();
     }
+
+    public override bool Interact1(PlayerController _player)
+    {
+        if (m_Health.NeedsHealth)
+        {
+            return false;
+        }
+
+        return base.Interact1(_player);
+    }
+    public override bool Interact2(PlayerController controller)
+    {
+        if (!m_Health.NeedsHealth)
+            return false;
+
+        float repairRate = controller.RepairSpeed * Time.deltaTime;
+        m_Health.HealthArithmetic(repairRate, false, controller.transform);
+
+        controller.CausedHealthChange(m_Health);
+
+        return true;
+    }
+
+    #region Menu Inflation
+
+    //public override bool Interact(PlayerController _player)
+    //{
+    //    return base.Interact(_player);
+    //}
+
+    public override void DeflateMenu()
+    {
+        base.DeflateMenu();
+
+        Dictionary<MenuButton, ForgeableObject>.Enumerator enumerator = buttonToForgeDictionary.GetEnumerator();
+        while (enumerator.MoveNext())
+        {
+            Destroy(enumerator.Current.Key.gameObject);
+        }
+
+        buttonToForgeDictionary.Clear();
+    }
+
+    protected override void AddButtons()
+    {
+        buttonToForgeDictionary.Clear();
+
+        List<ForgeableObject> forgeableComponents = Forgeables;
+
+        forgeableComponents.ForEach(f =>
+        {
+            GameObject _buttonObject = Instantiate(buttonPrefab) as GameObject;
+            MenuButton _button = _buttonObject.GetComponent<MenuButton>();
+
+            ItemPrice _price = f.gameObject.GetComponent<ItemPrice>();
+
+            _button.Initialize(f.Name, _price.CreditValue.ToString());
+            _button.OnActionMain += ProcesForgeRequest;
+
+
+            m_Menu.AddButton(_buttonObject);
+
+            buttonToForgeDictionary.Add(_button, f);
+        });
+    }
+
+    void ProcesForgeRequest(MenuButton selectedButton)
+    {
+        if (!buttonToForgeDictionary.ContainsKey(selectedButton))
+            return;
+
+        ForgeableObject forgeable = buttonToForgeDictionary[selectedButton];
+
+        ItemPrice price = forgeable.gameObject.GetComponent<ItemPrice>();
+        if (!activatingPlayer.CreditArithmetic(-price.CreditValue))
+        {
+            return;
+        }
+
+        GameObject g = Instantiate(forgeable.gameObject) as GameObject;
+        Forge(activatingPlayer, g.GetComponent<ForgeableObject>(), activatingPlayer.GetComponent<Team>());
+
+        DeflateMenu();
+    }
+
+    protected override bool CanInflateMenu()
+    {
+        return base.CanInflateMenu() && CanRemoveActive();
+    }
+
+    #endregion
+
+    
 
     public void Forge(PlayerController forger, ForgeableObject forgeObj)
     {
@@ -54,18 +147,18 @@ public class ForgeSite : MonoBehaviour, IMemorable, IStat
     }
     public void Forge(PlayerController forger, ForgeableObject forgeObj, Team _team)
     {
-        StartCoroutine(AttemptForge(forger, forgeObj, _team));
+        StartCoroutine(AttemptForgeRoutine(forger, forgeObj, _team));
     }
-    IEnumerator AttemptForge(PlayerController player, ForgeableObject forgeObj, Team team)
+    IEnumerator AttemptForgeRoutine(PlayerController player, ForgeableObject forgeObj, Team team)
     {
         forgingPlayer = player;
-        attemptedForge = forgeObj;
-        m_Interactable.enabled = false;
+        processingForge = forgeObj;
+        IsInteractable = false;
 
         forgeObj.gameObject.SetActive(false);
         forgeObj.transform.position = m_Transform.position;
 
-        timerUI = ObjectPoolerManager.Instance.TimerUIPooler.GetPooledObject();
+        timerUI = ObjectPoolerManager.Instance.DialUIPooler.GetPooledObject();
         timerUI.SetActive(true);
 
         FollowTarget follow = timerUI.GetComponent<FollowTarget>();
@@ -76,7 +169,7 @@ public class ForgeSite : MonoBehaviour, IMemorable, IStat
         progress.SetPercentage(1f, true);
 
         float timer = forgeObj.BuildTime;
-
+        
         while (timer > 0f)
         {
             yield return null;
@@ -86,15 +179,15 @@ public class ForgeSite : MonoBehaviour, IMemorable, IStat
             string timerString = (Mathf.Round(timer * 100) / 100f).ToString();
             progress.SetText(timerString);
         }
-
+        
         timerUI.SetActive(false);
 
-        attemptedForge = null;
+        processingForge = null;
         timerUI = null;
 
         ProcessForge(forgeObj, team);
 
-        m_Interactable.enabled = true;
+        IsInteractable = true;
     }
     void ProcessForge(ForgeableObject forgeObj, Team _team)
     {
@@ -122,11 +215,12 @@ public class ForgeSite : MonoBehaviour, IMemorable, IStat
 
     public void CancelForgeAttempt()
     {
+        Debug.Log("Cancelling Forge Attempt");
         StopAllCoroutines();
 
-        if (attemptedForge != null)
+        if (processingForge != null)
         {
-            ItemPrice forgePrice = attemptedForge.GetComponent<ItemPrice>();
+            ItemPrice forgePrice = processingForge.GetComponent<ItemPrice>();
 
             if (forgePrice != null && forgingPlayer != null)
             {
@@ -134,8 +228,8 @@ public class ForgeSite : MonoBehaviour, IMemorable, IStat
             }
 
 
-            Destroy(attemptedForge.gameObject);
-            attemptedForge = null;
+            Destroy(processingForge.gameObject);
+            processingForge = null;
         }
 
         if (timerUI != null)
@@ -144,7 +238,7 @@ public class ForgeSite : MonoBehaviour, IMemorable, IStat
             timerUI = null;
         }
 
-        m_Interactable.enabled = true;
+        IsInteractable = true;
     }
     public void RemoveActiveForge()
     {
@@ -242,8 +336,10 @@ public class ForgeSite : MonoBehaviour, IMemorable, IStat
 
     #endregion
 
-    void OnValidate()
+    protected override void OnValidate()
     {
+        base.OnValidate();
+
         if (m_Stats != null)
         {
             m_Stats.Validate();

@@ -53,6 +53,9 @@ namespace mattatz.VoxelSystem
         [SerializeField]
         bool activateOnDisable = true;
 
+        [SerializeField]
+        float launchPower;
+
 
         Rigidbody m_Rigidbody;
 
@@ -101,7 +104,7 @@ namespace mattatz.VoxelSystem
                 int index = UnityEngine.Random.Range(0, voxels.Count);
                 Voxel voxel = voxels[index];
 
-                SpawnObject(prefab, voxel, false, true);
+                SpawnObject(prefab, voxel, false);
 
                 voxels.RemoveAt(index);
             }
@@ -120,7 +123,7 @@ namespace mattatz.VoxelSystem
                 int index = UnityEngine.Random.Range(0, voxels.Count);
                 Voxel voxel = voxels[index];
 
-                SpawnObject(prefab, voxel, false, true);
+                SpawnObject(prefab, voxel, false);
 
                 voxels.RemoveAt(index);
             }
@@ -137,20 +140,20 @@ namespace mattatz.VoxelSystem
                     renderer.material = m_Material;
 
                     Renderer objectRenderer = GetComponentInChildren<Renderer>();
-                    if(objectRenderer != null)
+                    if (objectRenderer != null && objectRenderer.material.HasProperty("_Color"))
                     {
                         Material rendererMaterial = renderer.material;
-                        
+
                         Color finalColor = objectRenderer.material.color * Mathf.LinearToGammaSpace(1.5f);
 
                         rendererMaterial.SetColor("_EmissionColor", finalColor);
                     }
                 }
 
-                SpawnObject(voxelObject, voxels[i], true, false);
+                SpawnObject(voxelObject, voxels[i], true);
             }
         }
-        void SpawnObject(GameObject obj, Voxel voxel, bool shouldScale, bool shouldAddForce)
+        void SpawnObject(GameObject obj, Voxel voxel, bool shouldScale)
         {
             obj.transform.position = m_MeshFilter.transform.TransformPoint(voxel.position);
             obj.transform.rotation = m_MeshFilter.transform.rotation;
@@ -159,7 +162,7 @@ namespace mattatz.VoxelSystem
             {
                 obj.transform.localScale = Vector3.one * VoxelSize;
             }
-            
+
             obj.SetActive(true);
 
             Rigidbody voxelRigid = obj.GetComponent<Rigidbody>();
@@ -167,17 +170,15 @@ namespace mattatz.VoxelSystem
             {
                 voxelRigid.velocity = m_Rigidbody.velocity * velocityInheritRatio;
 
-                if (shouldAddForce)
-                {
-                    Vector3 directionVector = obj.transform.position - m_MeshFilter.transform.position;
-                    directionVector = directionVector.normalized * _ItemDropLaunchPower;
-                   
-                    voxelRigid.AddForce(directionVector, ForceMode.Impulse);
-                }
+                Vector3 directionVector = obj.transform.position - m_MeshFilter.transform.position;
+                directionVector = directionVector.normalized * UnityEngine.Random.Range(0f, LaunchPower);
+
+                voxelRigid.AddForce(directionVector, ForceMode.Impulse);
             }
 
         }
 
+        #region Accessors
 
         protected int VoxelCount
         {
@@ -194,6 +195,13 @@ namespace mattatz.VoxelSystem
             get { return numberOfDrops; }
             private set { numberOfDrops = Mathf.Clamp(value, 0, value); }
         }
+        protected float LaunchPower
+        {
+            get { return launchPower; }
+            private set { launchPower = Mathf.Clamp(value, 0f, value); }
+        }
+
+        #endregion
 
         void OnValidate()
         {
@@ -201,6 +209,8 @@ namespace mattatz.VoxelSystem
             VoxelSize = VoxelSize;
 
             NumberOfDrops = NumberOfDrops;
+
+            LaunchPower = LaunchPower;
         }
 
 

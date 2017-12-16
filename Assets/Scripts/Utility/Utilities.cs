@@ -341,10 +341,6 @@ public static class Utilities
     {
         return (a & b) == b;
     }
-    public static bool HasFlag(UtilityActor.TargetingMethod a, UtilityActor.TargetingMethod b)
-    {
-        return (a & b) == b;
-    }
     public static bool HasFlag(Wander.WanderType a, Wander.WanderType b)
     {
         return (a & b) == b;

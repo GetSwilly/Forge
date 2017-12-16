@@ -5,7 +5,6 @@ using UnityEngine;
 
 public class Team : MonoBehaviour
 {
-
     public enum Type
     {
         All,
@@ -15,8 +14,6 @@ public class Team : MonoBehaviour
 
     [SerializeField]
     Type m_TeamType;
-
-    String m_TeamTag;
     
     [SerializeField]
     protected List<TeamClassification> friendlyTeams = new List<TeamClassification>();
@@ -24,15 +21,11 @@ public class Team : MonoBehaviour
     [SerializeField]
     protected List<TeamClassification> enemyTeams = new List<TeamClassification>();
 
+    Identifier m_Identifier;
 
-    void Awake()
+    protected virtual void Awake()
     {
-        IIdentifier identifier = GetComponent<IIdentifier>();
-
-        if(identifier != null)
-        {
-            m_TeamTag = identifier.Name;
-        }
+        m_Identifier = GetComponent<Identifier>();
     }
 
     public static TeamClassification GetTeam(Team.Type type)
@@ -84,6 +77,27 @@ public class Team : MonoBehaviour
         return IsClassified(type, tag, EnemyTeams);
     }
 
+    public void Copy(Team team)
+    {
+        if (team == null)
+        {
+            return;
+        }
+
+ 
+        TeamType = team.TeamType;
+        FriendlyTeams = team.FriendlyTeams;
+        FriendlyTeams.Add(Team.GetTeam(TeamType));
+        EnemyTeams = team.EnemyTeams;
+    }
+
+    public void ResetTeam()
+    {
+        TeamType = Team.Type.All;
+        FriendlyTeams.Clear();
+        EnemyTeams.Clear();
+    }
+
     #region Accessors
 
     public Team.Type TeamType
@@ -93,7 +107,10 @@ public class Team : MonoBehaviour
     }
     public string TeamTag
     {
-        get { return m_TeamTag; }
+        get
+        {
+            return m_Identifier.Name;
+        }
     }
 
     public List<TeamClassification> FriendlyTeams
